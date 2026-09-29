@@ -5,6 +5,7 @@ import { CATEGORIES, categoryById, PLATFORMS } from '../lib/constants';
 import { budgetLabel, compact } from '../lib/format';
 import { useDB, userById, applicantsCount, isSaved, actions, brandName, followersOf, ratingOf } from '../lib/store';
 import { matchScore } from '../lib/match';
+import { earnLabel, deliverableSummary } from '../lib/pay';
 import { Avatar, Badge, cx } from './ui';
 
 export function Logo({ className }) {
@@ -122,6 +123,32 @@ export function MatchPill({ score, label, tone, checks, passed, total }) {
   );
 }
 
+export function EarnTag({ campaign, className }) {
+  return (
+    <span className={cx('inline-flex items-center gap-1 rounded-full bg-emerald-600/95 text-white px-2.5 py-1 text-[12px] font-semibold shadow-sm backdrop-blur', className)}>
+      {earnLabel(campaign)}
+    </span>
+  );
+}
+
+// Compact card for horizontal shelves.
+export function OpportunityTile({ campaign }) {
+  const d = useDB();
+  const owner = userById(d, campaign.ownerId);
+  return (
+    <Link to={`/opportunity/${campaign.id}`} className="w-[230px] shrink-0 bg-white border border-line rounded-2xl overflow-hidden hover:shadow-lift transition-shadow snap-start">
+      <div className="relative">
+        <ProductImage campaign={campaign} className="aspect-[4/3]" />
+        <EarnTag campaign={campaign} className="absolute bottom-2 left-2 !text-[11.5px]" />
+      </div>
+      <div className="p-3">
+        <p className="text-[13px] font-bold leading-snug line-clamp-2 min-h-[34px]">{campaign.productName}</p>
+        <p className="text-[11.5px] text-ink-muted truncate mt-0.5">{brandName(owner)} · {owner?.region}</p>
+      </div>
+    </Link>
+  );
+}
+
 export function OpportunityCard({ campaign }) {
   const d = useDB();
   const me = userById(d, d.session.userId);
@@ -137,6 +164,7 @@ export function OpportunityCard({ campaign }) {
           <Bookmark size={15} className={saved ? 'fill-white' : ''} />
         </button>
         <span className="absolute top-3 left-3"><Badge className="bg-white/95 border-transparent text-ink">{campaign.type}</Badge></span>
+        <EarnTag campaign={campaign} className="absolute bottom-3 left-3" />
       </div>
       <div className="p-4 flex flex-col flex-1">
         <div className="flex items-center justify-between gap-2 mb-1.5">
@@ -145,9 +173,9 @@ export function OpportunityCard({ campaign }) {
         </div>
         <h3 className="text-[14.5px] font-bold text-ink leading-snug line-clamp-2">{campaign.title}</h3>
         <p className="text-[12.5px] text-ink-muted mt-1 line-clamp-2">{campaign.description}</p>
-        <div className="mt-auto pt-3 flex items-center justify-between">
-          <span className="text-[14px] font-bold text-brand-dark">{budgetLabel(campaign)}</span>
-          <span className="text-[12px] text-ink-muted">{applicantsCount(d, campaign.id)} applied</span>
+        <div className="mt-auto pt-3 flex items-center justify-between gap-3">
+          <span className="text-[12px] text-ink-soft truncate">{deliverableSummary(campaign)}</span>
+          <span className="text-[12px] text-ink-muted shrink-0">{applicantsCount(d, campaign.id)} applied</span>
         </div>
       </div>
     </Link>
@@ -166,8 +194,8 @@ export function OpportunityRow({ campaign }) {
         <p className="text-[12.5px] text-ink-muted">{campaign.type} · {categoryById(campaign.category).label} · {applicantsCount(d, campaign.id)} applied</p>
       </div>
       <div className="text-right shrink-0">
-        <p className="text-[13.5px] font-bold text-brand-dark">{budgetLabel(campaign)}</p>
-        {m.score != null && <p className="text-[12px] font-semibold text-emerald-700">{m.label}</p>}
+        <p className="text-[12.5px] font-semibold text-emerald-700">{earnLabel(campaign)}</p>
+        {m.score != null && <p className="text-[11.5px] text-ink-muted">{m.label}</p>}
       </div>
       <Chev size={18} className="text-ink-muted shrink-0" />
     </Link>

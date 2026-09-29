@@ -2,8 +2,9 @@ import { useEffect, useState } from 'react';
 import { useParams, Link, useNavigate } from 'react-router-dom';
 import { ArrowLeft, Bookmark, MessageCircle, Calendar, Users, FileText, MapPin, Target, CheckCircle2, Clock, Eye, Share2, Star, Flag, BadgeCheck, ShieldCheck } from 'lucide-react';
 import { useDB, liveCampaigns, campaignById, userById, currentUser, applicantsCount, membersOf, isSaved, actions, brandName, ratingOf } from '../lib/store';
-import { categoryById, COMP_TYPES, PLATFORMS } from '../lib/constants';
-import { budgetLabel, shortDate, peso } from '../lib/format';
+import { categoryById, PLATFORMS } from '../lib/constants';
+import { shortDate, peso } from '../lib/format';
+import { earnLabel, payBreakdown, giftLabel } from '../lib/pay';
 import { matchScore } from '../lib/match';
 import { ProductImage, OpportunityCard, FitChecks } from '../components/visuals';
 import { Button, Card, Badge, Avatar, cx, useToast, useCopy } from '../components/ui';
@@ -103,9 +104,23 @@ export default function OpportunityDetail() {
 
         <aside className="space-y-4">
           <Card className="p-5 sticky top-24">
-            <p className="text-[12px] text-ink-muted">{COMP_TYPES[c.compensation]}{['flat', 'hybrid'].includes(c.compensation) ? ' per creator' : ''}</p>
-            <p className="text-[26px] font-extrabold text-brand-dark">{budgetLabel(c)}</p>
-            {estEarn > 0 && <p className="text-[12.5px] text-ink-muted">≈ {peso(estEarn)} earned per sale (avg. order {peso(c.aov)})</p>}
+            <p className="text-[12px] font-semibold uppercase tracking-wide text-ink-muted">What you'll earn</p>
+            <p className="text-[22px] font-extrabold text-emerald-700 mt-0.5">{earnLabel(c)}</p>
+            <div className="mt-3 rounded-xl border border-line divide-y divide-line">
+              {payBreakdown(c).rows.map((r) => (
+                <div key={r.label} className="flex items-center justify-between px-3 py-2.5 text-[13.5px]">
+                  <span><span className="text-ink font-medium">{r.label}</span> <span className="text-ink-muted text-[12px]">· {r.platform}</span></span>
+                  <span className="font-semibold tabular-nums">{payBreakdown(c).cash ? (r.min === r.max ? peso(r.max) : `${peso(r.min)}–${peso(r.max)}`) : c.compensation === 'gifted' ? giftLabel(c) : '—'}</span>
+                </div>
+              ))}
+              {['commission', 'hybrid'].includes(c.compensation) && (
+                <div className="flex items-center justify-between px-3 py-2.5 text-[13.5px]">
+                  <span className="text-ink font-medium">+ on every sale you drive</span>
+                  <span className="font-semibold text-emerald-700 tabular-nums">{c.commissionRate}%{estEarn > 0 && <span className="text-ink-muted font-normal text-[12px]"> ≈ {peso(estEarn)}</span>}</span>
+                </div>
+              )}
+            </div>
+            <p className="text-[11.5px] text-ink-muted mt-1.5">{payBreakdown(c).cash ? 'Suggested split of the brand\'s budget per creator. Final fee is agreed when you apply.' : c.compensation === 'gifted' ? 'No cash fee. You keep what you receive.' : `Based on an average order of ${peso(c.aov)}.`}</p>
             <div className="grid grid-cols-3 gap-2 mt-4 text-center">
               <Mini icon={Users} value={`${members.length}/${c.slots}`} label="Spots filled" />
               <Mini icon={FileText} value={applicantsCount(d, c.id)} label="Applied" />

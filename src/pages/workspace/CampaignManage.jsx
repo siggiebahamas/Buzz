@@ -1,7 +1,7 @@
 import { useState } from 'react';
 import { useParams, Link, Navigate, useNavigate } from 'react-router-dom';
 import { ArrowLeft, Users, Wallet, FileText, Zap, Pencil, ExternalLink, Check, X, MessageCircle, Copy, Star, Trash2, Send, TrendingUp, ShoppingBag } from 'lucide-react';
-import { useDB, campaignById, userById, currentUser, actions, creators, followersOf } from '../../lib/store';
+import { useDB, campaignById, userById, currentUser, actions, creators, followersOf, reactionTotal } from '../../lib/store';
 import { CAMPAIGN_STAGES, COMP_TYPES, PLATFORMS, categoryById } from '../../lib/constants';
 import { peso, compact, budgetLabel, shortDate, timeAgo } from '../../lib/format';
 import { matchScore } from '../../lib/match';
@@ -193,7 +193,7 @@ export default function CampaignManage() {
           <div><p className="text-ink-muted text-[12px]">Target audience</p><p>{c.audience || '—'}</p></div>
           <div><p className="text-ink-muted text-[12px]">Deliverables per creator</p><p>{c.deliverables.map((x) => `${x.qty}× ${x.type}`).join(', ')}</p></div>
           <div><p className="text-ink-muted text-[12px]">Content rights</p><p>{c.contentRights}</p></div>
-          <div><p className="text-ink-muted text-[12px]">Community validation</p><p>{d.posts.filter((p) => p.campaignId === c.id).reduce((a, p) => a + p.likes.length + p.interested.length, 0)} reactions on {d.posts.filter((p) => p.campaignId === c.id).length} posts</p></div>
+          <div><p className="text-ink-muted text-[12px]">Community validation</p><p>{d.posts.filter((p) => p.campaignId === c.id).reduce((a, p) => a + reactionTotal(p) + p.interested.length, 0)} reactions on {d.posts.filter((p) => p.campaignId === c.id).length} posts</p></div>
         </div>
       </Card>
 

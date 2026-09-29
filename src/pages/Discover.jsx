@@ -1,6 +1,6 @@
 import { Link, useNavigate } from 'react-router-dom';
 import { Search, Handshake, BarChart3, Trophy, ArrowRight, ChevronRight, Flame, Sparkles, Star, Heart, MessageCircle } from 'lucide-react';
-import { useDB, applicantsCount, userById, displayName, creators, actions, liveCampaigns } from '../lib/store';
+import { useDB, applicantsCount, userById, displayName, creators, actions, liveCampaigns, reactionTotal } from '../lib/store';
 import { OpportunityCard, CreatorCard } from '../components/visuals';
 import { Button, Avatar, SectionHead } from '../components/ui';
 import { timeAgo } from '../lib/format';
@@ -95,7 +95,7 @@ export default function Discover() {
                   <p className="font-bold text-ink leading-snug">{p.title}</p>
                   <p className="text-[13px] text-ink-muted mt-1.5 line-clamp-3">{p.body}</p>
                   <div className="mt-auto pt-4 flex gap-4 text-[12.5px] text-ink-muted">
-                    <span className="inline-flex items-center gap-1"><Heart size={14} />{p.likes.length}</span>
+                    <span className="inline-flex items-center gap-1"><Heart size={14} />{reactionTotal(p)}</span>
                     <span className="inline-flex items-center gap-1"><MessageCircle size={14} />{p.comments.length}</span>
                   </div>
                 </Link>

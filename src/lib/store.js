@@ -4,7 +4,7 @@ import { useSyncExternalStore } from 'react';
 import { buildSeed, hashPw, SERVICE_FEE } from './seed';
 import { uid, DAY, peso } from './format';
 
-const KEY = 'buzz-db-v4';
+const KEY = 'buzz-db-v5';
 const listeners = new Set();
 
 function load() {
@@ -12,7 +12,7 @@ function load() {
     const raw = localStorage.getItem(KEY);
     if (raw) {
       const parsed = JSON.parse(raw);
-      if (parsed?.version === 4) return parsed;
+      if (parsed?.version === 5) return parsed;
     }
   } catch { /* storage blocked or corrupt: fall through to fresh seed */ }
   return buildSeed();
@@ -412,7 +412,7 @@ export const actions = {
   // ---------- community ----------
   createPost(data) {
     return commit((d) => {
-      const p = { id: uid('post'), authorId: d.session.userId, likes: [], interested: [], followers: [], comments: [], createdAt: Date.now(), photos: [], ...data };
+      const p = { id: uid('post'), authorId: d.session.userId, likes: [], claps: [], ideas: [], interested: [], followers: [], comments: [], createdAt: Date.now(), photos: [], ...data };
       d.posts.unshift(p);
       if (data.notify && data.campaignId) {
         d.posts.filter((x) => x.campaignId === data.campaignId).flatMap((x) => x.followers)
@@ -421,6 +421,26 @@ export const actions = {
       }
       return p.id;
     });
+  },
+  // One reaction per person, like Facebook: picking another swaps it.
+  react(postId, kind) {
+    commit((d) => {
+      const p = d.posts.find((x) => x.id === postId);
+      const me = d.session.userId;
+      const had = p[kind]?.includes(me);
+      REACTIONS.forEach((r) => { p[r.id] = (p[r.id] || []).filter((x) => x !== me); });
+      if (!had) {
+        p[kind].push(me);
+        if (p.authorId !== me) notify(d, p.authorId, `${currentUser(d).name} reacted ${REACTIONS.find((r) => r.id === kind).emoji} to "${p.title}"`, `/community/${p.id}`);
+      }
+    });
+  },
+  setFlag(key, value) { commit((d) => { d.flags = { ...(d.flags || {}), [key]: value }; }); },
+  recordVisit() {
+    const me = currentUser(db);
+    const day = new Date().toISOString().slice(0, 10);
+    if (!me || me.visitDays?.includes(day)) return;
+    commit((d) => { const u = currentUser(d); u.visitDays = [...(u.visitDays || []), day].slice(-60); });
   },
   toggleIn(postId, field) {
     commit((d) => {
@@ -498,6 +518,14 @@ function release(d, x) {
   d.transactions.push({ id: uid('tx'), userId: x.creatorId, type: 'release', amount: x.fee, ts: Date.now(), ref: x.id, note: `Payment released: ${x.title}` });
   notify(d, x.creatorId, `${peso(x.fee)} released to your Buzz wallet for "${x.title}"`, '/workspace/payments');
 }
+
+export const REACTIONS = [
+  { id: 'likes', emoji: '🔥', label: 'Hype' },
+  { id: 'claps', emoji: '👏', label: 'Clap' },
+  { id: 'ideas', emoji: '💡', label: 'Smart' },
+];
+export const reactionTotal = (p) => REACTIONS.reduce((a, r) => a + (p[r.id]?.length || 0), 0);
+export const myReaction = (p, userId) => REACTIONS.find((r) => p[r.id]?.includes(userId))?.id || null;
 
 export function unreadCount(d) {
   const me = d.session.userId;

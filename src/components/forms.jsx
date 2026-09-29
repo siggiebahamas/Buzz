@@ -56,7 +56,7 @@ const blankCampaign = () => ({
   productName: '', title: '', type: 'Product', category: 'food', description: '', audience: '',
   compensation: 'flat', budgetMin: 1000, budgetMax: 3000, commissionRate: 10, slots: 3,
   deliverables: [{ type: 'Reel', qty: 1, platform: 'instagram' }], photos: [], photoHints: [],
-  deadline: Date.now() + 21 * DAY, contentRights: '90 days', shopUrl: '', aov: 0, published: true,
+  deadline: Date.now() + 21 * DAY, contentRights: '90 days', shopUrl: '', aov: 0, published: true, tags: [],
 });
 
 export function CampaignForm({ open, onClose, initial, onSaved }) {
@@ -137,6 +137,15 @@ export function CampaignForm({ open, onClose, initial, onSaved }) {
           <Field label="Apply by"><Input type="date" value={new Date(f.deadline).toISOString().slice(0, 10)} onChange={(e) => set('deadline', new Date(e.target.value).getTime())} /></Field>
           <Field label="Content rights"><Select value={f.contentRights} onChange={(e) => set('contentRights', e.target.value)}>{['30 days', '60 days', '90 days', '1 year', 'None'].map((x) => <option key={x}>{x}</option>)}</Select></Field>
           <Field label="Shop link"><Input value={f.shopUrl} onChange={(e) => set('shopUrl', e.target.value)} placeholder="Shopee / Lazada / site" /></Field>
+        </div>
+        <div>
+          <p className="text-[12px] font-semibold uppercase tracking-wide text-ink-muted mb-2">Helps creators find you</p>
+          <div className="flex flex-wrap gap-2">
+            {[['handmade', 'Handmade'], ['noface', 'No face needed'], ['longterm', 'Long-term ambassador']].map(([id, label]) => {
+              const on = (f.tags || []).includes(id);
+              return <button type="button" key={id} onClick={() => set('tags', on ? f.tags.filter((t) => t !== id) : [...(f.tags || []), id])} className={cx('h-8 px-3 rounded-full border text-[13px]', on ? 'bg-ink text-white border-ink' : 'bg-white border-line-strong text-ink-soft')}>{label}</button>;
+            })}
+          </div>
         </div>
         <Checkbox checked={f.published} onChange={(v) => set('published', v)} label="List on Opportunities" hint="Uncheck to keep it private and invite creators directly." />
         {err && <p className="text-[13px] text-rose-600">{err}</p>}

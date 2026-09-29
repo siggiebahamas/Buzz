@@ -1,8 +1,9 @@
 import { useState } from 'react';
 import { Link, Navigate } from 'react-router-dom';
 import { ShieldAlert, Users, Store, MessageSquare, BadgeCheck, Ban, Star, Trash2, Check, Wallet, Search } from 'lucide-react';
-import { useDB, userById, campaignById, actions, isAdmin, displayName, walletOf } from '../lib/store';
+import { useDB, userById, campaignById, actions, isAdmin, displayName, walletOf, reactionTotal } from '../lib/store';
 import { peso, timeAgo, compact } from '../lib/format';
+import { dailyPicksStatus, DAILY_PICKS_THRESHOLD } from '../lib/discover';
 import { Card, Button, Badge, Avatar, Segmented, EmptyState, IconTile, useAct, useConfirm, cx } from '../components/ui';
 
 function target(d, r) {
@@ -51,7 +52,7 @@ export default function Admin() {
           <h1 className="text-[28px] font-bold">Trust & Safety</h1>
           <p className="text-ink-muted">Review reports, verify people and keep fake listings off Buzz.</p>
         </div>
-        <Segmented value={tab} onChange={setTab} size="sm" options={[{ id: 'reports', label: `Reports · ${open.length}` }, { id: 'users', label: 'Users' }, { id: 'listings', label: 'Listings' }, { id: 'posts', label: 'Posts' }]} />
+        <Segmented value={tab} onChange={setTab} size="sm" options={[{ id: 'reports', label: `Reports · ${open.length}` }, { id: 'users', label: 'Users' }, { id: 'listings', label: 'Listings' }, { id: 'posts', label: 'Posts' }, { id: 'features', label: 'Features' }]} />
       </div>
       <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-5 gap-3 mt-6">
         {stats.map(([Icon, v, l, tone]) => (
@@ -139,6 +140,32 @@ export default function Admin() {
         </Card>
       )}
 
+      {tab === 'features' && (() => {
+        const s = dailyPicksStatus(d);
+        return (
+          <Card className="mt-6 p-5 max-w-2xl">
+            <div className="flex flex-wrap items-start justify-between gap-4">
+              <div>
+                <p className="font-bold text-[16px]">Daily picks + Surprise me</p>
+                <p className="text-[13px] text-ink-muted mt-0.5">Three rotating picks per creator each day, with a check-in streak. Switches on by itself once Buzz has {DAILY_PICKS_THRESHOLD.listings} live listings and {DAILY_PICKS_THRESHOLD.creators} creators.</p>
+              </div>
+              <Badge tone={s.on ? 'green' : 'neutral'}>{s.on ? 'Showing' : 'Hidden'}</Badge>
+            </div>
+            <div className="grid grid-cols-2 gap-3 mt-4">
+              {[['Live listings', s.listings, DAILY_PICKS_THRESHOLD.listings], ['Creators', s.creators, DAILY_PICKS_THRESHOLD.creators]].map(([l, v, t]) => (
+                <div key={l} className="rounded-xl bg-canvas p-3">
+                  <p className="text-[12px] text-ink-muted">{l}</p>
+                  <p className="text-[18px] font-bold">{v} <span className="text-[13px] font-normal text-ink-muted">/ {t}</span></p>
+                  <div className="h-1.5 rounded-full bg-line mt-2"><div className="h-full rounded-full bg-brand" style={{ width: `${Math.min(100, (v / t) * 100)}%` }} /></div>
+                </div>
+              ))}
+            </div>
+            <div className="mt-4"><Segmented size="sm" value={s.mode} onChange={(v) => act(() => actions.setFlag('dailyPicks', v), v === 'auto' ? 'Back to automatic' : v === 'on' ? 'Daily picks turned on' : 'Daily picks turned off')}
+              options={[{ id: 'auto', label: 'Automatic' }, { id: 'on', label: 'Always on' }, { id: 'off', label: 'Off' }]} /></div>
+          </Card>
+        );
+      })()}
+
       {tab === 'posts' && (
         <div className="space-y-3 mt-4">
           {d.posts.filter((p) => `${p.title} ${p.body}`.toLowerCase().includes(needle)).map((p) => (
@@ -146,7 +173,7 @@ export default function Admin() {
               <MessageSquare size={17} className="text-ink-muted mt-0.5 shrink-0" />
               <div className="flex-1 min-w-0">
                 <Link to={`/community/${p.id}`} className="font-semibold hover:underline">{p.title}</Link>
-                <p className="text-[12.5px] text-ink-muted">{p.anonymous ? 'Anonymous' : displayName(userById(d, p.authorId))} · {timeAgo(p.createdAt)} · {p.likes.length} likes · {p.comments.length} replies</p>
+                <p className="text-[12.5px] text-ink-muted">{p.anonymous ? 'Anonymous' : displayName(userById(d, p.authorId))} · {timeAgo(p.createdAt)} · {reactionTotal(p)} likes · {p.comments.length} replies</p>
               </div>
               <Button size="sm" variant="ghost" onClick={async () => { if (await ask({ title: 'Remove this post?', body: 'The author is notified.', confirm: 'Remove', danger: true })) act(() => actions.adminRemovePost(p.id), 'Post removed'); }}><Trash2 size={14} /></Button>
             </Card>

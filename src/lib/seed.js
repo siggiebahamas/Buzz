@@ -50,6 +50,12 @@ const SAMPLE_PHOTOS = {
   cmp_lodge: ['1520250497591-112f2f40a3f4', '1537996194471-e657df975ab4'].map(U),
 };
 
+const TAGS = {
+  cmp_barong: ['handmade'], cmp_ligaya: ['handmade'], cmp_marikina: ['handmade'], cmp_kahoy: ['handmade'], cmp_bulul: ['handmade', 'noface'],
+  cmp_tinalak: ['handmade'], cmp_candle: ['handmade', 'noface'], cmp_sili: ['noface'], cmp_barako: ['noface'], cmp_ipon: ['noface'],
+  cmp_mangga: ['noface'], cmp_protina: ['longterm'], cmp_active: ['longterm'], cmp_kalamansi: ['longterm'],
+};
+
 const ME = 'u_me';
 
 const OWNERS = [
@@ -204,6 +210,7 @@ export function buildSeed() {
       deadline: now + between(7, 40) * DAY, contentRights: pick(['30 days', '60 days', '90 days']),
       shopUrl: 'https://shopee.ph/', aov, status, published: true, createdAt, views: Math.round(between(120, 2400)),
       promo: productName.split(' ')[0].toUpperCase().replace(/[^A-Z]/g, '').slice(0, 6),
+      tags: TAGS[cid] || [],
     };
   });
   const campaignById = Object.fromEntries(campaigns.map((c) => [c.id, c]));
@@ -291,19 +298,19 @@ export function buildSeed() {
 
   const post = (authorId, topic, title, body, daysAgo, extra = {}) => ({
     id: id('post'), authorId, anonymous: false, topic, campaignId: null, title, body, photos: [],
-    likes: [], interested: [], followers: [], comments: [], createdAt: now - daysAgo * DAY, ...extra,
+    likes: [], claps: [], ideas: [], interested: [], followers: [], comments: [], createdAt: now - daysAgo * DAY, ...extra,
   });
   const cm = (authorId, body, hoursAgo) => ({ id: id('cmt'), authorId, body, createdAt: now - hoursAgo * 3600000 });
   const posts = [
-    post('u_sili', 'wins', 'Sold out our 3-pack in 9 days from 3 creators', 'We gave each creator their own promo code. SILI-BIANC alone drove 40% of orders. Lesson: food creators who actually cook convert way better than pure reviewers.', 2, { campaignId: 'cmp_sili', photos: [SAMPLE_PHOTOS.cmp_sili[0]], likes: ['c_bianca', 'u_mangga', 'u_barako', 'c_paolo', ME, 'u_hurno'], comments: [cm('u_barako', 'Did you cap the discount per code? Worried about margin.', 30), cm('u_sili', '10% off, capped at 200 uses per code. Margin held.', 28)] }),
+    post('u_sili', 'wins', 'Sold out our 3-pack in 9 days from 3 creators', 'We gave each creator their own promo code. SILI-BIANC alone drove 40% of orders. Lesson: food creators who actually cook convert way better than pure reviewers.', 2, { campaignId: 'cmp_sili', photos: [SAMPLE_PHOTOS.cmp_sili[0]], likes: ['c_bianca', 'u_mangga', 'u_barako'], claps: ['c_paolo', ME, 'u_hurno', 'u_protina', 'c_hannah'], ideas: ['u_kalamansi'], comments: [cm('u_barako', 'Did you cap the discount per code? Worried about margin.', 30), cm('u_sili', '10% off, capped at 200 uses per code. Margin held.', 28)] }),
     post('u_ligaya', 'ideas', 'Would you pay for made-to-measure Filipiniana online?', 'I\'m testing remote fittings: you send 12 measurements + a video call, I ship the gown with one free alteration. Is this something you\'d trust? What would make you say yes?', 1, { photos: [SAMPLE_PHOTOS.cmp_ligaya[0]], likes: ['c_aya', 'c_leah'], interested: ['c_aya', 'c_leah', 'u_ben'], comments: [cm('c_aya', 'A fitting video from a real client would make me trust it instantly.', 10)] }),
     post('u_carvers', 'help', 'How do we ship fragile carvings from Banaue to Manila?', 'Our pieces keep arriving chipped. Couriers don\'t reach us daily. Anyone solved crating or consolidation for provincial crafts?', 3, { likes: ['c_rina', 'u_tboli'], comments: [cm('u_kahoy', 'We use foam corner guards + double-wall boxes. DM me our supplier.', 60), cm('u_tboli', 'We consolidate in Koronadal once a week. Same problem!', 50)] }),
     post('u_mangga', 'collab', 'Pasalubong bundle: looking for 2 more Visayas brands', 'We want a "Taste of Cebu" box for balikbayans: dried mangoes + 2 other brands. Split costs 3 ways, one creator campaign for all. Candles or coffee welcome!', 4, { likes: ['u_candle', 'u_barako', 'c_trish'], interested: ['u_candle', 'u_barako'] }),
     post(ME, 'build', 'Abaca Barong: first 2 creators live, here are the numbers', 'Aya\'s reel reached 40K+ with a 5% engagement rate. Clicks are strong but the conversion is low: people want to see it in person. Testing a fitting pop-up next.', 1, { campaignId: 'cmp_barong', photos: SAMPLE_PHOTOS.cmp_barong.slice(0, 2), likes: ['u_ligaya', 'c_aya', 'u_ben'], comments: [cm('u_ligaya', 'Happy to lend my atelier for a fitting weekend!', 5)] }),
-    post('c_kaye', 'help', 'Brands: please send the brief BEFORE the product', 'Creator side here. Three times this month I got product with no brief, no deadline, no usage rights. Put it in writing on Buzz so we both know what we agreed to.', 5, { likes: ['c_hannah', 'c_bianca', 'c_migo', 'c_sam', 'u_kalamansi'] }),
+    post('c_kaye', 'help', 'Brands: please send the brief BEFORE the product', 'Creator side here. Three times this month I got product with no brief, no deadline, no usage rights. Put it in writing on Buzz so we both know what we agreed to.', 5, { likes: ['c_hannah', 'c_bianca'], ideas: ['c_migo', 'c_sam', 'u_kalamansi', 'u_sili'] }),
     post('u_ipon', 'ideas', 'Paluwagan tracker: useful or gimmick?', 'We\'re deciding whether to build group savings (paluwagan) into Ipon. Would you use it? What would stop you?', 6, { likes: ['c_jomar'], interested: ['c_jomar', 'c_hannah'] }),
     post('c_rina', 'collab', 'Baguio makers: shared shoot day in October', 'I\'m organizing a one-day shoot for 5 craft brands. You bring product, I bring 2 photographers. ₱2,500 per brand covers everything.', 7, { likes: ['u_carvers', 'u_candle', 'u_tboli'], interested: ['u_carvers', 'u_tboli'] }),
-    post('u_protina', 'wins', 'First 1,000 tubs sold, 62% from creator codes', 'Migo\'s meal prep reels are our best channel by far. Cost per order: ₱118 vs ₱310 on ads.', 9, { campaignId: 'cmp_protina', photos: [SAMPLE_PHOTOS.cmp_protina[0]], likes: ['c_migo', 'u_pilates', ME, 'u_sili'] }),
+    post('u_protina', 'wins', 'First 1,000 tubs sold, 62% from creator codes', 'Migo\'s meal prep reels are our best channel by far. Cost per order: ₱118 vs ₱310 on ads.', 9, { campaignId: 'cmp_protina', photos: [SAMPLE_PHOTOS.cmp_protina[0]], likes: ['c_migo', 'u_pilates'], claps: [ME, 'u_sili', 'c_marco', 'u_kahoy'] }),
     post('u_hurno', 'build', 'Switching to pre-orders for weekend pandesal', 'After Bianca\'s video we had lines at 5AM and ran out by 7. Now testing pre-orders via Buzz messages. Anyone done this well?', 10, { photos: SAMPLE_PHOTOS.cmp_hurno, likes: ['c_bianca', 'u_sili'] }),
   ];
 
@@ -388,7 +395,8 @@ export function buildSeed() {
   ];
 
   return {
-    version: 4,
+    version: 5,
+    flags: { dailyPicks: 'auto' },
     session: { userId: ME, mode: 'business' },
     users, campaigns, applications, links, events, deliverables, reviews, posts, collabs, threads, notifications, saved, profileViews,
     transactions, reports, emails: [], resets: [],
