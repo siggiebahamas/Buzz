@@ -2,10 +2,11 @@
 // so swapping localStorage for a real backend later only touches this file.
 import { useSyncExternalStore } from 'react';
 import { buildSeed, hashPw, SERVICE_FEE, contractTerms } from './seed';
+import { brandFeeRate, creatorFeeRate, earn, isOn, setting } from './monetize';
 import { uid, DAY, peso } from './format';
 import { rankCreators } from './match';
 
-const KEY = 'buzz-db-v7';
+const KEY = 'buzz-db-v8';
 const listeners = new Set();
 
 function load() {
@@ -13,7 +14,7 @@ function load() {
     const raw = localStorage.getItem(KEY);
     if (raw) {
       const parsed = JSON.parse(raw);
-      if (parsed?.version === 7) return parsed;
+      if (parsed?.version === 8) return parsed;
     }
   } catch { /* storage blocked or corrupt: fall through to fresh seed */ }
   return buildSeed();
@@ -63,7 +64,8 @@ export const walletOf = (d, userId) => {
   return { txs: txs.sort((a, b) => b.ts - a.ts), balance, held };
 };
 export { SERVICE_FEE };
-export const feeRate = (u) => (u?.plan === 'pro' ? 0.03 : SERVICE_FEE);
+export const feeRate = (u) => brandFeeRate(db, u);
+export { isOn, setting };
 export const brandName = (u) => u?.business?.name || u?.name || 'Unknown';
 export const displayName = (u) => (u?.business && !u.creator ? u.business.name : u?.name) || 'Unknown';
 export const ratingOf = (d, userId) => {
@@ -201,7 +203,8 @@ export const actions = {
       }
       const owner = currentUser(d);
       const active = d.campaigns.filter((x) => x.ownerId === owner.id && x.published && !x.removed && x.status !== 'completed').length;
-      if (data.published !== false && owner.plan !== 'pro' && active >= 2) throw new Error('The Free plan includes 2 active listings. Complete one, save this as private, or upgrade to Pro.');
+      const limit = setting(d, 'plans', 'freeListings');
+      if (isOn(d, 'plans') && data.published !== false && !['pro', 'agency'].includes(owner.plan) && active >= limit) throw new Error(`The Free plan includes ${limit} active listings. Complete one, save this as private, or upgrade to Pro.`);
       const c = {
         id: uid('cmp'), ownerId: d.session.userId, needsShipping: data.type === 'Product' && data.compensation !== 'commission', createdAt: Date.now(), views: 0, status: 'recruiting', published: true,
         photoHints: [], shopUrl: '', contentRights: '90 days', region: currentUser(d).region, aov: 0,
@@ -242,7 +245,7 @@ export const actions = {
   deleteCampaign(cid) {
     commit((d) => {
       d.deliverables.filter((x) => x.campaignId === cid && x.escrow === 'held').forEach((x) => {
-        d.transactions.push({ id: uid('tx'), userId: d.session.userId, type: 'refund', amount: Math.round(x.fee * (1 + SERVICE_FEE)), ts: Date.now(), ref: x.id, note: `Escrow refund: ${x.title}` });
+        d.transactions.push({ id: uid('tx'), userId: d.session.userId, type: 'refund', amount: Math.round(x.fee * (1 + (x.feeRate ?? SERVICE_FEE))), ts: Date.now(), ref: x.id, note: `Escrow refund: ${x.title}` });
       });
       d.campaigns = d.campaigns.filter((c) => c.id !== cid);
       d.applications = d.applications.filter((a) => a.campaignId !== cid);
@@ -364,23 +367,30 @@ export const actions = {
       const list = d.deliverables.filter((x) => ids.includes(x.id) && x.escrow === 'unfunded' && x.fee > 0);
       if (!list.length) throw new Error('Nothing left to fund.');
       const me = d.session.userId;
+      const rate = brandFeeRate(d, currentUser(d));
       list.forEach((x) => {
         x.escrow = 'held';
-        d.transactions.push({ id: uid('tx'), userId: me, type: 'fund', amount: -Math.round(x.fee * (1 + feeRate(currentUser(d)))), ts: Date.now(), ref: x.id, note: `Escrow for ${x.title} via ${method}` });
+        x.feeRate = rate;
+        d.transactions.push({ id: uid('tx'), userId: me, type: 'fund', amount: -Math.round(x.fee * (1 + rate)), ts: Date.now(), ref: x.id, note: `Escrow for ${x.title} via ${method}` });
+        earn(d, { stream: 'transactionFee', amount: x.fee * rate, payer: me, note: `Service fee: ${x.title}`, ref: x.id, charge: false, uid });
         notify(d, x.creatorId, `${peso(x.fee)} for "${x.title}" is now secured in escrow`, '/workspace/payments');
         if (x.status === 'approved') release(d, x);
       });
     });
   },
-  withdraw(amount, method, account) {
+  withdraw(amount, method, account, instant = false) {
     commit((d) => {
       const me = d.session.userId;
       const { balance } = walletOf(d, me);
       const amt = Number(amount);
+      const fast = instant && isOn(d, 'instantPayout');
       if (!(amt >= 100)) throw new Error('Minimum withdrawal is ₱100.');
       if (amt > balance) throw new Error(`You can withdraw up to ${peso(balance)}.`);
       if (!account.trim()) throw new Error('Add the account number to send to.');
-      d.transactions.push({ id: uid('tx'), userId: me, type: 'payout', amount: -amt, ts: Date.now(), ref: null, note: `Withdrawal to ${method} •••• ${account.trim().slice(-4)}` });
+      const fee = fast ? setting(d, 'instantPayout', 'fee') : 0;
+      if (fast && amt <= fee) throw new Error('The amount must be more than the instant fee.');
+      d.transactions.push({ id: uid('tx'), userId: me, type: 'payout', amount: -amt, ts: Date.now(), ref: null, note: `${fast ? 'Instant withdrawal' : 'Withdrawal'} to ${method} •••• ${account.trim().slice(-4)}${fee ? ` (${peso(fee)} fee)` : ''}` });
+      if (fee) earn(d, { stream: 'instantPayout', amount: fee, payer: me, note: 'Instant withdrawal fee', charge: false, uid });
       email(d, me, `Withdrawal of ${peso(amt)} is on its way`, `We sent ${peso(amt)} to your ${method} account ending in ${account.trim().slice(-4)}.`, '/workspace/payments');
     });
   },
@@ -540,8 +550,10 @@ export const actions = {
 export function release(d, x) {
   x.escrow = 'released';
   x.paidAt = Date.now();
-  d.transactions.push({ id: uid('tx'), userId: x.creatorId, type: 'release', amount: x.fee, ts: Date.now(), ref: x.id, note: `Payment released: ${x.title}` });
-  notify(d, x.creatorId, `${peso(x.fee)} released to your Buzz wallet for "${x.title}"`, '/workspace/payments');
+  const cut = Math.round(x.fee * creatorFeeRate(d, userById(d, x.creatorId)));
+  d.transactions.push({ id: uid('tx'), userId: x.creatorId, type: 'release', amount: x.fee - cut, ts: Date.now(), ref: x.id, note: `Payment released: ${x.title}${cut ? ` (after ${peso(cut)} Buzz fee)` : ''}` });
+  if (cut) earn(d, { stream: 'transactionFee', amount: cut, payer: x.creatorId, note: `Creator fee: ${x.title}`, ref: x.id, charge: false, uid });
+  notify(d, x.creatorId, `${peso(x.fee - cut)} released to your Buzz wallet for "${x.title}"`, '/workspace/payments');
 }
 
 export const REACTIONS = [

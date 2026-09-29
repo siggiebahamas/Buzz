@@ -2,7 +2,7 @@ import { Link, useNavigate } from 'react-router-dom';
 import { Search, Handshake, BarChart3, Trophy, ArrowRight, ChevronRight, Flame, Sparkles, Star, Heart, MessageCircle } from 'lucide-react';
 import { rankCreators, rankCampaigns, profileCampaign } from '../lib/match';
 import { useDB, currentUser, applicantsCount, userById, displayName, creators, actions, liveCampaigns, reactionTotal } from '../lib/store';
-import { OpportunityCard, CreatorCard } from '../components/visuals';
+import { OpportunityCard, CreatorCard, isFeatured } from '../components/visuals';
 import { Button, Avatar, SectionHead } from '../components/ui';
 import { timeAgo } from '../lib/format';
 
@@ -17,7 +17,8 @@ export default function Discover() {
   const d = useDB();
   const nav = useNavigate();
   const listed = liveCampaigns(d).filter((c) => c.status !== 'completed');
-  const trending = [...listed].sort((a, b) => (b.featured ? 1e6 : 0) + applicantsCount(d, b.id) * 50 + b.views - ((a.featured ? 1e6 : 0) + applicantsCount(d, a.id) * 50 + a.views)).slice(0, 6);
+  const boost = (c) => (isFeatured(d, c) ? 1e7 : 0) + (c.featured ? 1e6 : 0) + applicantsCount(d, c.id) * 50 + c.views;
+  const trending = [...listed].sort((a, b) => boost(b) - boost(a)).slice(0, 6);
   const wins = d.posts.filter((p) => p.topic === 'wins').slice(0, 3);
   const me = currentUser(d);
   // Logged-in people see matches; visitors see the most engaging creators.

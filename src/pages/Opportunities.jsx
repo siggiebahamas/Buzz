@@ -4,6 +4,7 @@ import { Search, Bookmark, ChevronRight, ChevronLeft, Plus, RotateCcw, Shuffle, 
 import { useDB, currentUser, applicantsCount, creators, followersOf, liveCampaigns } from '../lib/store';
 import { BUDGET_BUCKETS, COMP_TYPES, PLATFORMS, REGIONS, categoryById } from '../lib/constants';
 import { matchScore, rankCampaigns, profileCampaign } from '../lib/match';
+import { isFeatured, isBoosted } from '../components/visuals';
 import { CategoryRow, OpportunityCard, OpportunityTile, CreatorCard, CreatorRow } from '../components/visuals';
 import { TOGGLES, SHELVES, dailyPicksStatus, pickOfTheDay } from '../lib/discover';
 import { actions } from '../lib/store';
@@ -134,6 +135,7 @@ export default function Opportunities() {
           </Results>
         ) : (
           <>
+            {listings.some((c) => isFeatured(d, c)) && <Shelf title="Featured" sub="Paid placement by the brand" items={listings.filter((c) => isFeatured(d, c))} />}
             <DailyPicks listings={listings} me={me} />
             <Section title={me?.creator ? 'Recommended For You' : 'Fresh Opportunities'} hint={me?.creator ? 'Matched to your content, rates, audience and platforms. Listings you already applied to are left out. Hover a fit label to see why.' : 'Sign up as a creator to see how well each one fits you.'}>
               <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-5">{recommended.map((c) => <OpportunityCard key={c.id} campaign={c} />)}</div>
@@ -167,6 +169,7 @@ export default function Opportunities() {
             </Results>
           ) : (
             <>
+              {people.some((u) => isBoosted(d, u)) && <Section title="Boosted creators" hint="These creators paid for extra visibility. Fit labels are the same honest scores as everywhere else."><div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-5">{people.filter((u) => isBoosted(d, u)).slice(0, 3).map((u) => <CreatorCard key={u.id} user={u} forCampaign={forCampaign} />)}</div></Section>}
               <Section title="Recommended Influencers For You"><div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-5">{people.slice(0, 6).map((u) => <CreatorCard key={u.id} user={u} forCampaign={forCampaign} />)}</div></Section>
               <Section title="Top Matching Influencers"><div className="space-y-3">{people.slice(0, 5).map((u) => <CreatorRow key={u.id} user={u} forCampaign={forCampaign} />)}</div></Section>
               <Section title="All Creators"><div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-5">{people.slice(6).map((u) => <CreatorCard key={u.id} user={u} forCampaign={forCampaign} />)}</div></Section>

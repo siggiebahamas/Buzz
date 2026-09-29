@@ -91,11 +91,13 @@ actions.login('u_me');
 const t = db().tickets.find((x) => x.subject === 'Receipt?');
 actions.replyTicket(t.id, 'Yes, we email one after each payment.');
 check('Support reply marks ticket answered', db().tickets.find((x) => x.id === t.id).status === 'answered');
+actions.setStream('plans', { on: true });
 actions.login('u_candle');
 check('Free plan blocks a 3rd active listing', (() => {
   const base = { productName: 'Candle', title: 't', type: 'Product', category: 'home', description: 'd', compensation: 'gifted', budgetMin: 0, budgetMax: 0, slots: 1, deliverables: [{ type: 'Reel', qty: 1, platform: 'instagram' }], platforms: ['instagram'], published: true, tags: [] };
   try { actions.saveCampaign(base); actions.saveCampaign(base); return false; } catch { return true; }
 })());
+actions.setStream('plans', { on: false });
 actions.login('u_kalamansi');
 const cn = db().concierge.find((x) => x.campaignId === 'cmp_kalamansi');
 actions.login('u_me');
@@ -107,6 +109,26 @@ actions.signup({ referral: 'SIGMUND11', password: 'password123', name: 'Mika Tan
 const mika = db().users.find((u) => u.email === 'mika@test.ph');
 const sigRef = db().users.find((u) => u.id === 'u_me').refCode;
 check('Referral code links new user to inviter', mika.referredBy === (db().users.find((u) => u.refCode === 'SIGMUND11')?.id || null), `u_me code is ${sigRef}`);
+
+// Monetization: only the transaction cut is live by default; everything else is switchable.
+const { isOn, STREAMS, revenueSummary } = await import('../src/lib/monetize.js');
+check('Only the transaction cut is on by default', STREAMS.filter((x) => isOn(db(), x.id)).map((x) => x.id).join() === 'transactionFee');
+const feeRev = db().revenue.filter((r) => r.stream === 'transactionFee' && r.ref === del.id);
+check('Escrow fee is recorded as Buzz revenue', feeRev.length === 1 && feeRev[0].amount === Math.round(1800 * 0.05), JSON.stringify(feeRev.map((r) => r.amount)));
+actions.login('u_me');
+check('Paid extras are refused while switched off', ['buyFeature', 'orderService', 'buyEventTicket'].every((fn) => throws(() => (fn === 'buyFeature' ? actions.buyFeature(cid, 1) : fn === 'orderService' ? actions.orderService('brief', {}) : actions.buyEventTicket(db().events[0].id)))));
+check('Plans are refused while switched off', throws(() => actions.setPlan('pro')));
+const revBefore = revenueSummary(db()).total;
+actions.setStream('featuredListings', { on: true, settings: { weekPrice: 600 } });
+actions.buyFeature(cid, 2);
+check('Featured listing charges the admin-set price', revenueSummary(db()).total - revBefore === 1200 && db().campaigns.find((c) => c.id === cid).featuredUntil > Date.now());
+actions.setStream('servicesCatalog', { on: true });
+actions.orderService('brief', { notes: 'help' });
+check('Service order lands in the admin queue', db().orders[0]?.serviceId === 'brief' && db().orders[0].status === 'new');
+actions.setStream('transactionFee', { on: false });
+const { feeRate } = await import('../src/lib/store.js');
+check('Turning the cut off makes escrow fee 0%', feeRate(db().users.find((u) => u.id === 'u_me')) === 0);
+actions.setStream('transactionFee', { on: true });
 
 console.log(`\n${pass} passed, ${fail} failed`);
 process.exit(fail ? 1 : 0);

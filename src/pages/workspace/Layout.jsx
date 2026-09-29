@@ -3,6 +3,7 @@ import { NavLink, Outlet } from 'react-router-dom';
 import { LayoutGrid, UserRound, Briefcase, Handshake, ListChecks, BarChart3, MessageSquare, Bookmark, Settings, HelpCircle, Wallet, FileSignature, Scale, BadgeCheck, Gift, Library } from 'lucide-react';
 import { Link } from 'react-router-dom';
 import { useDB, currentUser, unreadCount, actions } from '../../lib/store';
+import { isOn } from '../../lib/monetize';
 import { Avatar, Segmented, Modal, cx } from '../../components/ui';
 
 export function useMode() {
@@ -35,7 +36,7 @@ const FAQ = [
   ['How do tracking links work?', 'Every accepted creator gets a link like buzz/go/CODE. Each visit counts as a click, then forwards to the brand\'s shop. Sales come from the link or from the matching promo code, which the brand logs in Analytics.'],
   ['How is Match % calculated?', 'Niche fit (40), platforms (20), rate vs. budget (20), location (10) and engagement (10). Hover any match % to see the breakdown.'],
   ['What is ROAS?', 'Return on ad spend: attributed revenue ÷ what you spent on creators. 3.0× means every ₱1 spent brought back ₱3 in sales.'],
-  ['How do payments work?', 'Brands pay each creator fee into Buzz escrow (plus a 5% service fee). The money is released to the creator\'s wallet the moment the brand approves the content, or automatically after 7 days without a response. Creators withdraw to GCash, Maya or a bank.'],
+  ['How do payments work?', 'Brands pay each creator fee into Buzz escrow (plus a small service fee). The money is released to the creator\'s wallet the moment the brand approves the content, or automatically after 7 days without a response. Creators withdraw to GCash, Maya or a bank.'],
   ['Something looks fake. What do I do?', 'Use Report on the listing, profile or post. Our team reviews every report within 24 hours.'],
   ['Can I be both a creator and a business owner?', 'Yes. Add both profiles in My Profile, then switch views with the toggle at the top of your workspace.'],
 ];
@@ -114,7 +115,7 @@ export default function WorkspaceLayout() {
             <Avatar user={me} size={34} />
             <div className="min-w-0">
               <p className="text-[13.5px] font-medium truncate">{me.name}</p>
-              <p className="text-[12px] text-ink-muted">{mode === 'creator' ? 'Influencer' : 'Business Owner'}{me.plan === 'pro' ? ' · Pro' : ''}</p>
+              <p className="text-[12px] text-ink-muted">{mode === 'creator' ? 'Influencer' : 'Business Owner'}{isOn(d, 'plans') && me.plan === 'pro' ? ' · Pro' : isOn(d, 'plans') && me.plan === 'agency' ? ' · Agency' : ''}</p>
             </div>
           </div>
         </div>

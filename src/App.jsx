@@ -21,6 +21,8 @@ import Referrals from './pages/workspace/Referrals';
 import Library from './pages/workspace/Library';
 import Help from './pages/Help';
 import Pricing from './pages/Pricing';
+import Services from './pages/Services';
+import Events from './pages/Events';
 import Go from './pages/Go';
 import WorkspaceLayout from './pages/workspace/Layout';
 import Overview from './pages/workspace/Overview';
@@ -71,6 +73,8 @@ export default function App() {
           <Route path="/terms" element={<Terms />} />
           <Route path="/help" element={<Help />} />
           <Route path="/pricing" element={<Pricing />} />
+          <Route path="/services" element={<Services />} />
+          <Route path="/events" element={<Events />} />
           <Route path="/privacy" element={<Privacy />} />
           <Route path="/admin" element={<RequireAuth><Admin /></RequireAuth>} />
           <Route path="/go/:code" element={<Go />} />

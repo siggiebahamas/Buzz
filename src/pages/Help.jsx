@@ -3,11 +3,12 @@ import { Link, useNavigate } from 'react-router-dom';
 import { ChevronDown, LifeBuoy, Send, MessageSquare } from 'lucide-react';
 import { useDB, actions, userById } from '../lib/store';
 import { timeAgo } from '../lib/format';
+import { isOn, setting } from '../lib/monetize';
 import { Card, Button, Badge, Field, Input, Select, Textarea, EmptyState, useAct, cx } from '../components/ui';
 
-const FAQ = [
+const faq = (fee, plans) => [
   ['Getting started', [
-    ['Is Buzz free?', 'Yes. Signing up, posting listings and applying are free. When a brand pays a creator through escrow, the brand pays a 5% service fee (3% on Pro). Creators receive their full fee.'],
+    ['Is Buzz free?', `Yes. Signing up, posting listings and applying are free. When a brand pays a creator through escrow, the brand pays a ${fee}% service fee${plans ? ' (less on paid plans)' : ''}. Creators receive their full fee.`],
     ['What should I put in my first listing?', 'A clear product photo, what makes it special, who you want to reach, and a fair budget. The budget helper in the form shows how many creators your budget can afford.'],
     ['How does Buzz pick matches?', 'We compare the listing with each creator: how close their content is to your product, whether their usual rate fits your budget, their audience, platforms, engagement for their size, their sales record on Buzz, and location. Hover any fit label to see the reasons.'],
   ]],
@@ -39,7 +40,7 @@ export default function Help() {
       <p className="text-ink-muted mt-1">Answers to common questions, and a real person when you need one.</p>
       <div className="grid grid-cols-1 lg:grid-cols-[1.4fr_1fr] gap-6 mt-8 items-start">
         <div className="space-y-6">
-          {FAQ.map(([group, qs]) => (
+          {faq(isOn(d, 'transactionFee') ? setting(d, 'transactionFee', 'brandPct') : 0, isOn(d, 'plans')).map(([group, qs]) => (
             <section key={group}>
               <h2 className="text-[13px] font-semibold uppercase tracking-wide text-ink-muted mb-2">{group}</h2>
               <Card className="divide-y divide-line">

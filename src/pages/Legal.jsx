@@ -1,5 +1,7 @@
 import { Link } from 'react-router-dom';
 import { Card } from '../components/ui';
+import { useDB } from '../lib/store';
+import { isOn } from '../lib/monetize';
 
 const UPDATED = 'September 29, 2026';
 
@@ -43,7 +45,7 @@ export function Terms() {
         ['What Buzz does', 'Buzz lets Brands post opportunities, lets Creators apply, and gives both sides tools to agree on deliverables, track results and handle payment. Buzz is not a party to the collaboration agreement between a Brand and a Creator, and does not employ Creators.'],
         ['Listings and applications', 'Brands must describe the product, pay, deliverables, deadlines and content rights truthfully. Listings may not promote:', ['Products that are illegal in the Philippines or need an FDA/DTI permit the Brand doesn\'t have', 'Gambling, tobacco, vapes or alcohol aimed at minors', 'Pyramid schemes, investment "opportunities" or loans without SEC/BSP registration', 'Counterfeit or copied goods, including copied indigenous designs'], 'Creators must represent their audience honestly. Buying followers, engagement or clicks is not allowed.'],
         ['Disclosure of paid content', 'Creators must clearly label paid or gifted content (for example #ad, #sponsored or "Paid partnership") in line with the Ad Standards Council code and the Consumer Act of the Philippines (RA 7394). Brands must not ask Creators to hide a paid relationship.'],
-        ['Payments, escrow and fees', 'Brands pay Creator fees into Buzz escrow before or during a campaign. Buzz holds the money and releases it to the Creator when the Brand approves the deliverable. If the Brand does not respond within 7 days of submission, the payment is released automatically.', 'Buzz charges Brands a 5% service fee on top of each fee. Creators receive the full agreed fee. Creators may withdraw their balance to GCash, Maya or a Philippine bank account (minimum ₱100).', 'Commission-based pay is calculated from sales tracked through the Creator\'s Buzz link or promo code. Brands must log promo-code sales accurately.', 'Each party is responsible for its own taxes, including BIR registration and receipts where required.'],
+        ['Payments, escrow and fees', 'Brands pay Creator fees into Buzz escrow before or during a campaign. Buzz holds the money and releases it to the Creator when the Brand approves the deliverable. If the Brand does not respond within 7 days of submission, the payment is released automatically.', 'Buzz charges Brands a service fee on top of each fee, shown in full before every payment. Optional paid services, plans and extras are priced on the page where you buy them. Creators receive the full agreed fee unless a creator fee is shown before they accept. Creators may withdraw their balance to GCash, Maya or a Philippine bank account (minimum ₱100).', 'Commission-based pay is calculated from sales tracked through the Creator\'s Buzz link or promo code. Brands must log promo-code sales accurately.', 'Each party is responsible for its own taxes, including BIR registration and receipts where required.'],
         ['Content and rights', 'Creators keep ownership of their content. By accepting a campaign, the Creator grants the Brand the usage right stated in the listing (for example, reposting for 90 days). Anything beyond that needs a separate written agreement.', 'Posts in the Community remain yours. You give Buzz permission to display them on the platform.'],
         ['Disputes between users', 'If a Brand and Creator disagree about a deliverable or payment, either can report it. Buzz will review the messages, deliverables and tracking data on the platform and may release, split or refund escrowed funds. This does not stop either party from going to court.'],
         ['Removing content and accounts', 'Buzz may remove listings, posts or accounts that break these terms, and may suspend accounts during a review. You can close your account at any time from Settings.'],
@@ -75,6 +77,7 @@ export function Privacy() {
 }
 
 export function Footer() {
+  const d = useDB();
   return (
     <footer className="border-t border-line bg-white">
       <div className="max-w-6xl mx-auto px-4 sm:px-6 py-8 flex flex-col sm:flex-row gap-3 sm:items-center justify-between text-[13px] text-ink-muted">
@@ -82,6 +85,8 @@ export function Footer() {
         <nav className="flex flex-wrap gap-x-5 gap-y-2">
           <Link to="/pricing" className="hover:text-ink">Pricing</Link>
           <Link to="/help" className="hover:text-ink">Help center</Link>
+          {isOn(d, 'servicesCatalog') && <Link to="/services" className="hover:text-ink">Services</Link>}
+          {isOn(d, 'events') && <Link to="/events" className="hover:text-ink">Events</Link>}
           <Link to="/terms" className="hover:text-ink">Terms</Link>
           <Link to="/privacy" className="hover:text-ink">Privacy</Link>
           <Link to="/community" className="hover:text-ink">Community</Link>

@@ -5,6 +5,16 @@ import { DAY } from './format';
 export const SERVICE_FEE = 0.05;
 
 // Snapshot of what both sides agree to when a creator joins a campaign.
+// Workshops and pop-ups, shown only when Events is switched on.
+function sampleEvents(now) {
+  const day = 86400000;
+  return [
+    { id: 'evt_launch', kind: 'Workshop', title: 'Launch with creators on ₱10K', date: now + 12 * day, place: 'Online (Zoom)', price: 499, seats: 60, audience: 'business', desc: 'A 90-minute class for first-time founders: writing a brief, pricing, picking creators, reading results.' },
+    { id: 'evt_rates', kind: 'Workshop', title: 'Price yourself right: rates for PH creators', date: now + 16 * day, place: 'Online (Zoom)', price: 299, seats: 80, audience: 'creator', desc: 'What brands pay, how to build a rate card, and how to negotiate without losing the deal.' },
+    { id: 'evt_bazaar', kind: 'Pop-up', title: 'Buzz Makers Pop-up, Maginhawa', date: now + 30 * day, place: 'Maginhawa St., Quezon City', price: 3500, seats: 20, audience: 'business', desc: 'A booth for your product, with Buzz creators filming the day. Price per booth.' },
+  ];
+}
+
 export function contractTerms(c, a, brand, creator) {
   return {
     brandName: brand?.business?.name || brand?.name, brandPerson: brand?.name, creatorName: creator?.name, creatorHandle: creator?.creator?.handle,
@@ -460,11 +470,13 @@ export function buildSeed() {
   ];
 
   return {
-    version: 7,
-    flags: { dailyPicks: 'auto', requireCreatorApproval: false },
+    version: 8,
+    flags: { dailyPicks: 'auto', requireCreatorApproval: false, monetization: {} },
     session: { userId: ME, mode: 'business' },
     users, campaigns, applications, links, events, deliverables, reviews, posts, collabs, threads, notifications, saved, profileViews,
     transactions, reports, emails: [], resets: [],
     contracts, disputes, verifications, shipments, concierge, tickets, saleImports: [],
+    revenue: transactions.filter((t) => t.type === 'fund').map((t) => ({ id: id('rev'), stream: 'transactionFee', amount: Math.round((-t.amount / (1 + SERVICE_FEE)) * SERVICE_FEE), payer: t.userId, note: 'Service fee', ref: t.ref, ts: t.ts })),
+    orders: [], events: sampleEvents(now), eventTickets: [],
   };
 }

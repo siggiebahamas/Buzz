@@ -8,6 +8,12 @@ import { matchScore } from '../lib/match';
 import { earnLabel, deliverableSummary } from '../lib/pay';
 import { Avatar, Badge, Button, cx, useCopy } from './ui';
 import { appUrl } from '../lib/links';
+import { isOn } from '../lib/monetize';
+
+// Paid placements are always labelled so creators and brands know what's an ad.
+export const isFeatured = (d, c) => isOn(d, 'featuredListings') && c.featuredUntil > Date.now();
+export const isBoosted = (d, u) => isOn(d, 'boostedProfiles') && u.boostedUntil > Date.now();
+const Sponsored = ({ label = 'Featured' }) => <Badge className="bg-ink/85 border-transparent text-white">{label}</Badge>;
 
 export function Logo({ className }) {
   return (
@@ -143,6 +149,7 @@ export function OpportunityTile({ campaign }) {
       <div className="relative">
         <ProductImage campaign={campaign} className="aspect-[4/3]" />
         <EarnTag campaign={campaign} className="absolute bottom-2 left-2 !text-[11.5px]" />
+        {isFeatured(d, campaign) && <span className="absolute top-2 left-2"><Sponsored /></span>}
       </div>
       <div className="p-3">
         <p className="text-[13px] font-bold leading-snug line-clamp-2 min-h-[34px]">{campaign.productName}</p>
@@ -166,7 +173,7 @@ export function OpportunityCard({ campaign }) {
           className={cx('absolute top-3 right-3 h-8 w-8 rounded-full grid place-items-center shadow-sm transition', saved ? 'bg-brand text-white' : 'bg-white/90 text-ink-soft hover:text-ink')} aria-label="Save">
           <Bookmark size={15} className={saved ? 'fill-white' : ''} />
         </button>
-        <span className="absolute top-3 left-3"><Badge className="bg-white/95 border-transparent text-ink">{campaign.type}</Badge></span>
+        <span className="absolute top-3 left-3 flex gap-1.5"><Badge className="bg-white/95 border-transparent text-ink">{campaign.type}</Badge>{isFeatured(d, campaign) && <Sponsored />}</span>
         <EarnTag campaign={campaign} className="absolute bottom-3 left-3" />
       </div>
       <div className="p-4 flex flex-col flex-1">
@@ -228,7 +235,7 @@ export function CreatorCard({ user, forCampaign }) {
         <Avatar user={user} size={52} />
         <div className="min-w-0 flex-1">
           <div className="flex items-start justify-between gap-2">
-            <p className="text-[14.5px] font-bold text-ink truncate inline-flex items-center gap-1">{user.name}{user.verified && <BadgeCheck size={14} className="text-sky-600 shrink-0" />}</p>
+            <p className="text-[14.5px] font-bold text-ink truncate inline-flex items-center gap-1">{user.name}{user.verified && <BadgeCheck size={14} className="text-sky-600 shrink-0" />}{isOn(d, 'plans') && user.creatorPlan === 'pro' && <Badge tone="soft" className="!px-1.5 !py-0 !text-[10px]">PRO</Badge>}</p>
             <MatchPill {...m} />
           </div>
           <p className="text-[12px] text-ink-muted truncate">{cats}</p>

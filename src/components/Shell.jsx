@@ -1,6 +1,7 @@
 import { createContext, useContext, useEffect, useRef, useState } from 'react';
 import { NavLink, Link, useNavigate, useLocation } from 'react-router-dom';
-import { Bell, MessageCircle, X, Send, ArrowLeft, LogOut, RotateCcw, UserRound, Repeat, Search, ShieldAlert, Smartphone, LifeBuoy, Sparkles as SparklesIcon, Compass, Sparkles, Users, LayoutGrid } from 'lucide-react';
+import { Bell, MessageCircle, X, Send, ArrowLeft, LogOut, RotateCcw, UserRound, Repeat, Search, ShieldAlert, Smartphone, LifeBuoy, Sparkles as SparklesIcon, Compass, Sparkles, Users, LayoutGrid, Wand2, CalendarDays } from 'lucide-react';
+import { isOn } from '../lib/monetize';
 import { useDB, currentUser, userById, actions, unreadCount, displayName, campaignById } from '../lib/store';
 import { timeAgo } from '../lib/format';
 import { Logo } from './visuals';
@@ -84,7 +85,9 @@ function AccountMenu() {
             <div className="p-1.5">
               <MenuItem icon={UserRound} onClick={() => { setOpen(false); nav(`/profile/${me.id}`); }}>View public profile</MenuItem>
               {installable && <MenuItem icon={Smartphone} onClick={() => { window.__buzzInstall?.prompt(); setInstallable(false); setOpen(false); }}>Install the Buzz app</MenuItem>}
-              <MenuItem icon={SparklesIcon} onClick={() => { setOpen(false); nav('/pricing'); }}>{me.plan === 'pro' ? 'Your plan: Pro' : 'Upgrade to Pro'}</MenuItem>
+              <MenuItem icon={SparklesIcon} onClick={() => { setOpen(false); nav('/pricing'); }}>{!isOn(d, 'plans') ? 'Pricing' : me.plan && me.plan !== 'free' ? `Your plan: ${me.plan === 'agency' ? 'Agency' : 'Pro'}` : 'Upgrade your plan'}</MenuItem>
+              {isOn(d, 'servicesCatalog') && <MenuItem icon={Wand2} onClick={() => { setOpen(false); nav('/services'); }}>Buzz services</MenuItem>}
+              {isOn(d, 'events') && <MenuItem icon={CalendarDays} onClick={() => { setOpen(false); nav('/events'); }}>Workshops & events</MenuItem>}
               <MenuItem icon={LifeBuoy} onClick={() => { setOpen(false); nav('/help'); }}>Help & support</MenuItem>
               {me.admin && <MenuItem icon={ShieldAlert} onClick={() => { setOpen(false); nav('/admin'); }}>Admin: Trust & Safety</MenuItem>}
               <MenuItem icon={Repeat} onClick={() => setSwitching(true)}>Switch demo account</MenuItem>
