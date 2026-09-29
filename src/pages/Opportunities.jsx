@@ -3,7 +3,7 @@ import { useNavigate, useSearchParams, Link } from 'react-router-dom';
 import { Search, Bookmark, ChevronRight, ChevronLeft, Plus, RotateCcw, Shuffle, Sparkles, Flame } from 'lucide-react';
 import { useDB, currentUser, applicantsCount, creators, followersOf, liveCampaigns } from '../lib/store';
 import { BUDGET_BUCKETS, COMP_TYPES, PLATFORMS, REGIONS, categoryById } from '../lib/constants';
-import { matchScore } from '../lib/match';
+import { matchScore, rankCampaigns, profileCampaign } from '../lib/match';
 import { CategoryRow, OpportunityCard, OpportunityTile, CreatorCard, CreatorRow } from '../components/visuals';
 import { TOGGLES, SHELVES, dailyPicksStatus, pickOfTheDay } from '../lib/discover';
 import { actions } from '../lib/store';
@@ -34,7 +34,7 @@ export default function Opportunities() {
   const [posting, setPosting] = useState(false);
   const myCampaigns = d.campaigns.filter((c) => c.ownerId === me?.id);
   const [forCid, setForCid] = useState(myCampaigns.find((c) => c.status !== 'completed')?.id || '');
-  const forCampaign = myCampaigns.find((c) => c.id === forCid) || null;
+  const forCampaign = myCampaigns.find((c) => c.id === forCid) || (me?.business ? profileCampaign(me) : null);
   const filtered = q || budget !== 'any' || comp !== 'all' || platforms.length > 0 || region !== 'all' || toggles.length > 0;
   const reset = () => { setQ(''); setCat('all'); setBudget('any'); setComp('all'); setPlatforms([]); setRegion('all'); setToggles([]); };
   const ctx = { d, me };
@@ -50,7 +50,7 @@ export default function Opportunities() {
       .filter((c) => !platforms.length || platforms.some((p) => c.platforms.includes(p)))
       .filter((c) => inBudget(budget, c.budgetMin, c.budgetMax))
       .filter((c) => !needle || `${c.title} ${c.productName} ${c.description} ${categoryById(c.category).label}`.toLowerCase().includes(needle))
-      .map((c) => ({ c, m: me?.creator ? matchScore(me, c).score : null }));
+      .map((c) => ({ c, m: me?.creator ? matchScore(me, c, { d }).score : null }));
     const by = {
       match: (a, b) => (b.m ?? 0) - (a.m ?? 0) || b.c.createdAt - a.c.createdAt,
       newest: (a, b) => b.c.createdAt - a.c.createdAt,
@@ -68,7 +68,7 @@ export default function Opportunities() {
       .filter((u) => region === 'all' || u.region === region)
       .filter((u) => inBudget(budget, u.creator.rates?.reel || 0, u.creator.rates?.reel || 0))
       .filter((u) => !needle || `${u.name} ${u.creator.handle} ${u.bio} ${u.creator.niches.map((n) => categoryById(n).label).join(' ')}`.toLowerCase().includes(needle))
-      .map((u) => ({ u, m: forCampaign ? matchScore(u, forCampaign, { brand: true }).score : 0 }));
+      .map((u) => ({ u, m: forCampaign ? matchScore(u, forCampaign, { brand: true, d }).score : 0 }));
     const by = {
       match: (a, b) => b.m - a.m || b.u.creator.engagement - a.u.creator.engagement,
       newest: (a, b) => b.u.joinedAt - a.u.joinedAt,
@@ -79,6 +79,8 @@ export default function Opportunities() {
   }, [d, q, cat, platforms, region, budget, sort, forCampaign, me]);
 
   const isCreatorView = as === 'creator';
+  // Best fits, with variety so one brand can't fill every slot.
+  const recommended = useMemo(() => (me?.creator ? rankCampaigns(d, me, listings, { diverse: true }).slice(0, 6).map((x) => x.c) : listings.slice(0, 6)), [d, me, listings]);
 
   return (
     <main className="max-w-6xl mx-auto px-4 sm:px-6 py-10">
@@ -133,8 +135,8 @@ export default function Opportunities() {
         ) : (
           <>
             <DailyPicks listings={listings} me={me} />
-            <Section title={me?.creator ? 'Recommended For You' : 'Fresh Opportunities'} hint={me?.creator ? 'Best fits first. Hover a fit label to see which of the 5 checks you pass.' : 'Sign up as a creator to see how well each one fits you.'}>
-              <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-5">{listings.slice(0, 6).map((c) => <OpportunityCard key={c.id} campaign={c} />)}</div>
+            <Section title={me?.creator ? 'Recommended For You' : 'Fresh Opportunities'} hint={me?.creator ? 'Matched to your content, rates, audience and platforms. Listings you already applied to are left out. Hover a fit label to see why.' : 'Sign up as a creator to see how well each one fits you.'}>
+              <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-5">{recommended.map((c) => <OpportunityCard key={c.id} campaign={c} />)}</div>
             </Section>
             {SHELVES.map((s) => {
               const items = listings.filter((c) => s.test(c, ctx));
@@ -142,17 +144,20 @@ export default function Opportunities() {
               return <Shelf key={s.id} title={s.title} sub={s.sub} items={s.sort ? [...items].sort(s.sort) : items} />;
             })}
             <Section title="All Opportunities">
-              <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-5">{listings.slice(6).map((c) => <OpportunityCard key={c.id} campaign={c} />)}</div>
+              <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-5">{listings.filter((c) => !recommended.includes(c)).map((c) => <OpportunityCard key={c.id} campaign={c} />)}</div>
             </Section>
           </>
         )
       ) : (
         <>
+          {me?.business && myCampaigns.length === 0 && (
+            <p className="mt-8 text-[13px] text-ink-muted rounded-2xl bg-white border border-line p-3 pl-4">Matching creators to your business profile ({me.business.type || 'your products'}). <button onClick={() => setPosting(true)} className="text-brand-dark font-medium">Post an opportunity</button> for sharper matches.</p>
+          )}
           {myCampaigns.length > 0 && (
             <div className="mt-8 flex flex-wrap items-center gap-3 rounded-2xl bg-white border border-line p-3 pl-4">
               <span className="text-[13.5px] text-ink-soft whitespace-nowrap">Match creators for</span>
               <div className="w-full sm:w-72"><Select value={forCid} onChange={(e) => setForCid(e.target.value)}>{myCampaigns.map((c) => <option key={c.id} value={c.id}>{c.productName}</option>)}</Select></div>
-              <span className="text-[12.5px] text-ink-muted">Fit checks use this campaign's category, platforms, budget and location.</span>
+              <span className="text-[12.5px] text-ink-muted">Ranked by content fit, budget, audience, platforms, engagement and results on Buzz.</span>
             </div>
           )}
           {filtered ? (

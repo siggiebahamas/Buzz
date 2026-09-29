@@ -7,6 +7,8 @@ import { compact, peso, timeAgo } from '../lib/format';
 import { OpportunityCard } from '../components/visuals';
 import { Avatar, Button, Card, Badge, Stars, EmptyState } from '../components/ui';
 import { InviteModal, ReportModal } from '../components/forms';
+import { FitChecks, MatchPill } from '../components/visuals';
+import { matchScore } from '../lib/match';
 import { useChat } from '../components/Shell';
 
 export default function Profile() {
@@ -68,6 +70,33 @@ export default function Profile() {
         </div>
       </Card>
 
+      {u.creator && !isMe && me?.business && (() => {
+        const mine = d.campaigns.filter((c) => c.ownerId === me.id && c.status !== 'completed')
+          .map((c) => ({ c, m: matchScore(u, c, { brand: true, d }), app: d.applications.find((a) => a.campaignId === c.id && a.creatorId === u.id && a.status !== 'withdrawn') }))
+          .sort((a, b) => b.m.score - a.m.score);
+        if (!mine.length) return null;
+        const best = mine[0];
+        return (
+          <Card className="p-5 mt-4 border-emerald-200">
+            <div className="flex flex-wrap items-start justify-between gap-3">
+              <div>
+                <p className="text-[12px] font-semibold uppercase tracking-wide text-ink-muted">How {u.name.split(' ')[0]} fits your campaigns</p>
+                <p className="font-bold text-[16px] mt-1">Best for {best.c.productName}: <span className="text-emerald-700">{best.m.label}</span></p>
+              </div>
+              {!best.app && <Button onClick={() => setInviting(best.c.id)}><Send size={15} />Invite to {best.c.productName}</Button>}
+              {best.app && <Badge tone="green" className="capitalize">{best.app.status === 'accepted' ? 'Already on this campaign' : `Application ${best.app.status}`}</Badge>}
+            </div>
+            <div className="mt-3"><FitChecks checks={best.m.checks} /></div>
+            {mine.length > 1 && (
+              <div className="mt-4 pt-3 border-t border-line flex flex-wrap gap-2">
+                {mine.slice(1).map(({ c, m }) => (
+                  <span key={c.id} className="inline-flex items-center gap-2 text-[12.5px] rounded-full border border-line pl-3 pr-1 py-0.5">{c.productName}<MatchPill {...m} /></span>
+                ))}
+              </div>
+            )}
+          </Card>
+        );
+      })()}
       {u.creator && (
         <>
           <div className="grid grid-cols-2 lg:grid-cols-4 gap-4 mt-4">
@@ -144,7 +173,7 @@ export default function Profile() {
           })}
         </div>
       )}
-      {inviting && <InviteModal open onClose={() => setInviting(false)} creator={u} />}
+      {inviting && <InviteModal open onClose={() => setInviting(false)} creator={u} campaignId={typeof inviting === 'string' ? inviting : undefined} />}
       {reporting && <ReportModal kind="user" refId={u.id} onClose={() => setReporting(false)} />}
     </main>
   );

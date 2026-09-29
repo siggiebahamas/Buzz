@@ -35,7 +35,9 @@ export default function Collaborations() {
   ];
   const [tab, setTab] = useState(groups[0][0]);
   const current = groups.find((g) => g[0] === tab) || groups[0];
-  const rows = mine.filter(current[2]).sort((a, b) => b.createdAt - a.createdAt);
+  // Brands review the strongest fits first; everything else is newest first.
+  const fitOf = (a) => matchScore(userById(d, a.creatorId), campaignById(d, a.campaignId), { brand: true, d }).score || 0;
+  const rows = mine.filter(current[2]).sort((a, b) => (biz && a.status === 'pending' ? fitOf(b) - fitOf(a) : b.createdAt - a.createdAt));
 
   return (
     <>
@@ -59,7 +61,7 @@ export default function Collaborations() {
             const creator = userById(d, a.creatorId);
             const owner = userById(d, c.ownerId);
             const other = biz ? creator : owner;
-            const m = matchScore(creator, c, { brand: true });
+            const m = matchScore(creator, c, { brand: true, d });
             const [label, tone] = STATUS[a.status];
             return (
               <Card key={a.id} className="p-4 flex flex-wrap sm:flex-nowrap items-start gap-4">

@@ -3,8 +3,9 @@
 import { useSyncExternalStore } from 'react';
 import { buildSeed, hashPw, SERVICE_FEE } from './seed';
 import { uid, DAY, peso } from './format';
+import { rankCreators } from './match';
 
-const KEY = 'buzz-db-v5';
+const KEY = 'buzz-db-v6';
 const listeners = new Set();
 
 function load() {
@@ -12,7 +13,7 @@ function load() {
     const raw = localStorage.getItem(KEY);
     if (raw) {
       const parsed = JSON.parse(raw);
-      if (parsed?.version === 5) return parsed;
+      if (parsed?.version === 6) return parsed;
     }
   } catch { /* storage blocked or corrupt: fall through to fresh seed */ }
   return buildSeed();
@@ -199,6 +200,12 @@ export const actions = {
         ...data,
       };
       d.campaigns.unshift(c);
+      // Tell the creators who fit best, so good listings don't wait to be found.
+      if (c.published) {
+        rankCreators(d, c).filter((x) => x.m.score >= 70).slice(0, 8).forEach(({ u, m }) => {
+          notify(d, u.id, `New listing that fits you (${m.label}): ${c.productName}`, `/opportunity/${c.id}`);
+        });
+      }
       return c.id;
     });
   },

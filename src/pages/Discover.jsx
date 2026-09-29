@@ -1,6 +1,7 @@
 import { Link, useNavigate } from 'react-router-dom';
 import { Search, Handshake, BarChart3, Trophy, ArrowRight, ChevronRight, Flame, Sparkles, Star, Heart, MessageCircle } from 'lucide-react';
-import { useDB, applicantsCount, userById, displayName, creators, actions, liveCampaigns, reactionTotal } from '../lib/store';
+import { rankCreators, rankCampaigns, profileCampaign } from '../lib/match';
+import { useDB, currentUser, applicantsCount, userById, displayName, creators, actions, liveCampaigns, reactionTotal } from '../lib/store';
 import { OpportunityCard, CreatorCard } from '../components/visuals';
 import { Button, Avatar, SectionHead } from '../components/ui';
 import { timeAgo } from '../lib/format';
@@ -18,7 +19,15 @@ export default function Discover() {
   const listed = liveCampaigns(d).filter((c) => c.status !== 'completed');
   const trending = [...listed].sort((a, b) => (b.featured ? 1e6 : 0) + applicantsCount(d, b.id) * 50 + b.views - ((a.featured ? 1e6 : 0) + applicantsCount(d, a.id) * 50 + a.views)).slice(0, 6);
   const wins = d.posts.filter((p) => p.topic === 'wins').slice(0, 3);
-  const featured = [...creators(d)].filter((u) => u.id !== d.session.userId).sort((a, b) => b.creator.engagement - a.creator.engagement).slice(0, 4);
+  const me = currentUser(d);
+  // Logged-in people see matches; visitors see the most engaging creators.
+  const myCamp = me?.business ? d.campaigns.filter((c) => c.ownerId === me.id && c.status !== 'completed')[0] || profileCampaign(me) : null;
+  const featured = myCamp
+    ? rankCreators(d, myCamp).slice(0, 4).map((x) => x.u)
+    : [...creators(d)].filter((u) => u.id !== d.session.userId).sort((a, b) => b.creator.engagement - a.creator.engagement).slice(0, 4);
+  const creatorsTitle = myCamp ? `Creators for ${myCamp.productName || 'your brand'}` : 'Creators on Buzz';
+  const creatorsSub = myCamp ? 'Picked by content, budget, audience and results' : 'Highest engagement this month';
+  const picked = me?.creator && d.session.mode === 'creator' ? rankCampaigns(d, me, listed).slice(0, 3).map((x) => x.c) : null;
   const stats = [
     [creators(d).length, 'creators'],
     [d.users.filter((u) => u.business).length, 'local brands'],
@@ -64,6 +73,13 @@ export default function Discover() {
         </div>
       </section>
 
+      {picked?.length > 0 && (
+        <section className="max-w-6xl mx-auto px-4 sm:px-6 pt-16">
+          <SectionHead title="Picked for you" icon={Sparkles} sub="Listings that fit your content, rates and audience"
+            action={<Link to="/opportunities?as=creator" className="text-[13.5px] font-medium text-brand-dark inline-flex items-center gap-1">See all matches <ChevronRight size={15} /></Link>} />
+          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-5">{picked.map((c) => <OpportunityCard key={c.id} campaign={c} />)}</div>
+        </section>
+      )}
       <section className="max-w-6xl mx-auto px-4 sm:px-6 py-16">
         <SectionHead title="Trending Opportunities" icon={Flame} sub="Local brands actively looking for creators right now"
           action={<Link to="/opportunities" className="text-[13.5px] font-medium text-brand-dark inline-flex items-center gap-1">View all <ChevronRight size={15} /></Link>} />
@@ -71,9 +87,9 @@ export default function Discover() {
       </section>
 
       <section className="max-w-6xl mx-auto px-4 sm:px-6 pb-16">
-        <SectionHead title="Creators on Buzz" icon={Star} sub="Highest engagement this month"
+        <SectionHead title={creatorsTitle} icon={Star} sub={creatorsSub}
           action={<Link to="/opportunities?as=business" className="text-[13.5px] font-medium text-brand-dark inline-flex items-center gap-1">View all <ChevronRight size={15} /></Link>} />
-        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">{featured.map((u) => <CreatorCard key={u.id} user={u} />)}</div>
+        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">{featured.map((u) => <CreatorCard key={u.id} user={u} forCampaign={myCamp} />)}</div>
       </section>
 
       <section className="bg-white border-y border-line">

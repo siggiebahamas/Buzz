@@ -23,6 +23,8 @@ jobs:
           node-version: 20
           cache: npm
       - run: npm ci
+      - name: Check matching quality
+        run: npm run test:match
       - run: npm run build
       - run: touch dist/.nojekyll && cp dist/index.html dist/404.html
       - uses: peaceiris/actions-gh-pages@v4

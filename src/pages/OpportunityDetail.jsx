@@ -30,7 +30,7 @@ export default function OpportunityDetail() {
   const isOwner = me?.id === c.ownerId;
   const mine = d.applications.find((a) => a.campaignId === c.id && a.creatorId === me?.id && a.status !== 'withdrawn');
   const members = membersOf(d, c.id).map((m) => userById(d, m));
-  const m = me?.creator && !isOwner ? matchScore(me, c) : null;
+  const m = me?.creator && !isOwner ? matchScore(me, c, { d }) : null;
   const saved = me && isSaved(d, 'campaign', c.id);
   const rating = ratingOf(d, owner.id);
   const photos = c.photos?.length ? c.photos.length : (c.photoHints?.length || 1);
@@ -130,7 +130,7 @@ export default function OpportunityDetail() {
             {m && (
               <div className="mt-4 rounded-xl bg-emerald-50/60 border border-emerald-100 p-3.5">
                 <p className="text-[14px] font-bold text-emerald-800 flex items-center gap-1.5"><Star size={14} className="fill-emerald-600 text-emerald-600" />{m.label} for you</p>
-                <p className="text-[12px] text-ink-muted mb-2.5">{m.passed} of {m.total} things this brand looks for</p>
+                <p className="text-[12px] text-ink-muted mb-2.5">Based on the brief, your profile, rates and results on Buzz</p>
                 <FitChecks checks={m.checks} />
               </div>
             )}

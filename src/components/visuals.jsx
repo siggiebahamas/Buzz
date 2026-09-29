@@ -98,8 +98,10 @@ export function FitChecks({ checks }) {
     <ul className="space-y-1.5">
       {checks.map((c) => (
         <li key={c.text} className="flex gap-2 text-[12.5px] leading-snug">
-          {c.ok ? <Check size={15} strokeWidth={2.5} className="text-emerald-600 shrink-0 mt-px" /> : <Minus size={15} strokeWidth={2.5} className="text-ink-faint shrink-0 mt-px" />}
-          <span className={c.ok ? 'text-ink' : 'text-ink-muted'}>{c.text}</span>
+          {c.status === 'good' ? <Check size={15} strokeWidth={2.5} className="text-emerald-600 shrink-0 mt-px" />
+            : c.status === 'ok' ? <span className="h-[15px] w-[15px] shrink-0 mt-px grid place-items-center"><span className="h-2 w-2 rounded-full bg-amber-400" /></span>
+              : <Minus size={15} strokeWidth={2.5} className="text-ink-faint shrink-0 mt-px" />}
+          <span className={c.status === 'bad' ? 'text-ink-muted' : 'text-ink'}>{c.text}</span>
         </li>
       ))}
     </ul>
@@ -111,11 +113,11 @@ export function MatchPill({ score, label, tone, checks, passed, total }) {
   return (
     <span className="relative group/m inline-flex">
       <span className={cx('inline-flex items-center gap-1 rounded-full border px-2 py-0.5 text-[11.5px] font-semibold whitespace-nowrap', tone)}>
-        {label} <span className="font-normal opacity-70">{passed}/{total}</span>
+        {label}
       </span>
       {checks?.length > 0 && (
-        <span className="absolute right-0 top-7 z-20 hidden group-hover/m:block w-64 bg-white border border-line rounded-xl shadow-lift p-3 text-left">
-          <span className="block text-[11px] uppercase tracking-wide text-ink-muted mb-2">Why it's a fit</span>
+        <span className="absolute right-0 top-7 z-20 hidden group-hover/m:block w-72 bg-white border border-line rounded-xl shadow-lift p-3 text-left">
+          <span className="block text-[11px] uppercase tracking-wide text-ink-muted mb-2">How this fits</span>
           <FitChecks checks={checks} />
         </span>
       )}
@@ -153,7 +155,7 @@ export function OpportunityCard({ campaign }) {
   const d = useDB();
   const me = userById(d, d.session.userId);
   const owner = userById(d, campaign.ownerId);
-  const m = me?.creator && me.id !== campaign.ownerId ? matchScore(me, campaign) : { score: null };
+  const m = me?.creator && me.id !== campaign.ownerId ? matchScore(me, campaign, { d }) : { score: null };
   const saved = isSaved(d, 'campaign', campaign.id);
   return (
     <Link to={`/opportunity/${campaign.id}`} className="group bg-white border border-line rounded-2xl overflow-hidden shadow-card hover:shadow-lift hover:-translate-y-0.5 transition-all flex flex-col">
@@ -185,7 +187,7 @@ export function OpportunityCard({ campaign }) {
 export function OpportunityRow({ campaign }) {
   const d = useDB();
   const me = userById(d, d.session.userId);
-  const m = me?.creator && me.id !== campaign.ownerId ? matchScore(me, campaign) : { score: null };
+  const m = me?.creator && me.id !== campaign.ownerId ? matchScore(me, campaign, { d }) : { score: null };
   return (
     <Link to={`/opportunity/${campaign.id}`} className="flex items-center gap-4 bg-white border border-line rounded-2xl p-3 pr-4 hover:shadow-lift transition-shadow">
       <ProductImage campaign={campaign} mini className="h-14 w-14 shrink-0" rounded="rounded-xl" />
@@ -216,7 +218,7 @@ export function PlatformChips({ platforms }) {
 
 export function CreatorCard({ user, forCampaign }) {
   const d = useDB();
-  const m = forCampaign ? matchScore(user, forCampaign, { brand: true }) : { score: null };
+  const m = forCampaign ? matchScore(user, forCampaign, { brand: true, d }) : { score: null };
   const r = ratingOf(d, user.id);
   const cats = user.creator.niches.map((n) => categoryById(n).label).join(', ');
   return (
@@ -247,7 +249,8 @@ export function CreatorCard({ user, forCampaign }) {
 }
 
 export function CreatorRow({ user, forCampaign }) {
-  const m = forCampaign ? matchScore(user, forCampaign, { brand: true }) : { score: null };
+  const d = useDB();
+  const m = forCampaign ? matchScore(user, forCampaign, { brand: true, d }) : { score: null };
   return (
     <Link to={`/profile/${user.id}`} className="flex items-center gap-4 bg-white border border-line rounded-2xl p-3 pr-4 hover:shadow-lift transition-shadow">
       <Avatar user={user} size={44} />

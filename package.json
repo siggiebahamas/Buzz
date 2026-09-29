@@ -6,7 +6,8 @@
   "scripts": {
     "dev": "vite",
     "build": "vite build",
-    "preview": "vite preview"
+    "preview": "vite preview",
+    "test:match": "vite-node scripts/eval-match.mjs"
   },
   "dependencies": {
     "lucide-react": "^1.48.0",
@@ -20,6 +21,7 @@
     "postcss": "^8.5.28",
     "tailwindcss": "^3.4.19",
     "vite": "^5.4.21",
+    "vite-node": "^2.1.9",
     "vite-plugin-singlefile": "^2.3.3"
   }
 }

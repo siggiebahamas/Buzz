@@ -4,7 +4,7 @@ import { ArrowLeft, Users, Wallet, FileText, Zap, Pencil, ExternalLink, Check, X
 import { useDB, campaignById, userById, currentUser, actions, creators, followersOf, reactionTotal } from '../../lib/store';
 import { CAMPAIGN_STAGES, COMP_TYPES, PLATFORMS, categoryById } from '../../lib/constants';
 import { peso, compact, budgetLabel, shortDate, timeAgo } from '../../lib/format';
-import { matchScore } from '../../lib/match';
+import { matchScore, rankCreators } from '../../lib/match';
 import { businessMetrics, getRange } from '../../lib/metrics';
 import { ProductImage, MatchPill } from '../../components/visuals';
 import { Card, Button, Badge, Avatar, IconTile, EmptyState, cx, useAct, useConfirm, useCopy } from '../../components/ui';
@@ -26,7 +26,7 @@ export default function CampaignManage() {
   const [editing, setEditing] = useState(false);
   const [inviting, setInviting] = useState(null);
   const [reviewing, setReviewing] = useState(null);
-  const [showMatch, setShowMatch] = useState(false);
+  const [showMatch, setShowMatch] = useState(true);
   if (!c) return <Navigate to="/workspace/campaigns" replace />;
   if (c.ownerId !== me.id) return <Navigate to={`/opportunity/${c.id}`} replace />;
 
@@ -35,11 +35,10 @@ export default function CampaignManage() {
   const row = bm.perCampaign.find((r) => r.campaign.id === c.id);
   const apps = d.applications.filter((a) => a.campaignId === c.id);
   const accepted = apps.filter((a) => a.status === 'accepted');
-  const pending = apps.filter((a) => a.status === 'pending');
+  const pending = apps.filter((a) => a.status === 'pending')
+    .sort((a, b) => matchScore(userById(d, b.creatorId), c, { brand: true, d }).score - matchScore(userById(d, a.creatorId), c, { brand: true, d }).score);
   const invited = apps.filter((a) => a.status === 'invited');
-  const involved = new Set(apps.filter((a) => a.status !== 'withdrawn' && a.status !== 'declined').map((a) => a.creatorId));
-  const suggestions = creators(d).filter((u) => u.id !== me.id && !involved.has(u.id))
-    .map((u) => ({ u, m: matchScore(u, c, { brand: true }) })).sort((a, b) => b.m.score - a.m.score).slice(0, 6);
+  const suggestions = rankCreators(d, c).slice(0, 8);
   const stageIdx = CAMPAIGN_STAGES.findIndex((s) => s.id === c.status);
   const reviewed = (toId) => d.reviews.some((r) => r.campaignId === c.id && r.fromId === me.id && r.toId === toId);
 
@@ -131,7 +130,7 @@ export default function CampaignManage() {
           <div className="space-y-3">
             {pending.map((a) => {
               const u = userById(d, a.creatorId);
-              const m = matchScore(u, c, { brand: true });
+              const m = matchScore(u, c, { brand: true, d });
               return (
                 <div key={a.id} className="rounded-xl border border-line p-3">
                   <div className="flex items-center gap-2.5">
@@ -166,9 +165,9 @@ export default function CampaignManage() {
         <Card className="p-5">
           <div className="flex items-center justify-between mb-3">
             <h2 className="font-bold text-[17px]">Suggested creators</h2>
-            <Button size="sm" onClick={() => setShowMatch(!showMatch)}><Zap size={14} />{showMatch ? 'Hide' : 'Auto-Match'}</Button>
+            <Button size="sm" onClick={() => setShowMatch(!showMatch)}><Zap size={14} />{showMatch ? 'Hide' : 'Show matches'}</Button>
           </div>
-          {!showMatch ? <p className="text-[13px] text-ink-muted">Auto-Match checks every creator on Buzz against five things: your category, your platforms, your budget, your location and whether their engagement beats the 3% average.</p> : (
+          {!showMatch ? <p className="text-[13px] text-ink-muted">Auto-Match ranks every creator on Buzz by how close their content is to your brief, whether their usual rate fits your budget, who their audience is, your platforms, engagement for their size, their sales record on Buzz, and location.</p> : (
             <div className="space-y-2">
               {suggestions.map(({ u, m }) => (
                 <div key={u.id} className="flex items-center gap-2.5 rounded-xl border border-line p-2.5">

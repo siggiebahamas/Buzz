@@ -92,6 +92,18 @@ const CREATORS = [
   { id: 'c_sam', name: 'Sam Uy', handle: 'corgisam', loc: 'Taguig City', region: 'Metro Manila', niches: ['pets'], pl: { instagram: 65000, tiktok: 150000 }, eng: 10.1, aud: 'Pet parents 20–40', bio: 'Daily life with Mochi the corgi.' },
   { id: 'c_leah', name: 'Leah Fernandez', handle: 'leahlocal', loc: 'Iloilo City', region: 'Visayas', niches: ['fashion', 'crafts'], pl: { instagram: 27000 }, eng: 8.1, aud: 'Supporters of local brands 22–45', bio: 'Proudly local: weaves, crafts and slow fashion.' },
   { id: 'c_marco', name: 'Marco Diaz', handle: 'marcoontheroad', loc: 'Siargao', region: 'Mindanao', niches: ['travel', 'fitness'], pl: { instagram: 41000, youtube: 22000 }, eng: 6.3, aud: 'Surfers and backpackers 20–35', bio: 'Surf, van life and island workouts.' },
+  // Nano and micro creators: the realistic partners for small local brands.
+  { id: 'c_joy', name: 'Joy Manalo', handle: 'joycooksph', loc: 'Angeles, Pampanga', region: 'Luzon', niches: ['food'], pl: { instagram: 8000, tiktok: 14000 }, eng: 9.2, aud: 'Home cooks 25–45, Central Luzon', bio: 'Kapampangan home cooking: sisig, tocino, and whatever is in the palengke today.' },
+  { id: 'c_ria', name: 'Ria Santos', handle: 'riasnacks', loc: 'Cebu City', region: 'Visayas', niches: ['food', 'travel'], pl: { tiktok: 12000, instagram: 4000 }, eng: 8.1, aud: 'Snack lovers and balikbayans 20–40, Visayas', bio: 'Pasalubong hauls, snack taste tests and Cebu food finds.' },
+  { id: 'c_dan', name: 'Dan Ocampo', handle: 'danbrews', loc: 'Lipa, Batangas', region: 'Luzon', niches: ['food'], pl: { instagram: 6000, tiktok: 3000 }, eng: 10.5, aud: 'Coffee drinkers 22–40', bio: 'Home barista. Brewing Batangas coffee every morning, reviewing local roasters.' },
+  { id: 'c_pia', name: 'Pia Robles', handle: 'piamoves', loc: 'Quezon City', region: 'Metro Manila', niches: ['fitness', 'beauty'], pl: { instagram: 15000, tiktok: 20000 }, eng: 7, aud: 'Women 22–35, Metro Manila', bio: 'Pilates and strength training for busy women. Honest gym and studio reviews.' },
+  { id: 'c_ken', name: 'Ken Yap', handle: 'kentechph', loc: 'Pasig City', region: 'Metro Manila', niches: ['tech', 'home'], pl: { youtube: 9000, tiktok: 18000 }, eng: 6.5, aud: 'Homeowners and gadget fans 25–40', bio: 'Budget gadgets and smart home setups that actually lower your Meralco bill.' },
+  { id: 'c_lia', name: 'Lia Torres', handle: 'liaglows', loc: 'Quezon City', region: 'Metro Manila', niches: ['beauty'], pl: { tiktok: 18000, instagram: 6000 }, eng: 9, aud: 'Women 18–28, skincare beginners', bio: 'Affordable local skincare routines for oily, humid-weather skin.' },
+  { id: 'c_rico', name: 'Rico Bautista', handle: 'ricomakes', loc: 'Iloilo City', region: 'Visayas', niches: ['crafts', 'home'], pl: { instagram: 7000, youtube: 2500 }, eng: 11, aud: 'Makers and home decor buyers 25–45', bio: 'Woodworking and the artisans behind local crafts. Proudly handmade.' },
+  { id: 'c_camille', name: 'Camille Go', handle: 'camillestyles', loc: 'Makati City', region: 'Metro Manila', niches: ['fashion'], pl: { instagram: 14000, tiktok: 6000 }, eng: 7.8, aud: 'Brides and women 25–40', bio: 'Modern Filipiniana and wedding guest styling with local designers.' },
+  { id: 'c_jb', name: 'JB Reyes', handle: 'jbpetsph', loc: 'Taguig City', region: 'Metro Manila', niches: ['pets'], pl: { instagram: 10000, tiktok: 25000 }, eng: 12, aud: 'Pet parents 20–40', bio: 'Two dachshunds and a corgi who hate the rain.' },
+  { id: 'c_tala', name: 'Tala Mercado', handle: 'talawanders', loc: 'El Nido, Palawan', region: 'Luzon', niches: ['travel'], pl: { instagram: 16000, youtube: 4000 }, eng: 8.4, aud: 'Couples 25–38', bio: 'Slow travel and island stays. Sunrise-to-sunset guides to Palawan.' },
+  { id: 'c_ana', name: 'Ana Dizon', handle: 'anaipon', loc: 'Makati City', region: 'Metro Manila', niches: ['tech'], pl: { tiktok: 11000, youtube: 3000 }, eng: 7, aud: 'Young earners 21–30', bio: 'Money tips for first jobbers: budgeting apps, paluwagan and sweldo planning.' },
   { id: 'c_hannah', name: 'Hannah Tiu', handle: 'hannahtries', loc: 'Manila', region: 'Metro Manila', niches: ['beauty', 'food'], pl: { tiktok: 95000 }, eng: 7.5, aud: 'Gen Z shoppers 18–26', bio: 'I try viral local products so you don\'t have to.' },
 ];
 
@@ -184,7 +196,9 @@ export function buildSeed() {
   }));
   CREATORS.forEach((c, i) => {
     const total = Object.values(c.pl).reduce((a, b) => a + b, 0);
-    const reel = Math.round(((total / 1000) * 25 + 500) / 100) * 100;
+    // Typical PH rates: small creators charge a higher price per 1K followers.
+    const k = total / 1000;
+    const reel = Math.round((k < 50 ? k * 45 + 400 : k * 25 + 1400) / 100) * 100;
     users.push({
       id: c.id, name: c.name, email: `${c.handle}@buzz.demo`, color: AVATAR_COLORS[(i + 3) % AVATAR_COLORS.length], photo: null,
       location: c.loc, region: c.region, joinedAt: now - between(40, 300) * DAY, bio: c.bio,
@@ -395,7 +409,7 @@ export function buildSeed() {
   ];
 
   return {
-    version: 5,
+    version: 6,
     flags: { dailyPicks: 'auto' },
     session: { userId: ME, mode: 'business' },
     users, campaigns, applications, links, events, deliverables, reviews, posts, collabs, threads, notifications, saved, profileViews,
