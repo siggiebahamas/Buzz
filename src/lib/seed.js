@@ -1,0 +1,321 @@
+// Sample data so every screen has something real to click through.
+// Everything is generated relative to "now" so dates always look current.
+import { DAY } from './format';
+
+function rng(seed) {
+  let s = seed >>> 0;
+  return () => {
+    s = (s + 0x6d2b79f5) >>> 0;
+    let t = s;
+    t = Math.imul(t ^ (t >>> 15), t | 1);
+    t ^= t + Math.imul(t ^ (t >>> 7), t | 61);
+    return ((t ^ (t >>> 14)) >>> 0) / 4294967296;
+  };
+}
+
+const AVATAR_COLORS = ['#F59E0B', '#EF7D57', '#E0607E', '#8B5CF6', '#3B82F6', '#10B981', '#14B8A6', '#F97316', '#6366F1', '#84CC16'];
+
+const ME = 'u_me';
+
+const OWNERS = [
+  { id: 'u_ligaya', name: 'Ligaya Santos', loc: 'Makati City', region: 'Metro Manila', biz: 'Atelier Ligaya', type: 'Made-to-measure dressmaker', cat: 'fashion', bio: 'Trained in London for 8 years, now home making modern Filipiniana and evening wear.' },
+  { id: 'u_ben', name: 'Benjamin Cruz', loc: 'Marikina City', region: 'Metro Manila', biz: 'Marikina Made', type: 'Handmade leather shoes', cat: 'fashion', bio: 'Third-generation shoemaker. Every pair is lasted and stitched by hand in our family workshop.' },
+  { id: 'u_carvers', name: 'Andres Dulnuan', loc: 'Banaue, Ifugao', region: 'Luzon', biz: 'Banaue Carvers Collective', type: 'Ifugao woodcarving', cat: 'crafts', bio: 'A collective of 14 Ifugao carvers keeping bulul and narra carving alive.' },
+  { id: 'u_sili', name: 'Paolo Reyes', loc: 'San Fernando, Pampanga', region: 'Luzon', biz: 'Sili Republic', type: 'Artisanal hot sauce', cat: 'food', bio: 'Small-batch hot sauces made with siling labuyo from Pampanga farms.' },
+  { id: 'u_kahoy', name: 'Mara Villanueva', loc: 'Mandaue, Cebu', region: 'Visayas', biz: 'Kahoy Studio', type: 'Handmade furniture', cat: 'home', bio: 'Small-batch furniture from reclaimed Cebu hardwood.' },
+  { id: 'u_protina', name: 'Jessa Lim', loc: 'Sta. Rosa, Laguna', region: 'Luzon', biz: 'Protina', type: 'Organic whey protein', cat: 'fitness', bio: 'The Philippines\' first locally-sourced organic whey protein.' },
+  { id: 'u_sulit', name: 'Rafael Tan', loc: 'Pasig City', region: 'Metro Manila', biz: 'Sulit Smart', type: 'Smart home devices', cat: 'tech', bio: 'We build smart outlets designed for Philippine electrical standards and Meralco rates.' },
+  { id: 'u_mangga', name: 'Grace Ouano', loc: 'Cebu City', region: 'Visayas', biz: 'Sugbo Mangga', type: 'Dried mango snacks', cat: 'food', bio: 'Carabao mangoes from Guimaras and Cebu, dried without added sulfites.' },
+  { id: 'u_cloud9', name: 'Kai Ramos', loc: 'General Luna, Siargao', region: 'Mindanao', biz: 'Cloud 9 Surf Stay', type: 'Surf camp & homestay', cat: 'travel', bio: 'A 6-room surf homestay run by local surf instructors.' },
+  { id: 'u_kalamansi', name: 'Bea Mendoza', loc: 'Quezon City', region: 'Metro Manila', biz: 'Kalamansi Glow', type: 'Citrus skincare', cat: 'beauty', bio: 'Vitamin C skincare made with kalamansi from Oriental Mindoro.' },
+  { id: 'u_barako', name: 'Tomas Aguilar', loc: 'Lipa, Batangas', region: 'Luzon', biz: 'Batangas Barako Roasters', type: 'Specialty coffee', cat: 'food', bio: 'Liberica beans from our family farm, roasted weekly.' },
+  { id: 'u_tboli', name: 'Maria Fe Dulay', loc: 'Lake Sebu, South Cotabato', region: 'Mindanao', biz: 'Lake Sebu Tinalak Weavers', type: 'T\'boli tinalak textiles', cat: 'crafts', bio: 'Dreamweavers of Lake Sebu. Each tinalak design is passed down, never copied.' },
+  { id: 'u_sadie', name: 'Nina Uy', loc: 'Taguig City', region: 'Metro Manila', biz: 'Sadie\'s Pet Wear', type: 'Pet apparel', cat: 'pets', bio: 'Rain-ready gear for short-legged dogs, inspired by our corgi Sadie.' },
+  { id: 'u_ipon', name: 'Carlo Dizon', loc: 'Makati City', region: 'Metro Manila', biz: 'Ipon', type: 'Budgeting app', cat: 'tech', bio: 'A budgeting app built for sweldo cycles, paluwagan and padala.' },
+  { id: 'u_pilates', name: 'Andrea Go', loc: 'Quezon City', region: 'Metro Manila', biz: 'Core Studio QC', type: 'Pilates studio', cat: 'fitness', bio: 'Reformer pilates studio in Maginhawa.' },
+  { id: 'u_hurno', name: 'Lorna Bautista', loc: 'Marikina City', region: 'Metro Manila', biz: 'Hurno Bakehouse', type: 'Neighborhood bakery', cat: 'food', bio: 'Ube cheese pandesal baked in a wood-fired oven since 2019.' },
+  { id: 'u_candle', name: 'Iris Navarro', loc: 'Iloilo City', region: 'Visayas', biz: 'Sampaguita Candle Co.', type: 'Soy candles', cat: 'home', bio: 'Hand-poured soy candles with scents of home: sampaguita, ilang-ilang, kape.' },
+  { id: 'u_lodge', name: 'Miguel Abad', loc: 'El Nido, Palawan', region: 'Luzon', biz: 'Bahay Kubo Eco Lodge', type: 'Eco lodge', cat: 'travel', bio: 'Solar-powered cottages 10 minutes from Nacpan Beach.' },
+];
+
+const CREATORS = [
+  { id: 'c_bianca', name: 'Bianca Reyes', handle: 'biancaeats', loc: 'Manila', region: 'Metro Manila', niches: ['food'], pl: { instagram: 48000, tiktok: 120000 }, eng: 7.2, aud: 'Women 18–34, Metro Manila foodies', bio: 'Honest food reviews, hole-in-the-wall finds and home cooking.' },
+  { id: 'c_migo', name: 'Migo Santos', handle: 'migomoves', loc: 'Taguig City', region: 'Metro Manila', niches: ['fitness'], pl: { instagram: 32000, tiktok: 85000 }, eng: 6.1, aud: 'Gym-goers 20–35', bio: 'Coach. Home workouts, lifting and budget meal prep.' },
+  { id: 'c_aya', name: 'Aya Lim', handle: 'ayastyles', loc: 'Makati City', region: 'Metro Manila', niches: ['fashion', 'beauty'], pl: { instagram: 76000, tiktok: 40000 }, eng: 5.4, aud: 'Young professionals 22–35', bio: 'Office-to-weekend styling with local designers.' },
+  { id: 'c_jomar', name: 'Jomar Villareal', handle: 'techwithjomar', loc: 'Quezon City', region: 'Metro Manila', niches: ['tech'], pl: { youtube: 140000, tiktok: 60000 }, eng: 4.8, aud: 'Men 18–40, gadget buyers', bio: 'No-nonsense gadget reviews in Taglish.' },
+  { id: 'c_trish', name: 'Trish Ocampo', handle: 'trishtravels', loc: 'Cebu City', region: 'Visayas', niches: ['travel', 'food'], pl: { instagram: 58000, youtube: 30000 }, eng: 6.8, aud: 'Weekend travelers 24–40', bio: 'Affordable island hopping and local stays.' },
+  { id: 'c_kaye', name: 'Kaye Delos Santos', handle: 'kayeglow', loc: 'Pasig City', region: 'Metro Manila', niches: ['beauty'], pl: { tiktok: 210000, instagram: 40000 }, eng: 8.9, aud: 'Women 18–30, skincare beginners', bio: 'Skincare for humid weather and morena skin.' },
+  { id: 'c_enzo', name: 'Enzo Garcia', handle: 'enzoathome', loc: 'Muntinlupa City', region: 'Metro Manila', niches: ['home'], pl: { instagram: 22000 }, eng: 7.9, aud: 'New homeowners 27–40', bio: 'Small-space condo makeovers on a budget.' },
+  { id: 'c_rina', name: 'Rina Castillo', handle: 'rinamakes', loc: 'Baguio City', region: 'Luzon', niches: ['crafts', 'home'], pl: { instagram: 18000, tiktok: 44000 }, eng: 9.4, aud: 'Makers and gift buyers 20–45', bio: 'Handmade, slow living and the artisans behind them.' },
+  { id: 'c_paolo', name: 'Paolo Lacson', handle: 'kuyafoodtrip', loc: 'Davao City', region: 'Mindanao', niches: ['food', 'travel'], pl: { facebook: 310000, tiktok: 90000 }, eng: 5.2, aud: 'Families across Mindanao and Visayas', bio: 'Food trips from Davao to Dumaguete.' },
+  { id: 'c_sam', name: 'Sam Uy', handle: 'corgisam', loc: 'Taguig City', region: 'Metro Manila', niches: ['pets'], pl: { instagram: 65000, tiktok: 150000 }, eng: 10.1, aud: 'Pet parents 20–40', bio: 'Daily life with Mochi the corgi.' },
+  { id: 'c_leah', name: 'Leah Fernandez', handle: 'leahlocal', loc: 'Iloilo City', region: 'Visayas', niches: ['fashion', 'crafts'], pl: { instagram: 27000 }, eng: 8.1, aud: 'Supporters of local brands 22–45', bio: 'Proudly local: weaves, crafts and slow fashion.' },
+  { id: 'c_marco', name: 'Marco Diaz', handle: 'marcoontheroad', loc: 'Siargao', region: 'Mindanao', niches: ['travel', 'fitness'], pl: { instagram: 41000, youtube: 22000 }, eng: 6.3, aud: 'Surfers and backpackers 20–35', bio: 'Surf, van life and island workouts.' },
+  { id: 'c_hannah', name: 'Hannah Tiu', handle: 'hannahtries', loc: 'Manila', region: 'Metro Manila', niches: ['beauty', 'food'], pl: { tiktok: 95000 }, eng: 7.5, aud: 'Gen Z shoppers 18–26', bio: 'I try viral local products so you don\'t have to.' },
+];
+
+// title, owner, cat, type, comp, min, max, commission, slots, deliverables, aov, photo hints
+const LISTINGS = [
+  ['cmp_barong', ME, 'fashion', 'Product', 'Abaca Barong', 'Campaign: Abaca Barong', 'Modern barong woven from Bicol abaca, with a limited NBA-inspired embroidery run. Looking for fashion creators who can style it for weddings, work and night-outs.', 'flat', 2500, 6000, 0, 4, [['Reel', 1, 'instagram'], ['Story set', 1, 'instagram']], 4200, ['Barong on model, front', 'Abaca weave close-up', 'Embroidery detail'], 'Millennials 25–40', 'active'],
+  ['cmp_active', ME, 'fitness', 'Product', 'Sustainable Activewear', 'Campaign: Sustainable Activewear Collection', 'Eco-friendly activewear made from recycled ocean plastic. Seeking fitness and lifestyle creators for workout content and ambassadorship.', 'flat', 3000, 5000, 0, 3, [['Reel', 2, 'instagram'], ['TikTok video', 1, 'tiktok']], 1850, ['Leggings flat-lay', 'Training in the set'], 'Women 18–35, fitness enthusiasts', 'active'],
+  ['cmp_foodbox', ME, 'food', 'Business', 'Local Artisan Food Box', 'Campaign: Local Artisan Food Box', 'Monthly subscription box of artisanal foods from local producers in your region. Looking for food creators to do unboxing and taste tests.', 'hybrid', 1500, 3000, 10, 5, [['TikTok video', 1, 'tiktok'], ['Story set', 1, 'instagram']], 1290, ['Open box, top view', 'Items laid out'], 'Foodies 25–50', 'recruiting'],
+  ['cmp_sili', 'u_sili', 'food', 'Product', 'Sili Republic Hot Sauce', 'Looking for 5 Filipino food creators for our hot sauce brand', 'We make artisanal Filipino hot sauces using local chilis. Looking for food creators who can authentically pair our sauces with Filipino dishes.', 'flat', 800, 2000, 0, 5, [['TikTok video', 1, 'tiktok'], ['Story set', 1, 'instagram']], 380, ['Three bottles on banana leaf', 'Sauce on sisig'], 'Food lovers 18–40', 'active'],
+  ['cmp_kahoy', 'u_kahoy', 'home', 'Business', 'Kahoy Studio Furniture', 'Home decor creators for our handmade furniture collection', 'Small-batch furniture studio looking for home decor creators to showcase our sustainable pieces. We use reclaimed Cebu hardwood.', 'commission', 0, 0, 15, 4, [['Reel', 1, 'instagram'], ['Feed post', 2, 'instagram']], 18500, ['Narra side table in living room', 'Workshop, craftsman sanding'], 'Homeowners 27–45', 'recruiting'],
+  ['cmp_protina', 'u_protina', 'fitness', 'Product', 'Protina Organic Whey', 'Fitness creators for organic protein powder launch', 'Launching the Philippines\' first locally-sourced organic whey protein. Looking for genuine fitness creators who train and meal prep.', 'flat', 1000, 4000, 0, 8, [['Reel', 1, 'instagram'], ['TikTok video', 2, 'tiktok']], 1650, ['Tub with scoop', 'Post-workout shake'], 'Gym-goers 20–35', 'active'],
+  ['cmp_sulit', 'u_sulit', 'tech', 'Product', 'Sulit Smart Outlet', 'Tech reviewers for our PH-made smart home device', 'We built a smart outlet + energy monitor designed for Philippine electrical standards. Looking for tech creators to review it honestly.', 'flat', 2000, 5000, 0, 4, [['YouTube video', 1, 'youtube'], ['TikTok video', 1, 'tiktok']], 1490, ['Outlet plugged in with app', 'Box and device'], 'Homeowners and gadget fans', 'recruiting'],
+  ['cmp_ligaya', 'u_ligaya', 'fashion', 'Service', 'Atelier Ligaya Filipiniana', 'Style our modern Filipiniana: London-trained dressmaker, now in Makati', 'After 8 years in London ateliers I\'m home and building a client base. Looking for creators to wear a made-to-measure piece and share the fitting journey.', 'gifted', 0, 0, 0, 3, [['Reel', 1, 'instagram'], ['Story set', 2, 'instagram']], 9500, ['Terno sleeve detail', 'Fitting session', 'Finished gown'], 'Brides and events 25–45', 'recruiting'],
+  ['cmp_marikina', 'u_ben', 'fashion', 'Product', 'Marikina Made Leather Shoes', 'Show off hand-stitched Marikina leather shoes', 'Our family has made shoes in Marikina since 1968. We want creators to show the craft behind each pair and style them day to day.', 'hybrid', 1500, 3500, 8, 4, [['Reel', 1, 'instagram'], ['TikTok video', 1, 'tiktok']], 3200, ['Brown oxfords on workbench', 'Hand-stitching close-up'], 'Men and women 25–45', 'active'],
+  ['cmp_bulul', 'u_carvers', 'crafts', 'Product', 'Ifugao Bulul Carvings', 'Bring Ifugao woodcarving to city homes', 'Hand-carved bulul and narra decor from a 14-carver collective in Banaue. We need creators who can tell our story to urban buyers.', 'commission', 0, 0, 20, 5, [['Reel', 1, 'instagram'], ['Feed post', 1, 'instagram']], 2800, ['Pair of bulul on shelf', 'Carver at work in Banaue'], 'Home decor buyers 25–50', 'recruiting'],
+  ['cmp_mangga', 'u_mangga', 'food', 'Product', 'Sugbo Dried Mangoes', 'Snack creators wanted for sulfite-free dried mangoes', 'Dried Carabao mangoes, no added sulfites. Looking for snack, travel and pasalubong creators.', 'flat', 800, 1800, 0, 6, [['TikTok video', 1, 'tiktok']], 290, ['Pouch with mango slices', 'Pasalubong box'], 'Snackers and balikbayans', 'active'],
+  ['cmp_cloud9', 'u_cloud9', 'travel', 'Service', 'Cloud 9 Surf Stay', 'Stay-and-surf content for our Siargao homestay', 'Free 3-night stay + surf lessons in exchange for honest travel content. Best for creators who actually surf or want to learn.', 'gifted', 0, 0, 0, 2, [['Reel', 2, 'instagram'], ['YouTube video', 1, 'youtube']], 7500, ['Room with ocean view', 'Surf lesson at Cloud 9'], 'Travelers 22–38', 'recruiting'],
+  ['cmp_kalamansi', 'u_kalamansi', 'beauty', 'Product', 'Kalamansi Glow Serum', 'Skincare creators for our kalamansi vitamin C serum', 'Vitamin C serum made with Mindoro kalamansi. We want real 14-day routines, not one-off hauls.', 'hybrid', 2000, 4500, 10, 6, [['TikTok video', 2, 'tiktok'], ['Story set', 1, 'instagram']], 690, ['Serum bottle with kalamansi', 'Texture swatch'], 'Women 18–30', 'active'],
+  ['cmp_barako', 'u_barako', 'food', 'Product', 'Batangas Barako Coffee', 'Coffee lovers: help us bring barako back', 'Liberica beans from our family farm in Lipa. Looking for creators who brew at home to share their daily cup.', 'flat', 1000, 2500, 0, 5, [['Reel', 1, 'instagram'], ['Story set', 1, 'instagram']], 480, ['Bag of beans and kapeng barako', 'Pour-over brewing'], 'Coffee drinkers 22–45', 'active'],
+  ['cmp_tinalak', 'u_tboli', 'crafts', 'Product', 'T\'boli Tinalak Textiles', 'Share the dreamweavers of Lake Sebu', 'Tinalak woven from abaca by T\'boli dreamweavers. We\'re looking for creators who respect the culture and can reach buyers in Manila and abroad.', 'hybrid', 2500, 5000, 12, 3, [['Reel', 1, 'instagram'], ['YouTube video', 1, 'youtube']], 5400, ['Tinalak cloth draped', 'Weaver at loom'], 'Culture and design lovers', 'recruiting'],
+  ['cmp_sadie', 'u_sadie', 'pets', 'Product', 'Corgi Raincoats', 'Pet creators for our corgi raincoats (rainy season drop)', 'Waterproof raincoats with belly coverage for short-legged dogs. Looking for pet creators, especially corgi and dachshund parents.', 'flat', 600, 2000, 0, 6, [['Reel', 1, 'instagram'], ['TikTok video', 1, 'tiktok']], 850, ['Corgi in yellow raincoat', 'Belly flap detail'], 'Pet parents 20–40', 'active'],
+  ['cmp_ipon', 'u_ipon', 'tech', 'Product', 'Ipon Budgeting App', 'Finance creators to demo a sweldo-cycle budgeting app', 'Ipon is built around kinsenas, paluwagan and padala. We pay per verified install on top of a base fee.', 'hybrid', 3000, 8000, 5, 4, [['TikTok video', 2, 'tiktok'], ['YouTube video', 1, 'youtube']], 0, ['App on phone, budget screen', 'Paluwagan tracker screen'], 'Young earners 21–35', 'recruiting'],
+  ['cmp_pilates', 'u_pilates', 'fitness', 'Service', 'Core Studio QC', 'Try reformer pilates in Maginhawa, on us', 'Complimentary 4-class pack for creators who share their first-timer experience.', 'gifted', 0, 0, 0, 4, [['Reel', 1, 'instagram'], ['Story set', 2, 'instagram']], 3500, ['Reformer room', 'Class in session'], 'Women 22–40, QC', 'recruiting'],
+  ['cmp_hurno', 'u_hurno', 'food', 'Business', 'Hurno Bakehouse', 'Ube cheese pandesal: wood-fired, Marikina', 'Neighborhood bakery ready for walk-in traffic from outside Marikina. Food creators, come visit at 6AM when it\'s fresh from the oven.', 'flat', 500, 1500, 0, 5, [['TikTok video', 1, 'tiktok']], 240, ['Tray of ube pandesal', 'Wood-fired oven'], 'East Metro families', 'active'],
+  ['cmp_candle', 'u_candle', 'home', 'Product', 'Sampaguita Soy Candles', 'Cozy home creators for Filipino-scented soy candles', 'Scents of home: sampaguita, ilang-ilang, kape. Great for gifting season content.', 'commission', 0, 0, 18, 5, [['Feed post', 1, 'instagram'], ['Story set', 1, 'instagram']], 650, ['Three candles lit', 'Gift set'], 'Gift buyers 22–45', 'recruiting'],
+  ['cmp_lodge', 'u_lodge', 'travel', 'Service', 'Bahay Kubo Eco Lodge', 'Solar-powered cottages near Nacpan Beach', 'Looking for travel creators to capture sunrise-to-sunset at our eco lodge. Stay + transfer covered, plus fee.', 'flat', 4000, 8000, 0, 2, [['Reel', 2, 'instagram'], ['YouTube video', 1, 'youtube']], 9800, ['Cottage at sunrise', 'Nacpan Beach'], 'Couples 25–40', 'recruiting'],
+];
+
+// [campaign, creator, status, pitch] — who's working on / applied to what
+const APPS = [
+  ['cmp_barong', 'c_aya', 'accepted', 'I style local designers weekly and my audience asks for wedding outfits all the time.'],
+  ['cmp_barong', 'c_leah', 'accepted', 'Abaca is close to my heart. I\'d love to show the weave process too.'],
+  ['cmp_barong', 'c_hannah', 'pending', 'Would love to do a "barong for Gen Z" styling video!'],
+  ['cmp_barong', 'c_rina', 'pending', 'I can feature the weavers behind the fabric.'],
+  ['cmp_active', 'c_migo', 'accepted', 'I train in activewear every day. Happy to do a 2-week wear test.'],
+  ['cmp_active', 'c_marco', 'accepted', 'Surf + beach workouts with the set would fit my feed perfectly.'],
+  ['cmp_active', 'c_kaye', 'declined', 'Interested in the leggings!'],
+  ['cmp_foodbox', 'c_bianca', 'pending', 'Unboxing and a taste ranking of every item: my audience loves those.'],
+  ['cmp_foodbox', 'c_paolo', 'pending', 'I can bring this to Mindanao families. Let\'s do a regional box!'],
+  ['cmp_foodbox', 'c_trish', 'pending', 'Pasalubong angle? I travel for food every week.'],
+  ['cmp_sili', ME, 'accepted', 'I cook Kapampangan food at home. Sisig + your sauce is a perfect pair.'],
+  ['cmp_sili', 'c_bianca', 'accepted', 'Spice challenge series?'],
+  ['cmp_sili', 'c_paolo', 'accepted', 'Hot sauce on Davao lechon, let\'s go.'],
+  ['cmp_sili', 'c_hannah', 'pending', 'Viral spicy food tests are my thing.'],
+  ['cmp_barako', ME, 'accepted', 'Barako is my daily cup. Happy to do a morning routine piece.'],
+  ['cmp_barako', 'c_trish', 'accepted', 'Batangas road trip + farm visit content.'],
+  ['cmp_kahoy', ME, 'pending', 'It matches my condo makeover series.'],
+  ['cmp_kahoy', 'c_enzo', 'accepted', 'Small-space styling with one hero piece.'],
+  ['cmp_kahoy', 'c_rina', 'pending', 'I\'d love to film at your workshop.'],
+  ['cmp_sadie', ME, 'pending', 'I love corgis! My friend\'s corgi Sadie would model it.'],
+  ['cmp_sadie', 'c_sam', 'accepted', 'Mochi hates rain. This is literally our life.'],
+  ['cmp_protina', 'c_migo', 'accepted', 'I already use whey daily. Would switch for a 30-day test.'],
+  ['cmp_protina', 'c_marco', 'pending', 'Island workouts + shakes.'],
+  ['cmp_sulit', 'c_jomar', 'pending', 'Full teardown and 30-day Meralco bill comparison.'],
+  ['cmp_marikina', 'c_aya', 'accepted', 'Shoes that go office to weekend, yes please.'],
+  ['cmp_marikina', 'c_leah', 'pending', 'I\'d love to visit the workshop.'],
+  ['cmp_bulul', 'c_rina', 'pending', 'This is exactly the kind of craft I cover.'],
+  ['cmp_mangga', 'c_trish', 'accepted', 'Pasalubong guide for Cebu!'],
+  ['cmp_mangga', 'c_hannah', 'accepted', 'Taste test vs. the big brands.'],
+  ['cmp_kalamansi', 'c_kaye', 'accepted', '14-day routine on morena skin, with before/after.'],
+  ['cmp_kalamansi', 'c_hannah', 'pending', 'Would try it for 2 weeks.'],
+  ['cmp_hurno', 'c_bianca', 'accepted', '6AM pandesal run, count me in.'],
+  ['cmp_cloud9', 'c_marco', 'pending', 'I surf Cloud 9 every week.'],
+  ['cmp_lodge', 'c_trish', 'pending', 'Sunrise drone shots + honest review.'],
+  ['cmp_tinalak', 'c_leah', 'pending', 'I\'ve written about tinalak before. Would love to go deeper.'],
+];
+
+export function buildSeed() {
+  const r = rng(20260929);
+  const now = Date.now();
+  const pick = (arr) => arr[Math.floor(r() * arr.length)];
+  const between = (a, b) => a + r() * (b - a);
+  let n = 0;
+  const id = (p) => `${p}_${(++n).toString(36)}`;
+
+  const users = [];
+  users.push({
+    id: ME, name: 'Sigmund Ty', email: 'sigmund@buzz.demo', color: '#1E2A4A', photo: null,
+    location: 'Quezon City', region: 'Metro Manila', joinedAt: now - 140 * DAY,
+    bio: 'Founder building local brands. Also creating content on food, coffee and small-business life.',
+    business: { name: 'Ty Trading Co.', type: 'Consumer brands', category: 'fashion', website: '', shopUrl: 'https://shopee.ph/', tagline: 'Local products, done right.' },
+    creator: { handle: 'sigmund.builds', niches: ['food', 'home'], platforms: [{ id: 'instagram', followers: 12400 }, { id: 'tiktok', followers: 28600 }], engagement: 6.9, rates: { reel: 1500, post: 900, story: 500 }, audience: 'Young professionals 22–35, Metro Manila' },
+    primary: 'business',
+  });
+  OWNERS.forEach((o, i) => users.push({
+    id: o.id, name: o.name, email: `${o.id.slice(2)}@buzz.demo`, color: AVATAR_COLORS[i % AVATAR_COLORS.length], photo: null,
+    location: o.loc, region: o.region, joinedAt: now - between(30, 200) * DAY, bio: o.bio,
+    business: { name: o.biz, type: o.type, category: o.cat, website: '', shopUrl: 'https://shopee.ph/', tagline: o.type },
+    creator: null, primary: 'business',
+  }));
+  CREATORS.forEach((c, i) => {
+    const total = Object.values(c.pl).reduce((a, b) => a + b, 0);
+    const reel = Math.round(((total / 1000) * 25 + 500) / 100) * 100;
+    users.push({
+      id: c.id, name: c.name, email: `${c.handle}@buzz.demo`, color: AVATAR_COLORS[(i + 3) % AVATAR_COLORS.length], photo: null,
+      location: c.loc, region: c.region, joinedAt: now - between(40, 300) * DAY, bio: c.bio,
+      business: null,
+      creator: {
+        handle: c.handle, niches: c.niches, engagement: c.eng, audience: c.aud,
+        platforms: Object.entries(c.pl).map(([pid, followers]) => ({ id: pid, followers })),
+        rates: { reel, post: Math.round(reel * 0.6 / 50) * 50, story: Math.round(reel * 0.35 / 50) * 50 },
+      },
+      primary: 'creator',
+    });
+  });
+
+  const campaigns = LISTINGS.map(([cid, ownerId, category, type, productName, title, description, comp, min, max, commission, slots, dels, aov, photoHints, audience, status]) => {
+    const createdAt = now - between(status === 'recruiting' ? 3 : 35, status === 'recruiting' ? 25 : 110) * DAY;
+    const owner = users.find((u) => u.id === ownerId);
+    return {
+      id: cid, ownerId, category, type, productName, title, description, summary: description.split('. ')[0] + '.',
+      compensation: comp, budgetMin: min, budgetMax: max, commissionRate: commission, slots,
+      deliverables: dels.map(([t, qty, platform]) => ({ type: t, qty, platform })),
+      platforms: [...new Set(dels.map((d) => d[2]))],
+      photos: [], photoHints, audience, region: owner.region,
+      deadline: now + between(7, 40) * DAY, contentRights: pick(['30 days', '60 days', '90 days']),
+      shopUrl: 'https://shopee.ph/', aov, status, published: true, createdAt, views: Math.round(between(120, 2400)),
+      promo: productName.split(' ')[0].toUpperCase().replace(/[^A-Z]/g, '').slice(0, 6),
+    };
+  });
+  const campaignById = Object.fromEntries(campaigns.map((c) => [c.id, c]));
+
+  const applications = [];
+  const links = [];
+  const events = [];
+  const deliverables = [];
+
+  APPS.forEach(([cid, crid, status, pitch]) => {
+    const c = campaignById[cid];
+    const creator = users.find((u) => u.id === crid);
+    const createdAt = c.createdAt + between(1, 6) * DAY;
+    const baseRate = creator.creator.rates.reel;
+    const rate = c.compensation === 'flat' || c.compensation === 'hybrid'
+      ? Math.min(c.budgetMax, Math.max(c.budgetMin, Math.round(baseRate / 100) * 100))
+      : 0;
+    const app = { id: id('app'), campaignId: cid, creatorId: crid, pitch, rate, status, source: r() < 0.2 ? 'invite' : 'apply', createdAt, decidedAt: status === 'pending' ? null : createdAt + between(0.5, 3) * DAY };
+    applications.push(app);
+    if (status !== 'accepted') return;
+
+    // Tracking link + promo code for every accepted creator.
+    const code = `${c.promo}-${creator.creator.handle.slice(0, 5).toUpperCase()}`;
+    const link = { id: id('lnk'), campaignId: cid, creatorId: crid, code, createdAt: app.decidedAt };
+    links.push(link);
+
+    // Deliverables expand the campaign's template.
+    const followers = creator.creator.platforms.reduce((a, p) => a + p.followers, 0);
+    let slot = 0;
+    c.deliverables.forEach((d) => {
+      for (let k = 0; k < d.qty; k++) {
+        slot += 1;
+        const dueAt = app.decidedAt + (7 + slot * 9) * DAY;
+        const fee = c.compensation === 'commission' || c.compensation === 'gifted'
+          ? 0 : Math.round(rate / c.deliverables.reduce((a, x) => a + x.qty, 0) / 50) * 50;
+        const del = {
+          id: id('del'), campaignId: cid, creatorId: crid, type: d.type, platform: d.platform,
+          title: `${d.type} for ${c.productName}`, dueAt, fee, status: 'todo', submittedAt: null, approvedAt: null, paidAt: null, contentUrl: '', stats: null, note: '',
+        };
+        if (dueAt < now - 2 * DAY || (dueAt < now + 3 * DAY && r() < 0.5)) {
+          const submittedAt = Math.min(now - 0.3 * DAY, dueAt - between(-1, 2) * DAY);
+          const reach = Math.round(followers * between(0.25, 0.9));
+          const likes = Math.round(reach * creator.creator.engagement / 100 * between(0.7, 0.9));
+          del.status = r() < 0.85 ? 'approved' : 'submitted';
+          del.submittedAt = submittedAt;
+          del.contentUrl = `https://www.${d.platform}.com/p/${code.toLowerCase()}-${slot}`;
+          del.stats = { reach, likes, comments: Math.round(likes * 0.06), shares: Math.round(likes * 0.04), saves: Math.round(likes * 0.05) };
+          if (del.status === 'approved') {
+            del.approvedAt = submittedAt + between(0.3, 2) * DAY;
+            if (fee && r() < 0.75) del.paidAt = del.approvedAt + between(1, 5) * DAY;
+          }
+        }
+        deliverables.push(del);
+      }
+    });
+
+    // Clicks and sales flow in after the first piece of content goes live.
+    const first = deliverables.filter((d) => d.creatorId === crid && d.campaignId === cid && d.submittedAt).map((d) => d.submittedAt).sort()[0];
+    if (!first || !c.aov) return;
+    const dailyClicks = followers / 1000 * between(0.3, 0.6);
+    for (let t = first; t < now; t += DAY) {
+      const age = (t - first) / DAY;
+      const decay = Math.max(0.15, Math.exp(-age / 25));
+      const clicks = Math.round(dailyClicks * decay * between(0.5, 1.5));
+      if (clicks) events.push({ t: 'click', linkId: link.id, ts: t + r() * DAY * 0.95, n: clicks });
+      const conv = between(0.006, 0.014);
+      const sales = Math.floor(clicks * conv + r());
+      for (let k = 0; k < sales; k++) events.push({ t: 'sale', linkId: link.id, ts: t + r() * DAY * 0.95, amount: Math.round(c.aov * between(0.8, 1.3) / 10) * 10, source: r() < 0.6 ? 'link' : 'code' });
+    }
+  });
+  events.sort((a, b) => a.ts - b.ts);
+  events.forEach((e) => { if (e.ts > now) e.ts = now - 60000; });
+
+  // Campaigns with any content live are "active"; older fully-delivered ones become "tracking".
+  const reviews = [
+    { id: id('rev'), campaignId: 'cmp_sili', fromId: 'u_sili', toId: 'c_bianca', rating: 5, text: 'Delivered early and the spice challenge drove real orders.', createdAt: now - 12 * DAY },
+    { id: id('rev'), campaignId: 'cmp_sili', fromId: 'c_bianca', toId: 'u_sili', rating: 5, text: 'Clear brief, paid on time. Would work with again.', createdAt: now - 11 * DAY },
+    { id: id('rev'), campaignId: 'cmp_mangga', fromId: 'u_mangga', toId: 'c_trish', rating: 5, text: 'Her Cebu pasalubong guide still sends us orders.', createdAt: now - 20 * DAY },
+    { id: id('rev'), campaignId: 'cmp_protina', fromId: 'u_protina', toId: 'c_migo', rating: 4, text: 'Great content. One revision needed on claims wording.', createdAt: now - 16 * DAY },
+    { id: id('rev'), campaignId: 'cmp_kalamansi', fromId: 'u_kalamansi', toId: 'c_kaye', rating: 5, text: 'The 14-day routine was the best-converting content we\'ve run.', createdAt: now - 6 * DAY },
+    { id: id('rev'), campaignId: 'cmp_sili', fromId: 'u_sili', toId: ME, rating: 5, text: 'Authentic cooking content. The sisig pairing sold out our 3-pack.', createdAt: now - 9 * DAY },
+    { id: id('rev'), campaignId: 'cmp_barong', fromId: 'c_aya', toId: ME, rating: 5, text: 'Organized founder, fast approvals and clear payment dates.', createdAt: now - 4 * DAY },
+    { id: id('rev'), campaignId: 'cmp_sadie', fromId: 'u_sadie', toId: 'c_sam', rating: 5, text: 'Mochi is a star. Our raincoats sold out in a week.', createdAt: now - 3 * DAY },
+  ];
+
+  const post = (authorId, topic, title, body, daysAgo, extra = {}) => ({
+    id: id('post'), authorId, anonymous: false, topic, campaignId: null, title, body, photos: [],
+    likes: [], interested: [], followers: [], comments: [], createdAt: now - daysAgo * DAY, ...extra,
+  });
+  const cm = (authorId, body, hoursAgo) => ({ id: id('cmt'), authorId, body, createdAt: now - hoursAgo * 3600000 });
+  const posts = [
+    post('u_sili', 'wins', 'Sold out our 3-pack in 9 days from 3 creators', 'We gave each creator their own promo code. SILI-BIANC alone drove 40% of orders. Lesson: food creators who actually cook convert way better than pure reviewers.', 2, { campaignId: 'cmp_sili', likes: ['c_bianca', 'u_mangga', 'u_barako', 'c_paolo', ME, 'u_hurno'], comments: [cm('u_barako', 'Did you cap the discount per code? Worried about margin.', 30), cm('u_sili', '10% off, capped at 200 uses per code. Margin held.', 28)] }),
+    post('u_ligaya', 'ideas', 'Would you pay for made-to-measure Filipiniana online?', 'I\'m testing remote fittings: you send 12 measurements + a video call, I ship the gown with one free alteration. Is this something you\'d trust? What would make you say yes?', 1, { likes: ['c_aya', 'c_leah'], interested: ['c_aya', 'c_leah', 'u_ben'], comments: [cm('c_aya', 'A fitting video from a real client would make me trust it instantly.', 10)] }),
+    post('u_carvers', 'help', 'How do we ship fragile carvings from Banaue to Manila?', 'Our pieces keep arriving chipped. Couriers don\'t reach us daily. Anyone solved crating or consolidation for provincial crafts?', 3, { likes: ['c_rina', 'u_tboli'], comments: [cm('u_kahoy', 'We use foam corner guards + double-wall boxes. DM me our supplier.', 60), cm('u_tboli', 'We consolidate in Koronadal once a week. Same problem!', 50)] }),
+    post('u_mangga', 'collab', 'Pasalubong bundle: looking for 2 more Visayas brands', 'We want a "Taste of Cebu" box for balikbayans: dried mangoes + 2 other brands. Split costs 3 ways, one creator campaign for all. Candles or coffee welcome!', 4, { likes: ['u_candle', 'u_barako', 'c_trish'], interested: ['u_candle', 'u_barako'] }),
+    post(ME, 'build', 'Abaca Barong: first 2 creators live, here are the numbers', 'Aya\'s reel reached 40K+ with a 5% engagement rate. Clicks are strong but the conversion is low: people want to see it in person. Testing a fitting pop-up next.', 1, { campaignId: 'cmp_barong', likes: ['u_ligaya', 'c_aya', 'u_ben'], comments: [cm('u_ligaya', 'Happy to lend my atelier for a fitting weekend!', 5)] }),
+    post('c_kaye', 'help', 'Brands: please send the brief BEFORE the product', 'Creator side here. Three times this month I got product with no brief, no deadline, no usage rights. Put it in writing on Buzz so we both know what we agreed to.', 5, { likes: ['c_hannah', 'c_bianca', 'c_migo', 'c_sam', 'u_kalamansi'] }),
+    post('u_ipon', 'ideas', 'Paluwagan tracker: useful or gimmick?', 'We\'re deciding whether to build group savings (paluwagan) into Ipon. Would you use it? What would stop you?', 6, { likes: ['c_jomar'], interested: ['c_jomar', 'c_hannah'] }),
+    post('c_rina', 'collab', 'Baguio makers: shared shoot day in October', 'I\'m organizing a one-day shoot for 5 craft brands. You bring product, I bring 2 photographers. ₱2,500 per brand covers everything.', 7, { likes: ['u_carvers', 'u_candle', 'u_tboli'], interested: ['u_carvers', 'u_tboli'] }),
+    post('u_protina', 'wins', 'First 1,000 tubs sold, 62% from creator codes', 'Migo\'s meal prep reels are our best channel by far. Cost per order: ₱118 vs ₱310 on ads.', 9, { campaignId: 'cmp_protina', likes: ['c_migo', 'u_pilates', ME, 'u_sili'] }),
+    post('u_hurno', 'build', 'Switching to pre-orders for weekend pandesal', 'After Bianca\'s video we had lines at 5AM and ran out by 7. Now testing pre-orders via Buzz messages. Anyone done this well?', 10, { likes: ['c_bianca', 'u_sili'] }),
+  ];
+
+  const collabs = [
+    { id: id('col'), hostId: 'u_mangga', kind: 'bundle', title: 'Taste of Cebu pasalubong box', description: 'Split a 3-brand box for balikbayans. One creator campaign, costs split 3 ways.', category: 'food', slots: 3, members: ['u_mangga', 'u_candle'], deadline: now + 12 * DAY, createdAt: now - 4 * DAY },
+    { id: id('col'), hostId: 'c_rina', kind: 'shoot', title: 'Baguio makers shoot day', description: '5 craft brands, 2 photographers, 1 day. ₱2,500 per brand.', category: 'crafts', slots: 5, members: ['c_rina', 'u_carvers', 'u_tboli'], deadline: now + 18 * DAY, createdAt: now - 7 * DAY },
+    { id: id('col'), hostId: 'u_sadie', kind: 'giveaway', title: 'Rainy season pet giveaway', description: 'Pet brands pool one prize bundle; 3 pet creators run it together.', category: 'pets', slots: 4, members: ['u_sadie', 'c_sam'], deadline: now + 9 * DAY, createdAt: now - 2 * DAY },
+    { id: id('col'), hostId: 'u_kalamansi', kind: 'popup', title: 'Local beauty booth at a QC weekend bazaar', description: 'Share a 3x3m booth and staff. ₱4,000 each for 3 brands.', category: 'beauty', slots: 3, members: ['u_kalamansi'], deadline: now + 21 * DAY, createdAt: now - 1 * DAY },
+    { id: id('col'), hostId: 'c_migo', kind: 'squad', title: 'Fitness creator squad for local brands', description: '4 fitness creators pitching together as one package to local brands. Bigger reach, one brief.', category: 'fitness', slots: 4, members: ['c_migo', 'c_marco'], deadline: now + 30 * DAY, createdAt: now - 5 * DAY },
+  ];
+
+  const thread = (a, b, campaignId, msgs) => ({
+    id: id('thr'), participants: [a, b], campaignId,
+    messages: msgs.map(([from, body, hoursAgo]) => ({ id: id('msg'), from, body, ts: now - hoursAgo * 3600000 })),
+    lastRead: { [a]: now - 1000 * 3600000, [b]: now },
+  });
+  const threads = [
+    thread(ME, 'c_aya', 'cmp_barong', [['c_aya', 'Hi! Received the barong, the weave is gorgeous. Shooting this weekend.', 50], [ME, 'Amazing. Please tag us and use code ABACA-AYAST in the caption.', 48], ['c_aya', 'Reel is up! Sent the link in Deliverables.', 3]]),
+    thread(ME, 'u_sili', 'cmp_sili', [['u_sili', 'Your sisig video is our top performer this week!', 30], [ME, 'Glad it worked. Want a second piece with the extra hot variant?', 26], ['u_sili', 'Yes! Adding a deliverable now.', 2]]),
+    thread(ME, 'c_bianca', 'cmp_foodbox', [['c_bianca', 'Hi Sigmund, I applied to the food box campaign. Happy to share past unboxing stats.', 20]]),
+    thread(ME, 'u_sadie', 'cmp_sadie', [[ME, 'Hi Nina! Applied for the corgi raincoat drop. Our friend\'s corgi is ready to model.', 70], ['u_sadie', 'Love it. Reviewing applications this week!', 60]]),
+  ];
+
+  const notifications = [
+    ['Aya Lim submitted a Reel for Abaca Barong', '/workspace/deliverables', 3, false],
+    ['Bianca Reyes applied to Local Artisan Food Box', '/workspace/collaborations', 20, false],
+    ['Sili Republic added a new deliverable for you', '/workspace/deliverables', 2, false],
+    ['Paolo Lacson applied to Local Artisan Food Box', '/workspace/collaborations', 28, true],
+    ['New sale via code SILI-SIGMU (₱420)', '/workspace/analytics', 36, true],
+    ['Payment of ₱1,000 received from Batangas Barako Roasters', '/workspace/analytics', 72, true],
+    ['Ligaya Santos commented on your update', '/community', 5, false],
+  ].map(([text, link, hoursAgo, read]) => ({ id: id('ntf'), userId: ME, text, link, ts: now - hoursAgo * 3600000, read }));
+
+  const saved = [
+    { id: id('sav'), userId: ME, kind: 'campaign', refId: 'cmp_bulul', ts: now - 2 * DAY },
+    { id: id('sav'), userId: ME, kind: 'creator', refId: 'c_bianca', ts: now - 1 * DAY },
+  ];
+
+  const profileViews = [];
+  for (let d = 0; d < 90; d++) {
+    const count = Math.round(between(2, 14));
+    for (let k = 0; k < count; k++) profileViews.push({ userId: ME, ts: now - d * DAY - r() * DAY });
+  }
+
+  return {
+    version: 1,
+    session: { userId: ME, mode: 'business' },
+    users, campaigns, applications, links, events, deliverables, reviews, posts, collabs, threads, notifications, saved, profileViews,
+  };
+}
