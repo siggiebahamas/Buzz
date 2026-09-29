@@ -39,7 +39,7 @@ export default function CampaignManage() {
   const invited = apps.filter((a) => a.status === 'invited');
   const involved = new Set(apps.filter((a) => a.status !== 'withdrawn' && a.status !== 'declined').map((a) => a.creatorId));
   const suggestions = creators(d).filter((u) => u.id !== me.id && !involved.has(u.id))
-    .map((u) => ({ u, m: matchScore(u, c) })).sort((a, b) => b.m.score - a.m.score).slice(0, 6);
+    .map((u) => ({ u, m: matchScore(u, c, { brand: true }) })).sort((a, b) => b.m.score - a.m.score).slice(0, 6);
   const stageIdx = CAMPAIGN_STAGES.findIndex((s) => s.id === c.status);
   const reviewed = (toId) => d.reviews.some((r) => r.campaignId === c.id && r.fromId === me.id && r.toId === toId);
 
@@ -131,7 +131,7 @@ export default function CampaignManage() {
           <div className="space-y-3">
             {pending.map((a) => {
               const u = userById(d, a.creatorId);
-              const m = matchScore(u, c);
+              const m = matchScore(u, c, { brand: true });
               return (
                 <div key={a.id} className="rounded-xl border border-line p-3">
                   <div className="flex items-center gap-2.5">
@@ -168,7 +168,7 @@ export default function CampaignManage() {
             <h2 className="font-bold text-[17px]">Suggested creators</h2>
             <Button size="sm" onClick={() => setShowMatch(!showMatch)}><Zap size={14} />{showMatch ? 'Hide' : 'Auto-Match'}</Button>
           </div>
-          {!showMatch ? <p className="text-[13px] text-ink-muted">Auto-Match ranks every creator on Buzz by niche, platforms, rate vs. your budget, location and engagement.</p> : (
+          {!showMatch ? <p className="text-[13px] text-ink-muted">Auto-Match checks every creator on Buzz against five things: your category, your platforms, your budget, your location and whether their engagement beats the 3% average.</p> : (
             <div className="space-y-2">
               {suggestions.map(({ u, m }) => (
                 <div key={u.id} className="flex items-center gap-2.5 rounded-xl border border-line p-2.5">

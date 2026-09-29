@@ -1,6 +1,6 @@
 import { useState } from 'react';
 import { Link } from 'react-router-dom';
-import { ImagePlus, ChevronLeft, ChevronRight, Bookmark, Star, MapPin, Users, BadgeCheck, ChevronRight as Chev } from 'lucide-react';
+import { ImagePlus, ChevronLeft, ChevronRight, Bookmark, Star, MapPin, Users, BadgeCheck, Check, Minus, ChevronRight as Chev } from 'lucide-react';
 import { CATEGORIES, categoryById, PLATFORMS } from '../lib/constants';
 import { budgetLabel, compact } from '../lib/format';
 import { useDB, userById, applicantsCount, isSaved, actions, brandName, followersOf, ratingOf } from '../lib/store';
@@ -24,17 +24,16 @@ export function Logo({ className }) {
 // Shows uploaded photos, or a styled stand-in labelled with what photo belongs there.
 export function ProductImage({ campaign, className, rounded = 'rounded-none', showNav = false, index = 0, mini = false }) {
   const [i, setI] = useState(index);
+  const [broken, setBroken] = useState({});
   const cat = categoryById(campaign.category);
-  const photos = campaign.photos || [];
+  const photos = (campaign.photos || []).filter((p) => !broken[p]);
   const hints = campaign.photoHints?.length ? campaign.photoHints : [campaign.productName];
   const count = photos.length || hints.length;
   const k = ((i % count) + count) % count;
   const Icon = cat.icon;
   return (
     <div className={cx('relative overflow-hidden group/img', rounded, className)}>
-      {photos.length ? (
-        <img src={photos[k]} alt={campaign.productName} className="absolute inset-0 w-full h-full object-cover" />
-      ) : (
+      {(
         <div className="absolute inset-0" style={{ background: `linear-gradient(135deg, ${cat.tint?.[0] || '#FEF3E2'}, ${cat.tint?.[1] || '#FBD38D'})` }}>
           <svg className="absolute inset-0 w-full h-full opacity-[0.18]" aria-hidden>
             <defs>
@@ -57,6 +56,9 @@ export function ProductImage({ campaign, className, rounded = 'rounded-none', sh
           )}
         </div>
       )}
+      {photos.length > 0 && (
+        <img src={photos[k]} alt={campaign.productName} loading="lazy" onError={() => setBroken((b) => ({ ...b, [photos[k]]: true }))} className="absolute inset-0 w-full h-full object-cover" />
+      )}
       {showNav && count > 1 && (
         <>
           <button onClick={(e) => { e.preventDefault(); setI(k - 1); }} className="absolute left-2 top-1/2 -translate-y-1/2 h-8 w-8 rounded-full bg-white/90 grid place-items-center opacity-0 group-hover/img:opacity-100 transition"><ChevronLeft size={16} /></button>
@@ -73,8 +75,7 @@ export function ProductImage({ campaign, className, rounded = 'rounded-none', sh
 }
 
 export function CategoryRow({ value, onChange, compactRow = false }) {
-  const [more, setMore] = useState(false);
-  const shown = more ? CATEGORIES : CATEGORIES.slice(0, 8);
+  const shown = CATEGORIES;
   const Tile = ({ active, onClick, icon: Icon, label }) => (
     <button onClick={onClick} className="flex flex-col items-center gap-1.5 w-[84px] group">
       <span className={cx('h-[52px] w-[52px] rounded-2xl border grid place-items-center transition-all',
@@ -87,24 +88,34 @@ export function CategoryRow({ value, onChange, compactRow = false }) {
   return (
     <div className={cx('flex flex-wrap gap-y-3', compactRow ? 'gap-x-1' : 'gap-x-2')}>
       {shown.map((c) => <Tile key={c.id} active={value === c.id} onClick={() => onChange(c.id)} icon={c.icon} label={c.label} />)}
-      {!more && (
-        <Tile active={false} onClick={() => setMore(true)} icon={({ size }) => <span style={{ fontSize: size - 4 }} className="leading-none tracking-widest">···</span>} label="More" />
-      )}
     </div>
   );
 }
 
-export function MatchPill({ score, parts }) {
+export function FitChecks({ checks }) {
+  return (
+    <ul className="space-y-1.5">
+      {checks.map((c) => (
+        <li key={c.text} className="flex gap-2 text-[12.5px] leading-snug">
+          {c.ok ? <Check size={15} strokeWidth={2.5} className="text-emerald-600 shrink-0 mt-px" /> : <Minus size={15} strokeWidth={2.5} className="text-ink-faint shrink-0 mt-px" />}
+          <span className={c.ok ? 'text-ink' : 'text-ink-muted'}>{c.text}</span>
+        </li>
+      ))}
+    </ul>
+  );
+}
+
+export function MatchPill({ score, label, tone, checks, passed, total }) {
   if (score == null) return null;
   return (
-    <span className="relative group/m inline-flex items-center gap-1 text-[12px] font-semibold text-emerald-600">
-      <Star size={13} className="fill-emerald-600" />{score}% Match
-      {parts?.length > 0 && (
-        <span className="absolute right-0 top-5 z-20 hidden group-hover/m:block w-56 bg-white border border-line rounded-xl shadow-lift p-3 text-left">
-          <span className="block text-[11px] uppercase tracking-wide text-ink-muted mb-1.5">Why this match</span>
-          {parts.map((p) => (
-            <span key={p.label} className="flex justify-between text-[12px] text-ink-soft font-normal py-0.5"><span>{p.note}</span><span className="text-ink font-medium">{p.pts}/{p.max}</span></span>
-          ))}
+    <span className="relative group/m inline-flex">
+      <span className={cx('inline-flex items-center gap-1 rounded-full border px-2 py-0.5 text-[11.5px] font-semibold whitespace-nowrap', tone)}>
+        {label} <span className="font-normal opacity-70">{passed}/{total}</span>
+      </span>
+      {checks?.length > 0 && (
+        <span className="absolute right-0 top-7 z-20 hidden group-hover/m:block w-64 bg-white border border-line rounded-xl shadow-lift p-3 text-left">
+          <span className="block text-[11px] uppercase tracking-wide text-ink-muted mb-2">Why it's a fit</span>
+          <FitChecks checks={checks} />
         </span>
       )}
     </span>
@@ -156,7 +167,7 @@ export function OpportunityRow({ campaign }) {
       </div>
       <div className="text-right shrink-0">
         <p className="text-[13.5px] font-bold text-brand-dark">{budgetLabel(campaign)}</p>
-        {m.score != null && <p className="text-[12px] font-semibold text-emerald-600">{m.score}% Match</p>}
+        {m.score != null && <p className="text-[12px] font-semibold text-emerald-700">{m.label}</p>}
       </div>
       <Chev size={18} className="text-ink-muted shrink-0" />
     </Link>
@@ -177,7 +188,7 @@ export function PlatformChips({ platforms }) {
 
 export function CreatorCard({ user, forCampaign }) {
   const d = useDB();
-  const m = forCampaign ? matchScore(user, forCampaign) : { score: null };
+  const m = forCampaign ? matchScore(user, forCampaign, { brand: true }) : { score: null };
   const r = ratingOf(d, user.id);
   const cats = user.creator.niches.map((n) => categoryById(n).label).join(', ');
   return (
@@ -208,7 +219,7 @@ export function CreatorCard({ user, forCampaign }) {
 }
 
 export function CreatorRow({ user, forCampaign }) {
-  const m = forCampaign ? matchScore(user, forCampaign) : { score: null };
+  const m = forCampaign ? matchScore(user, forCampaign, { brand: true }) : { score: null };
   return (
     <Link to={`/profile/${user.id}`} className="flex items-center gap-4 bg-white border border-line rounded-2xl p-3 pr-4 hover:shadow-lift transition-shadow">
       <Avatar user={user} size={44} />
@@ -218,7 +229,7 @@ export function CreatorRow({ user, forCampaign }) {
       </div>
       <div className="text-right">
         <p className="text-[13.5px] font-bold text-brand-dark">₱{(user.creator.rates?.reel || 0).toLocaleString()}</p>
-        {m.score != null && <p className="text-[12px] font-semibold text-emerald-600">{m.score}% Match</p>}
+        {m.score != null && <p className="text-[12px] font-semibold text-emerald-700">{m.label}</p>}
       </div>
       <Chev size={18} className="text-ink-muted" />
     </Link>

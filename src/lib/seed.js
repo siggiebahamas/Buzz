@@ -24,6 +24,32 @@ function rng(seed) {
 
 const AVATAR_COLORS = ['#F59E0B', '#EF7D57', '#E0607E', '#8B5CF6', '#3B82F6', '#10B981', '#14B8A6', '#F97316', '#6366F1', '#84CC16'];
 
+// Sample product photos (Unsplash, free to use). Stand-ins until brands upload their own.
+const U = (id) => `https://images.unsplash.com/photo-${id}?auto=format&fit=crop&w=900&q=70`;
+const SAMPLE_PHOTOS = {
+  cmp_barong: ['1515886657613-9f3515b0c78f', '1490481651871-ab68de25d43d', '1445205170230-053b83016050'].map(U),
+  cmp_active: ['1571019613454-1cb2f99b2d8b', '1517836357463-d25dfeac3438'].map(U),
+  cmp_foodbox: ['1546069901-ba9599a7e63c', '1490645935967-10de6ba17061'].map(U),
+  cmp_sili: ['1504674900247-0877df9cc836', '1565299624946-b28f40a0ae38'].map(U),
+  cmp_kahoy: ['1555041469-a586c61ea9bc', '1586023492125-27b2c045efd7'].map(U),
+  cmp_protina: ['1534438327276-14e5300c3a48', '1571019613454-1cb2f99b2d8b'].map(U),
+  cmp_sulit: ['1518770660439-4636190af475', '1519389950473-47ba0277781c'].map(U),
+  cmp_ligaya: ['1483985988355-763728e1935b', '1434389677669-e08b4cac3105'].map(U),
+  cmp_marikina: ['1549298916-b41d501d3772', '1542291026-7eec264c27ff'].map(U),
+  cmp_bulul: ['1513519245088-0e12902e5a38', '1452860606245-08befc0ff44b'].map(U),
+  cmp_mangga: ['1553279768-865429fa0078', '1546069901-ba9599a7e63c'].map(U),
+  cmp_cloud9: ['1502680390469-be75c86b636f', '1507525428034-b723cf961d3e'].map(U),
+  cmp_kalamansi: ['1556228578-8c89e6adf883', '1620916566398-39f1143ab7be'].map(U),
+  cmp_barako: ['1495474472287-4d71bcdd2085', '1447933601403-0c6688de566e', '1509042239860-f550ce710b93'].map(U),
+  cmp_tinalak: ['1523381210434-271e8be1f52b', '1528459801416-a9e53bbf4e17'].map(U),
+  cmp_sadie: ['1587300003388-59208cc962cb', '1543466835-00a7907e9de1'].map(U),
+  cmp_ipon: ['1512941937669-90a1b58e7e9c', '1554224155-6726b3ff858f'].map(U),
+  cmp_pilates: ['1518611012118-696072aa579a', '1544367567-0f2fcb009e0b'].map(U),
+  cmp_hurno: ['1509440159596-0249088772ff', '1555507036-ab1f4038808a'].map(U),
+  cmp_candle: ['1602143407151-7111542de6e8', '1603006905003-be475563bc59'].map(U),
+  cmp_lodge: ['1520250497591-112f2f40a3f4', '1537996194471-e657df975ab4'].map(U),
+};
+
 const ME = 'u_me';
 
 const OWNERS = [
@@ -174,7 +200,7 @@ export function buildSeed() {
       compensation: comp, budgetMin: min, budgetMax: max, commissionRate: commission, slots,
       deliverables: dels.map(([t, qty, platform]) => ({ type: t, qty, platform })),
       platforms: [...new Set(dels.map((d) => d[2]))],
-      photos: [], photoHints, audience, region: owner.region,
+      photos: SAMPLE_PHOTOS[cid] || [], photoHints, audience, region: owner.region,
       deadline: now + between(7, 40) * DAY, contentRights: pick(['30 days', '60 days', '90 days']),
       shopUrl: 'https://shopee.ph/', aov, status, published: true, createdAt, views: Math.round(between(120, 2400)),
       promo: productName.split(' ')[0].toUpperCase().replace(/[^A-Z]/g, '').slice(0, 6),
@@ -269,16 +295,16 @@ export function buildSeed() {
   });
   const cm = (authorId, body, hoursAgo) => ({ id: id('cmt'), authorId, body, createdAt: now - hoursAgo * 3600000 });
   const posts = [
-    post('u_sili', 'wins', 'Sold out our 3-pack in 9 days from 3 creators', 'We gave each creator their own promo code. SILI-BIANC alone drove 40% of orders. Lesson: food creators who actually cook convert way better than pure reviewers.', 2, { campaignId: 'cmp_sili', likes: ['c_bianca', 'u_mangga', 'u_barako', 'c_paolo', ME, 'u_hurno'], comments: [cm('u_barako', 'Did you cap the discount per code? Worried about margin.', 30), cm('u_sili', '10% off, capped at 200 uses per code. Margin held.', 28)] }),
-    post('u_ligaya', 'ideas', 'Would you pay for made-to-measure Filipiniana online?', 'I\'m testing remote fittings: you send 12 measurements + a video call, I ship the gown with one free alteration. Is this something you\'d trust? What would make you say yes?', 1, { likes: ['c_aya', 'c_leah'], interested: ['c_aya', 'c_leah', 'u_ben'], comments: [cm('c_aya', 'A fitting video from a real client would make me trust it instantly.', 10)] }),
+    post('u_sili', 'wins', 'Sold out our 3-pack in 9 days from 3 creators', 'We gave each creator their own promo code. SILI-BIANC alone drove 40% of orders. Lesson: food creators who actually cook convert way better than pure reviewers.', 2, { campaignId: 'cmp_sili', photos: [SAMPLE_PHOTOS.cmp_sili[0]], likes: ['c_bianca', 'u_mangga', 'u_barako', 'c_paolo', ME, 'u_hurno'], comments: [cm('u_barako', 'Did you cap the discount per code? Worried about margin.', 30), cm('u_sili', '10% off, capped at 200 uses per code. Margin held.', 28)] }),
+    post('u_ligaya', 'ideas', 'Would you pay for made-to-measure Filipiniana online?', 'I\'m testing remote fittings: you send 12 measurements + a video call, I ship the gown with one free alteration. Is this something you\'d trust? What would make you say yes?', 1, { photos: [SAMPLE_PHOTOS.cmp_ligaya[0]], likes: ['c_aya', 'c_leah'], interested: ['c_aya', 'c_leah', 'u_ben'], comments: [cm('c_aya', 'A fitting video from a real client would make me trust it instantly.', 10)] }),
     post('u_carvers', 'help', 'How do we ship fragile carvings from Banaue to Manila?', 'Our pieces keep arriving chipped. Couriers don\'t reach us daily. Anyone solved crating or consolidation for provincial crafts?', 3, { likes: ['c_rina', 'u_tboli'], comments: [cm('u_kahoy', 'We use foam corner guards + double-wall boxes. DM me our supplier.', 60), cm('u_tboli', 'We consolidate in Koronadal once a week. Same problem!', 50)] }),
     post('u_mangga', 'collab', 'Pasalubong bundle: looking for 2 more Visayas brands', 'We want a "Taste of Cebu" box for balikbayans: dried mangoes + 2 other brands. Split costs 3 ways, one creator campaign for all. Candles or coffee welcome!', 4, { likes: ['u_candle', 'u_barako', 'c_trish'], interested: ['u_candle', 'u_barako'] }),
-    post(ME, 'build', 'Abaca Barong: first 2 creators live, here are the numbers', 'Aya\'s reel reached 40K+ with a 5% engagement rate. Clicks are strong but the conversion is low: people want to see it in person. Testing a fitting pop-up next.', 1, { campaignId: 'cmp_barong', likes: ['u_ligaya', 'c_aya', 'u_ben'], comments: [cm('u_ligaya', 'Happy to lend my atelier for a fitting weekend!', 5)] }),
+    post(ME, 'build', 'Abaca Barong: first 2 creators live, here are the numbers', 'Aya\'s reel reached 40K+ with a 5% engagement rate. Clicks are strong but the conversion is low: people want to see it in person. Testing a fitting pop-up next.', 1, { campaignId: 'cmp_barong', photos: SAMPLE_PHOTOS.cmp_barong.slice(0, 2), likes: ['u_ligaya', 'c_aya', 'u_ben'], comments: [cm('u_ligaya', 'Happy to lend my atelier for a fitting weekend!', 5)] }),
     post('c_kaye', 'help', 'Brands: please send the brief BEFORE the product', 'Creator side here. Three times this month I got product with no brief, no deadline, no usage rights. Put it in writing on Buzz so we both know what we agreed to.', 5, { likes: ['c_hannah', 'c_bianca', 'c_migo', 'c_sam', 'u_kalamansi'] }),
     post('u_ipon', 'ideas', 'Paluwagan tracker: useful or gimmick?', 'We\'re deciding whether to build group savings (paluwagan) into Ipon. Would you use it? What would stop you?', 6, { likes: ['c_jomar'], interested: ['c_jomar', 'c_hannah'] }),
     post('c_rina', 'collab', 'Baguio makers: shared shoot day in October', 'I\'m organizing a one-day shoot for 5 craft brands. You bring product, I bring 2 photographers. ₱2,500 per brand covers everything.', 7, { likes: ['u_carvers', 'u_candle', 'u_tboli'], interested: ['u_carvers', 'u_tboli'] }),
-    post('u_protina', 'wins', 'First 1,000 tubs sold, 62% from creator codes', 'Migo\'s meal prep reels are our best channel by far. Cost per order: ₱118 vs ₱310 on ads.', 9, { campaignId: 'cmp_protina', likes: ['c_migo', 'u_pilates', ME, 'u_sili'] }),
-    post('u_hurno', 'build', 'Switching to pre-orders for weekend pandesal', 'After Bianca\'s video we had lines at 5AM and ran out by 7. Now testing pre-orders via Buzz messages. Anyone done this well?', 10, { likes: ['c_bianca', 'u_sili'] }),
+    post('u_protina', 'wins', 'First 1,000 tubs sold, 62% from creator codes', 'Migo\'s meal prep reels are our best channel by far. Cost per order: ₱118 vs ₱310 on ads.', 9, { campaignId: 'cmp_protina', photos: [SAMPLE_PHOTOS.cmp_protina[0]], likes: ['c_migo', 'u_pilates', ME, 'u_sili'] }),
+    post('u_hurno', 'build', 'Switching to pre-orders for weekend pandesal', 'After Bianca\'s video we had lines at 5AM and ran out by 7. Now testing pre-orders via Buzz messages. Anyone done this well?', 10, { photos: SAMPLE_PHOTOS.cmp_hurno, likes: ['c_bianca', 'u_sili'] }),
   ];
 
   const collabs = [
@@ -362,7 +388,7 @@ export function buildSeed() {
   ];
 
   return {
-    version: 3,
+    version: 4,
     session: { userId: ME, mode: 'business' },
     users, campaigns, applications, links, events, deliverables, reviews, posts, collabs, threads, notifications, saved, profileViews,
     transactions, reports, emails: [], resets: [],

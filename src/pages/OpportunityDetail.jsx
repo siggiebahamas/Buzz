@@ -5,7 +5,7 @@ import { useDB, liveCampaigns, campaignById, userById, currentUser, applicantsCo
 import { categoryById, COMP_TYPES, PLATFORMS } from '../lib/constants';
 import { budgetLabel, shortDate, peso } from '../lib/format';
 import { matchScore } from '../lib/match';
-import { ProductImage, OpportunityCard } from '../components/visuals';
+import { ProductImage, OpportunityCard, FitChecks } from '../components/visuals';
 import { Button, Card, Badge, Avatar, cx, useToast, useCopy } from '../components/ui';
 import { ApplyModal, ReportModal } from '../components/forms';
 import { useChat } from '../components/Shell';
@@ -113,13 +113,10 @@ export default function OpportunityDetail() {
             </div>
 
             {m && (
-              <div className="mt-4 rounded-xl bg-emerald-50/60 border border-emerald-100 p-3">
-                <p className="text-[13px] font-bold text-emerald-700 flex items-center gap-1.5"><Star size={14} className="fill-emerald-600 text-emerald-600" />{m.score}% match for you</p>
-                <div className="mt-2 space-y-1">
-                  {m.parts.map((p) => (
-                    <div key={p.label} className="flex justify-between text-[12px]"><span className="text-ink-soft">{p.note}</span><span className="font-medium">{p.pts}/{p.max}</span></div>
-                  ))}
-                </div>
+              <div className="mt-4 rounded-xl bg-emerald-50/60 border border-emerald-100 p-3.5">
+                <p className="text-[14px] font-bold text-emerald-800 flex items-center gap-1.5"><Star size={14} className="fill-emerald-600 text-emerald-600" />{m.label} for you</p>
+                <p className="text-[12px] text-ink-muted mb-2.5">{m.passed} of {m.total} things this brand looks for</p>
+                <FitChecks checks={m.checks} />
               </div>
             )}
 

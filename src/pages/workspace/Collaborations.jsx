@@ -59,7 +59,7 @@ export default function Collaborations() {
             const creator = userById(d, a.creatorId);
             const owner = userById(d, c.ownerId);
             const other = biz ? creator : owner;
-            const m = matchScore(creator, c);
+            const m = matchScore(creator, c, { brand: true });
             const [label, tone] = STATUS[a.status];
             return (
               <Card key={a.id} className="p-4 flex flex-wrap sm:flex-nowrap items-start gap-4">

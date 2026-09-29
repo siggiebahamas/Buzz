@@ -142,7 +142,7 @@ export function Checkbox({ checked, onChange, label, hint }) {
 }
 
 // Pill dropdown used by filters ("Budget ▾").
-export function PillMenu({ label, value, options, onChange }) {
+export function PillMenu({ label, value, options, onChange, multi = false }) {
   const [open, setOpen] = useState(false);
   const ref = useRef(null);
   useEffect(() => {
@@ -150,20 +150,27 @@ export function PillMenu({ label, value, options, onChange }) {
     document.addEventListener('mousedown', h);
     return () => document.removeEventListener('mousedown', h);
   }, []);
-  const active = value && value !== 'any' && value !== 'all';
-  const current = options.find((o) => o.id === value);
+  const active = multi ? value.length > 0 : value && value !== 'any' && value !== 'all';
+  const current = multi ? null : options.find((o) => o.id === value);
+  const shown = multi ? (value.length === 1 ? options.find((o) => o.id === value[0])?.label : `${label} · ${value.length}`) : current?.label;
   return (
     <div className="relative" ref={ref}>
       <button onClick={() => setOpen(!open)} className={cx('h-8 pl-3 pr-2 rounded-full border text-[13px] inline-flex items-center gap-1.5 transition-colors', active ? 'bg-brand-soft border-brand/60 text-ink' : 'bg-white border-line-strong text-ink-soft hover:bg-canvas')}>
-        {active ? current?.label : label}<ChevronDown size={14} />
+        {active ? shown : label}<ChevronDown size={14} />
       </button>
       {open && (
         <div className="absolute z-30 mt-1.5 min-w-[190px] bg-white border border-line rounded-xl shadow-lift p-1">
-          {options.map((o) => (
-            <button key={o.id} onClick={() => { onChange(o.id); setOpen(false); }} className={cx('w-full text-left px-3 py-2 rounded-lg text-[13px] flex items-center justify-between hover:bg-canvas', o.id === value && 'font-semibold')}>
-              {o.label}{o.id === value && <Check size={14} className="text-brand-dark" />}
-            </button>
-          ))}
+          {multi && <p className="px-3 pt-1.5 pb-1 text-[11px] text-ink-muted">Pick as many as you like</p>}
+          {options.map((o) => {
+            const on = multi ? value.includes(o.id) : o.id === value;
+            return (
+              <button key={o.id} onClick={() => { if (multi) onChange(on ? value.filter((v) => v !== o.id) : [...value, o.id]); else { onChange(o.id); setOpen(false); } }} className={cx('w-full text-left px-3 py-2 rounded-lg text-[13px] flex items-center justify-between gap-3 hover:bg-canvas', on && 'font-semibold')}>
+                {multi && <span className={cx('h-4 w-4 rounded border grid place-items-center shrink-0', on ? 'bg-brand border-brand' : 'border-line-strong')}>{on && <Check size={11} strokeWidth={3} className="text-white" />}</span>}
+                <span className="flex-1">{o.label}</span>{!multi && on && <Check size={14} className="text-brand-dark" />}
+              </button>
+            );
+          })}
+          {multi && value.length > 0 && <button onClick={() => onChange([])} className="w-full text-left px-3 py-2 text-[12.5px] text-brand-dark">Clear</button>}
         </div>
       )}
     </div>

@@ -37,7 +37,7 @@ export default function PostDetail() {
           {author ? <><Avatar user={author} size={32} /><Link to={`/profile/${author.id}`} className="text-[13.5px] font-medium hover:underline">{displayName(author)}</Link></> : <span className="text-[13.5px] text-ink-muted">Posted anonymously</span>}
         </div>
         <p className="text-[15px] text-ink-soft mt-5 leading-relaxed whitespace-pre-line">{p.body}</p>
-        {p.photos?.length > 0 && <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 mt-5">{p.photos.map((src, i) => <img key={i} src={src} alt="" className="rounded-xl border border-line w-full object-cover" />)}</div>}
+        {p.photos?.length > 0 && <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 mt-5">{p.photos.map((src, i) => <img key={i} src={src} alt="" loading="lazy" onError={(e) => { e.currentTarget.style.display = 'none'; }} className="rounded-xl border border-line w-full object-cover" />)}</div>}
         {camp && (
           <Link to={`/opportunity/${camp.id}`} className="mt-5 flex items-center gap-3 rounded-xl border border-line p-3 hover:bg-canvas">
             <ProductImage campaign={camp} mini className="h-12 w-12" rounded="rounded-lg" />

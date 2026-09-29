@@ -4,7 +4,7 @@ import { useSyncExternalStore } from 'react';
 import { buildSeed, hashPw, SERVICE_FEE } from './seed';
 import { uid, DAY, peso } from './format';
 
-const KEY = 'buzz-db-v3';
+const KEY = 'buzz-db-v4';
 const listeners = new Set();
 
 function load() {
@@ -12,7 +12,7 @@ function load() {
     const raw = localStorage.getItem(KEY);
     if (raw) {
       const parsed = JSON.parse(raw);
-      if (parsed?.version === 3) return parsed;
+      if (parsed?.version === 4) return parsed;
     }
   } catch { /* storage blocked or corrupt: fall through to fresh seed */ }
   return buildSeed();

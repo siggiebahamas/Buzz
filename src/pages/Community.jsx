@@ -36,7 +36,7 @@ export function PostCard({ p }) {
           <p className="text-[14px] text-ink-soft mt-1.5 line-clamp-3 whitespace-pre-line">{p.body}</p>
         </Link>
         {p.photos?.length > 0 && (
-          <div className="flex gap-2 mt-3">{p.photos.slice(0, 4).map((src, i) => <img key={i} src={src} alt="" className="h-24 w-32 object-cover rounded-xl border border-line" />)}</div>
+          <div className="flex gap-2 mt-3">{p.photos.slice(0, 4).map((src, i) => <img key={i} src={src} alt="" loading="lazy" onError={(e) => { e.currentTarget.style.display = 'none'; }} className="h-24 w-32 object-cover rounded-xl border border-line" />)}</div>
         )}
         <div className="flex flex-wrap items-center gap-x-5 gap-y-2 mt-4 pt-3 border-t border-line text-[13px] text-ink-muted">
           <button onClick={() => need(() => actions.toggleIn(p.id, 'likes'))} className={cx('inline-flex items-center gap-1.5 hover:text-ink', p.likes.includes(me) && 'text-rose-500')}><Heart size={16} className={p.likes.includes(me) ? 'fill-rose-500' : ''} />{p.likes.length}</button>

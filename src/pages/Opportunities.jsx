@@ -24,15 +24,15 @@ export default function Opportunities() {
   const [cat, setCat] = useState(params.get('cat') || 'all');
   const [budget, setBudget] = useState('any');
   const [comp, setComp] = useState('all');
-  const [platform, setPlatform] = useState('all');
+  const [platforms, setPlatforms] = useState([]);
   const [region, setRegion] = useState('all');
   const [sort, setSort] = useState('match');
   const [posting, setPosting] = useState(false);
   const myCampaigns = d.campaigns.filter((c) => c.ownerId === me?.id);
   const [forCid, setForCid] = useState(myCampaigns.find((c) => c.status !== 'completed')?.id || '');
   const forCampaign = myCampaigns.find((c) => c.id === forCid) || null;
-  const filtered = q || cat !== 'all' || budget !== 'any' || comp !== 'all' || platform !== 'all' || region !== 'all';
-  const reset = () => { setQ(''); setCat('all'); setBudget('any'); setComp('all'); setPlatform('all'); setRegion('all'); };
+  const filtered = q || cat !== 'all' || budget !== 'any' || comp !== 'all' || platforms.length > 0 || region !== 'all';
+  const reset = () => { setQ(''); setCat('all'); setBudget('any'); setComp('all'); setPlatforms([]); setRegion('all'); };
 
   const listings = useMemo(() => {
     const needle = q.toLowerCase();
@@ -40,7 +40,7 @@ export default function Opportunities() {
       .filter((c) => cat === 'all' || c.category === cat)
       .filter((c) => comp === 'all' || c.compensation === comp)
       .filter((c) => region === 'all' || c.region === region)
-      .filter((c) => platform === 'all' || c.platforms.includes(platform))
+      .filter((c) => !platforms.length || platforms.some((p) => c.platforms.includes(p)))
       .filter((c) => inBudget(budget, c.budgetMin, c.budgetMax))
       .filter((c) => !needle || `${c.title} ${c.productName} ${c.description} ${categoryById(c.category).label}`.toLowerCase().includes(needle))
       .map((c) => ({ c, m: me?.creator ? matchScore(me, c).score : null }));
@@ -51,17 +51,17 @@ export default function Opportunities() {
       popular: (a, b) => applicantsCount(d, b.c.id) - applicantsCount(d, a.c.id),
     }[sort];
     return arr.sort(by).map((x) => x.c);
-  }, [d, q, cat, comp, region, platform, budget, sort, me]);
+  }, [d, q, cat, comp, region, platforms, budget, sort, me]);
 
   const people = useMemo(() => {
     const needle = q.toLowerCase();
     let arr = creators(d).filter((u) => u.id !== me?.id)
       .filter((u) => cat === 'all' || u.creator.niches.includes(cat))
-      .filter((u) => platform === 'all' || u.creator.platforms.some((p) => p.id === platform))
+      .filter((u) => !platforms.length || u.creator.platforms.some((p) => platforms.includes(p.id)))
       .filter((u) => region === 'all' || u.region === region)
       .filter((u) => inBudget(budget, u.creator.rates?.reel || 0, u.creator.rates?.reel || 0))
       .filter((u) => !needle || `${u.name} ${u.creator.handle} ${u.bio} ${u.creator.niches.map((n) => categoryById(n).label).join(' ')}`.toLowerCase().includes(needle))
-      .map((u) => ({ u, m: forCampaign ? matchScore(u, forCampaign).score : 0 }));
+      .map((u) => ({ u, m: forCampaign ? matchScore(u, forCampaign, { brand: true }).score : 0 }));
     const by = {
       match: (a, b) => b.m - a.m || b.u.creator.engagement - a.u.creator.engagement,
       newest: (a, b) => b.u.joinedAt - a.u.joinedAt,
@@ -69,7 +69,7 @@ export default function Opportunities() {
       popular: (a, b) => followersOf(b.u) - followersOf(a.u),
     }[sort];
     return arr.sort(by).map((x) => x.u);
-  }, [d, q, cat, platform, region, budget, sort, forCampaign, me]);
+  }, [d, q, cat, platforms, region, budget, sort, forCampaign, me]);
 
   const isCreatorView = as === 'creator';
 
@@ -92,7 +92,7 @@ export default function Opportunities() {
       <div className="mt-3 flex flex-wrap gap-2">
         <PillMenu label="Budget" value={budget} onChange={setBudget} options={BUDGET_BUCKETS} />
         {isCreatorView && <PillMenu label="Collaboration Type" value={comp} onChange={setComp} options={[{ id: 'all', label: 'Any type' }, ...Object.entries(COMP_TYPES).map(([id, label]) => ({ id, label }))]} />}
-        <PillMenu label="Platform" value={platform} onChange={setPlatform} options={[{ id: 'all', label: 'Any platform' }, ...Object.entries(PLATFORMS).map(([id, p]) => ({ id, label: p.label }))]} />
+        <PillMenu multi label="Platforms" value={platforms} onChange={setPlatforms} options={Object.entries(PLATFORMS).map(([id, p]) => ({ id, label: p.label }))} />
         <PillMenu label="Location" value={region} onChange={setRegion} options={[{ id: 'all', label: 'Anywhere' }, ...REGIONS.map((r) => ({ id: r, label: r }))]} />
         <PillMenu label="Sort" value={sort} onChange={setSort} options={[
           { id: 'match', label: 'Sort: Best match' }, { id: 'newest', label: 'Sort: Newest' },
@@ -109,7 +109,7 @@ export default function Opportunities() {
           </Results>
         ) : (
           <>
-            <Section title={me?.creator ? 'Recommended For You' : 'Fresh Opportunities'} hint={me?.creator ? 'Ranked by how well each brief fits your niche, platforms, rate and location. Hover a match % to see why.' : 'Sign up as a creator to see your match score.'}>
+            <Section title={me?.creator ? 'Recommended For You' : 'Fresh Opportunities'} hint={me?.creator ? 'Best fits first. Hover a fit label to see which of the 5 checks you pass.' : 'Sign up as a creator to see how well each one fits you.'}>
               <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-5">{listings.slice(0, 6).map((c) => <OpportunityCard key={c.id} campaign={c} />)}</div>
             </Section>
             <Section title="Trending Opportunities">
@@ -126,7 +126,7 @@ export default function Opportunities() {
             <div className="mt-8 flex flex-wrap items-center gap-3 rounded-2xl bg-white border border-line p-3 pl-4">
               <span className="text-[13.5px] text-ink-soft whitespace-nowrap">Match creators for</span>
               <div className="w-full sm:w-72"><Select value={forCid} onChange={(e) => setForCid(e.target.value)}>{myCampaigns.map((c) => <option key={c.id} value={c.id}>{c.productName}</option>)}</Select></div>
-              <span className="text-[12.5px] text-ink-muted">Scores use the campaign's niche, platforms, budget and region.</span>
+              <span className="text-[12.5px] text-ink-muted">Fit checks use this campaign's category, platforms, budget and location.</span>
             </div>
           )}
           {filtered ? (
