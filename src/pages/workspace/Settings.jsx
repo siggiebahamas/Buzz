@@ -47,6 +47,12 @@ export default function Settings() {
         <button onClick={async () => { if (await ask({ title: 'Reset demo data?', body: 'Every change you made is replaced with the original sample data.', confirm: 'Reset', danger: true })) { actions.resetDemo(); nav('/'); } }} className="w-full px-5 py-4 border-b border-line text-left hover:bg-canvas">
           <span className="block text-[15px]">Reset demo data</span><span className="block text-[12.5px] text-ink-muted">Restore the original sample products, creators and campaigns</span>
         </button>
+        <button onClick={() => { const blob = new Blob([JSON.stringify(actions.exportMyData(), null, 2)], { type: 'application/json' }); const url = URL.createObjectURL(blob); const el = document.createElement('a'); el.href = url; el.download = 'my-buzz-data.json'; el.click(); URL.revokeObjectURL(url); }} className="w-full px-5 py-4 border-b border-line text-left hover:bg-canvas">
+          <span className="block text-[15px]">Download my data</span><span className="block text-[12.5px] text-ink-muted">A copy of your profile, campaigns, agreements, payments and messages</span>
+        </button>
+        <button onClick={() => setOpen('delete')} className="w-full px-5 py-4 border-b border-line text-left hover:bg-canvas">
+          <span className="block text-[15px]">Close my account</span><span className="block text-[12.5px] text-ink-muted">Removes your profile and listings. Payment records are kept as the law requires.</span>
+        </button>
         <button onClick={() => { actions.logout(); nav('/'); }} className="w-full px-5 py-4 text-left hover:bg-canvas">
           <span className="block text-[15px] text-rose-600">Sign Out</span><span className="block text-[12.5px] text-ink-muted">Log out of your account</span>
         </button>
@@ -60,6 +66,12 @@ export default function Settings() {
           <Field label="New password" hint="At least 8 characters."><Input type="password" required value={pw.next} onChange={(e) => setPw({ ...pw, next: e.target.value })} /></Field>
           <Field label="Repeat new password"><Input type="password" required value={pw.again} onChange={(e) => setPw({ ...pw, again: e.target.value })} /></Field>
           <Button type="submit" className="w-full">Change password</Button>
+        </form>
+      </Modal>
+      <Modal open={open === 'delete'} onClose={() => setOpen(null)} title="Close your account?" subtitle="Your profile, listings and saved items are removed. Agreements and payment records stay for 10 years as required for tax purposes.">
+        <form onSubmit={(e) => { e.preventDefault(); if (act(() => actions.deleteAccount(pw.old), 'Your account is closed.')) nav('/'); }} className="space-y-3">
+          <Field label="Enter your password to confirm"><Input type="password" required value={pw.old} onChange={(e) => setPw({ ...pw, old: e.target.value })} /></Field>
+          <Button type="submit" variant="dark" className="w-full">Close my account</Button>
         </form>
       </Modal>
       <Modal open={open === 'notifications'} onClose={() => setOpen(null)} title="Notifications">

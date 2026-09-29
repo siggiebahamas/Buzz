@@ -4,6 +4,16 @@ import { DAY } from './format';
 
 export const SERVICE_FEE = 0.05;
 
+// Snapshot of what both sides agree to when a creator joins a campaign.
+export function contractTerms(c, a, brand, creator) {
+  return {
+    brandName: brand?.business?.name || brand?.name, brandPerson: brand?.name, creatorName: creator?.name, creatorHandle: creator?.creator?.handle,
+    product: c.productName, deliverables: c.deliverables.map((d) => ({ type: d.type, qty: d.qty, platform: d.platform })),
+    fee: ['flat', 'hybrid'].includes(c.compensation) ? (a.rate || c.budgetMin) : 0, compensation: c.compensation, commissionRate: c.commissionRate || 0,
+    contentRights: c.contentRights, disclosure: true, requireDraft: !!c.requireDraft, deadline: c.deadline,
+  };
+}
+
 // Demo-only password hash (FNV-1a). Real accounts will use the backend's auth.
 export function hashPw(pw) {
   let h = 0x811c9dc5;
@@ -408,11 +418,53 @@ export function buildSeed() {
     { id: id('rep'), kind: 'user', refId: 'c_marco', reporterId: 'u_cloud9', reason: 'Fake followers', note: 'Engagement looks bought.', ts: now - 5 * DAY, status: 'dismissed' },
   ];
 
+  // ---- trust, contracts, shipping, support (v7) ----
+  const firstName = (u) => u.name.split(' ')[0].toLowerCase().replace(/[^a-z]/g, '');
+  users.forEach((u, i) => {
+    u.plan = ['u_me', 'u_sili', 'u_protina'].includes(u.id) ? 'pro' : 'free';
+    u.refCode = `${firstName(u)}${(i * 37 + 11) % 97}`.toUpperCase();
+    u.approved = true;
+    if (u.business) u.business.verified = VERIFIED.has(u.id);
+    if (u.creator) u.creator.statsVerified = VERIFIED.has(u.id);
+    if (u.creator) u.shipping = { name: u.name, phone: `0917 ${String(1000000 + i * 7919).slice(0, 3)} ${String(4000 + i * 13).slice(0, 4)}`, address: `${10 + i} Mabini St.`, city: u.location };
+  });
+  const byId = Object.fromEntries(users.map((u) => [u.id, u]));
+  const contracts = [];
+  const shipments = [];
+  applications.filter((a) => a.status === 'accepted').forEach((a) => {
+    const c = campaignById[a.campaignId];
+    const t = a.decidedAt;
+    contracts.push({
+      id: id('ctr'), applicationId: a.id, campaignId: c.id, brandId: c.ownerId, creatorId: a.creatorId, createdAt: t,
+      terms: contractTerms(c, a, byId[c.ownerId], byId[a.creatorId]),
+      brandSignedAt: t + 3600000, brandSignName: byId[c.ownerId].name,
+      creatorSignedAt: t + 7200000, creatorSignName: byId[a.creatorId].name,
+    });
+    if (c.type === 'Product' && c.compensation !== 'commission') {
+      shipments.push({ id: id('shp'), campaignId: c.id, creatorId: a.creatorId, courier: 'J&T Express', tracking: `JT${String(Math.floor(r() * 1e10)).padStart(10, '0')}`, status: 'delivered', shippedAt: t + 1 * DAY, deliveredAt: t + 3 * DAY });
+    }
+  });
+  // Barong campaign asks for drafts before posting.
+  campaigns.forEach((c) => { c.requireDraft = c.id === 'cmp_barong' || c.id === 'cmp_kalamansi'; c.needsShipping = c.type === 'Product' && c.compensation !== 'commission'; });
+
+  const verifications = [
+    { id: id('ver'), userId: 'u_candle', kind: 'business', docType: 'DTI Business Name Registration', docName: 'DTI-Sampaguita-Candle-Co.pdf', docNumber: '3381204', note: '', status: 'pending', createdAt: now - 1 * DAY },
+    { id: id('ver'), userId: 'c_joy', kind: 'creator', docType: 'Instagram and TikTok insights', docName: 'insights-sept.png', links: ['https://www.instagram.com/joycooksph', 'https://www.tiktok.com/@joycooksph'], note: 'Screenshots of the last 30 days of insights.', status: 'pending', createdAt: now - 0.5 * DAY },
+  ];
+  const disputes = [];
+  const concierge = [
+    { id: id('cnc'), campaignId: 'cmp_kalamansi', brandId: 'u_kalamansi', note: 'Looking for 2 more creators with oily-skin audiences. Budget is firm.', status: 'open', picks: [], createdAt: now - 10 * 3600000 },
+  ];
+  const tickets = [
+    { id: id('tkt'), userId: 'u_hurno', topic: 'Payments', subject: 'Can I pay escrow with a BPI debit card?', body: 'I don\'t use GCash. Does Buzz accept debit cards for escrow?', status: 'open', replies: [], createdAt: now - 6 * 3600000 },
+  ];
+
   return {
-    version: 6,
-    flags: { dailyPicks: 'auto' },
+    version: 7,
+    flags: { dailyPicks: 'auto', requireCreatorApproval: false },
     session: { userId: ME, mode: 'business' },
     users, campaigns, applications, links, events, deliverables, reviews, posts, collabs, threads, notifications, saved, profileViews,
     transactions, reports, emails: [], resets: [],
+    contracts, disputes, verifications, shipments, concierge, tickets, saleImports: [],
   };
 }

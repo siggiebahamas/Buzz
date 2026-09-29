@@ -8,6 +8,8 @@ import { ProductImage, MatchPill } from '../../components/visuals';
 import { Card, Button, Badge, Avatar, EmptyState, cx, useAct } from '../../components/ui';
 import { useChat } from '../../components/Shell';
 import { useMode, ModeToggle, PageHead } from './Layout';
+import { OpenDisputeModal } from './Disputes';
+import { Truck, FileSignature, Flag } from 'lucide-react';
 
 const STATUS = {
   pending: ['Pending', 'soft'], invited: ['Invited', 'violet'], accepted: ['Active partner', 'green'], declined: ['Declined', 'neutral'], withdrawn: ['Withdrawn', 'neutral'],
@@ -34,6 +36,7 @@ export default function Collaborations() {
     ['closed', 'Closed', (a) => ['declined', 'withdrawn'].includes(a.status)],
   ];
   const [tab, setTab] = useState(groups[0][0]);
+  const [dispute, setDispute] = useState(null);
   const current = groups.find((g) => g[0] === tab) || groups[0];
   // Brands review the strongest fits first; everything else is newest first.
   const fitOf = (a) => matchScore(userById(d, a.creatorId), campaignById(d, a.campaignId), { brand: true, d }).score || 0;
@@ -77,6 +80,18 @@ export default function Collaborations() {
                   </Link>
                   {a.pitch && <p className="text-[13.5px] text-ink-soft mt-2">"{a.pitch}"</p>}
                   <p className="text-[12px] text-ink-muted mt-1.5">{a.source === 'invite' ? 'Invited' : 'Applied'} {timeAgo(a.createdAt)}{a.rate ? ` · Rate ${peso(a.rate)}` : ''}</p>
+                  {a.status === 'accepted' && (() => {
+                    const k = d.contracts.find((x) => x.applicationId === a.id);
+                    const sh = d.shipments.find((x) => x.campaignId === c.id && x.creatorId === a.creatorId);
+                    const mineToSign = k && (biz ? !k.brandSignedAt : !k.creatorSignedAt);
+                    return (
+                      <div className="flex flex-wrap gap-2 mt-2">
+                        {k && <Link to="/workspace/contracts"><Badge tone={k.brandSignedAt && k.creatorSignedAt ? 'green' : mineToSign ? 'red' : 'soft'}><FileSignature size={11} />{k.brandSignedAt && k.creatorSignedAt ? 'Agreement signed' : mineToSign ? 'Sign the agreement' : 'Waiting for signature'}</Badge></Link>}
+                        {sh && <Badge tone={sh.status === 'delivered' ? 'green' : sh.status === 'shipped' ? 'blue' : 'neutral'}><Truck size={11} />{sh.status === 'delivered' ? 'Sample received' : sh.status === 'shipped' ? `Shipped: ${sh.courier} ${sh.tracking}` : 'Sample not shipped yet'}</Badge>}
+                        {sh?.status === 'shipped' && !biz && <button onClick={() => actions.updateShipment(sh.id, { status: 'delivered' })} className="text-[12px] font-medium text-brand-dark">I got it</button>}
+                      </div>
+                    );
+                  })()}
                 </div>
                 <div className="flex flex-col items-start sm:items-end gap-2 w-full sm:w-auto sm:shrink-0">
                   {biz && <MatchPill {...m} />}
@@ -95,6 +110,7 @@ export default function Collaborations() {
                       </>
                     )}
                     {!biz && a.status === 'pending' && <Button size="sm" variant="outline" onClick={() => act(() => actions.decide(a.id, 'withdrawn'), 'Application withdrawn')}>Withdraw</Button>}
+                    {a.status === 'accepted' && <Button size="sm" variant="ghost" title="Report a problem" onClick={() => setDispute({ campaignId: c.id, againstId: biz ? a.creatorId : c.ownerId })}><Flag size={14} /></Button>}
                     {a.status === 'accepted' && <Link to={biz ? `/workspace/campaigns/${c.id}` : '/workspace/deliverables'}><Button size="sm" variant="soft">{biz ? 'Manage' : 'My tasks'}</Button></Link>}
                   </div>
                 </div>
@@ -103,6 +119,7 @@ export default function Collaborations() {
           })}
         </div>
       )}
+      {dispute && <OpenDisputeModal {...dispute} onClose={() => setDispute(null)} />}
     </>
   );
 }

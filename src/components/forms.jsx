@@ -1,5 +1,7 @@
 import { useRef, useState } from 'react';
-import { ImagePlus, X, Plus, Trash2 } from 'lucide-react';
+import { ImagePlus, X, Plus, Trash2, Calculator, ClipboardCheck, Check as CheckIcon, Circle } from 'lucide-react';
+import { rankCreators, creatorQuote } from '../lib/match';
+import { peso as pesoFmt, compact as compactFmt } from '../lib/format';
 import { CATEGORIES, LISTING_TYPES, COMP_TYPES, PLATFORMS, DELIVERABLE_TYPES, COMMUNITY_TOPICS, COLLAB_KINDS, REGIONS } from '../lib/constants';
 import { useDB, currentUser, actions, campaignById, userById } from '../lib/store';
 import { DAY } from '../lib/format';
@@ -56,8 +58,55 @@ const blankCampaign = () => ({
   productName: '', title: '', type: 'Product', category: 'food', description: '', audience: '',
   compensation: 'flat', budgetMin: 1000, budgetMax: 3000, commissionRate: 10, slots: 3,
   deliverables: [{ type: 'Reel', qty: 1, platform: 'instagram' }], photos: [], photoHints: [],
-  deadline: Date.now() + 21 * DAY, contentRights: '90 days', shopUrl: '', aov: 0, published: true, tags: [],
+  deadline: Date.now() + 21 * DAY, contentRights: '90 days', shopUrl: '', aov: 0, published: true, tags: [], requireDraft: true,
 });
+
+// Live guidance while a brand writes a listing: how good the brief is, and
+// what the budget can realistically buy from creators on Buzz.
+function BriefHelpers({ f }) {
+  const d = useDB();
+  const me = currentUser(d);
+  const checks = [
+    [f.photos?.length > 0, 'At least one product photo', 'Listings with photos get far more applicants.'],
+    [f.photos?.length >= 3, '3 or more photos', 'Show the product, a detail, and it in use.'],
+    [(f.description || '').length >= 120, 'A brief of 2–3 sentences', 'Say what it is, why it\'s special, and the content you want.'],
+    [(f.audience || '').length >= 6, 'Target audience', 'e.g. "Women 22–35, Metro Manila". Used for matching.'],
+    [(f.deliverables || []).length > 0, 'Clear deliverables', 'Creators want to know exactly what to make.'],
+    [!!f.aov, 'Average order value', 'Lets us estimate sales and creator earnings.'],
+    [f.compensation !== 'flat' || Number(f.budgetMax) >= 800, 'A realistic budget', 'Below ₱800 per creator gets very few applicants.'],
+  ];
+  const score = Math.round((checks.filter((c) => c[0]).length / checks.length) * 100);
+  const draft = { ...f, id: 'draft', ownerId: me?.id, region: me?.region, createdAt: Date.now(), platforms: [...new Set((f.deliverables || []).map((x) => x.platform))], budgetMin: Number(f.budgetMin) || 0, budgetMax: Number(f.budgetMax) || 0, commissionRate: Number(f.commissionRate) || 0, aov: Number(f.aov) || 0 };
+  const cash = ['flat', 'hybrid'].includes(f.compensation);
+  const ranked = me ? rankCreators(d, draft, { exclude: false }).filter((x) => x.m.factors.theme.score >= 0.6) : [];
+  const affordable = cash ? ranked.filter((x) => creatorQuote(x.u, draft) <= draft.budgetMax) : ranked;
+  const reach = affordable.slice(0, Number(f.slots) || 1).reduce((a, x) => a + (x.u.creator.platforms || []).filter((p) => draft.platforms.includes(p.id)).reduce((s, p) => s + Number(p.followers || 0), 0), 0);
+  const cheapestTop = ranked.slice(0, 3).map((x) => creatorQuote(x.u, draft)).sort((a, b) => a - b)[0];
+  return (
+    <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+      <div className="rounded-2xl border border-line p-4">
+        <p className="text-[13px] font-semibold flex items-center gap-1.5"><ClipboardCheck size={15} className="text-brand-dark" />Brief strength: <span className={score >= 80 ? 'text-emerald-700' : score >= 50 ? 'text-brand-dark' : 'text-rose-600'}>{score}%</span></p>
+        <div className="h-1.5 rounded-full bg-line mt-2"><div className={cx('h-full rounded-full', score >= 80 ? 'bg-emerald-500' : 'bg-brand')} style={{ width: `${score}%` }} /></div>
+        <ul className="mt-3 space-y-1.5">
+          {checks.map(([ok, label, tip]) => (
+            <li key={label} className="text-[12px] flex gap-1.5" title={tip}>{ok ? <CheckIcon size={13} className="text-emerald-600 mt-0.5 shrink-0" /> : <Circle size={11} className="text-ink-faint mt-1 shrink-0" />}<span className={ok ? 'text-ink-soft' : 'text-ink'}>{label}{!ok && <span className="text-ink-muted"> · {tip}</span>}</span></li>
+          ))}
+        </ul>
+      </div>
+      <div className="rounded-2xl border border-line p-4 bg-emerald-50/40">
+        <p className="text-[13px] font-semibold flex items-center gap-1.5"><Calculator size={15} className="text-emerald-700" />What your budget gets you</p>
+        {!ranked.length ? <p className="text-[12.5px] text-ink-muted mt-2">Pick a category and deliverables to see matching creators.</p> : (
+          <>
+            <p className="text-[24px] font-extrabold mt-1">{affordable.length} <span className="text-[13px] font-medium text-ink-muted">{f.category ? 'creators in this category' : 'creators'} {cash ? 'fit your budget' : 'match'}</span></p>
+            {affordable.length > 0 && <p className="text-[12.5px] text-ink-soft">Hiring the top {Math.min(Number(f.slots) || 1, affordable.length)} reaches about <b>{compactFmt(reach)}</b> followers.</p>}
+            {cash && affordable.length < (Number(f.slots) || 1) && cheapestTop && <p className="text-[12.5px] mt-2 rounded-lg bg-white p-2">Your best-matching creators usually charge from <b>{pesoFmt(cheapestTop)}</b> for this content. Raise the max, ask for fewer pieces, or add commission.</p>}
+            <div className="flex -space-x-2 mt-3">{affordable.slice(0, 6).map((x) => <span key={x.u.id} title={x.u.name} className="h-7 w-7 rounded-full ring-2 ring-white grid place-items-center text-[10px] font-bold text-white" style={{ background: x.u.color }}>{x.u.name.split(' ').map((w) => w[0]).join('').slice(0, 2)}</span>)}</div>
+          </>
+        )}
+      </div>
+    </div>
+  );
+}
 
 export function CampaignForm({ open, onClose, initial, onSaved }) {
   const act = useAct();
@@ -147,7 +196,9 @@ export function CampaignForm({ open, onClose, initial, onSaved }) {
             })}
           </div>
         </div>
+        <Checkbox checked={!!f.requireDraft} onChange={(v) => set('requireDraft', v)} label="Approve drafts before creators post" hint="Creators send you a draft first. Recommended for your first campaigns." />
         <Checkbox checked={f.published} onChange={(v) => set('published', v)} label="List on Opportunities" hint="Uncheck to keep it private and invite creators directly." />
+        <BriefHelpers f={f} />
         {err && <p className="text-[13px] text-rose-600">{err}</p>}
         <Button type="submit" size="lg" className="w-full">{initial?.id ? 'Save changes' : 'Publish opportunity'}</Button>
       </form>
@@ -381,6 +432,66 @@ export function ReportModal({ kind, refId, onClose }) {
       </div>
       <Field label="Details (optional)" className="mt-4"><Textarea id="report-note" value={note} onChange={(e) => setNote(e.target.value)} placeholder="What happened?" /></Field>
       <Button size="lg" className="w-full mt-4" onClick={() => { if (act(() => actions.report(kind, refId, reason, note.trim()), 'Report sent. Thanks for keeping Buzz safe.')) onClose(); }}>Send report</Button>
+    </Modal>
+  );
+}
+
+// Reads an order export (Shopee, Lazada, Shopify, TikTok Shop or any sheet) and
+// finds the promo-code, amount and date columns by their names.
+export function parseOrdersCsv(text) {
+  const lines = text.replace(/\r/g, '').split('\n').filter((l) => l.trim());
+  if (lines.length < 2) return { rows: [], error: 'The file needs a header row and at least one order.' };
+  const split = (line) => {
+    const out = [];
+    let cur = '';
+    let q = false;
+    for (const ch of line) {
+      if (ch === '"') q = !q;
+      else if ((ch === ',' || ch === '\t' || ch === ';') && !q) { out.push(cur.trim()); cur = ''; }
+      else cur += ch;
+    }
+    out.push(cur.trim());
+    return out;
+  };
+  const head = split(lines[0]).map((h) => h.toLowerCase());
+  const find = (words) => head.findIndex((h) => words.some((w) => h.includes(w)));
+  const code = find(['voucher', 'promo', 'coupon', 'discount code', 'code']);
+  const amount = find(['total', 'amount', 'subtotal', 'price', 'paid']);
+  const date = find(['date', 'created', 'time']);
+  if (code < 0 || amount < 0) return { rows: [], error: 'We couldn\'t find a promo/voucher code column and an amount column. Rename them to "Code" and "Amount".' };
+  const rows = lines.slice(1).map(split).map((r) => ({ code: r[code], amount: r[amount], date: date >= 0 ? r[date] : '' })).filter((r) => r.code);
+  return { rows, columns: { code: head[code], amount: head[amount], date: date >= 0 ? head[date] : null } };
+}
+
+export function ImportSalesModal({ onClose }) {
+  const act = useAct();
+  const ref = useRef(null);
+  const [source, setSource] = useState('Shopee');
+  const [text, setText] = useState('');
+  const [result, setResult] = useState(null);
+  const parsed = text ? parseOrdersCsv(text) : null;
+  const load = (f) => { if (!f) return; const r = new FileReader(); r.onload = () => setText(String(r.result)); r.readAsText(f); };
+  return (
+    <Modal open onClose={onClose} title="Import sales from your shop" subtitle="Upload an order export. We match each order's promo code to the creator who drove it." width="max-w-2xl">
+      {result ? (
+        <div className="space-y-3">
+          <p className="text-[15px]"><b>{result.matched} sales</b> matched to your creators, worth <b>₱{Math.round(result.total).toLocaleString('en-PH')}</b>.</p>
+          {result.unknown.length > 0 && <p className="text-[13px] text-ink-muted">Codes we didn't recognize (not from Buzz creators): {result.unknown.slice(0, 12).join(', ')}{result.unknown.length > 12 ? '…' : ''}</p>}
+          <Button className="w-full" onClick={onClose}>Done</Button>
+        </div>
+      ) : (
+        <div className="space-y-4">
+          <Field label="Where is this export from?"><Select value={source} onChange={(e) => setSource(e.target.value)}>{['Shopee', 'Lazada', 'TikTok Shop', 'Shopify', 'My own website', 'Spreadsheet'].map((s) => <option key={s}>{s}</option>)}</Select></Field>
+          <button type="button" onClick={() => ref.current.click()} className="w-full rounded-xl border-2 border-dashed border-line-strong hover:border-brand py-6 text-[13.5px] text-ink-muted">Upload a .csv file</button>
+          <input ref={ref} type="file" accept=".csv,text/csv,text/plain" hidden onChange={(e) => load(e.target.files[0])} />
+          <Field label="Or paste the rows" hint="Needs a header row with the promo/voucher code and the order amount. Date is optional.">
+            <Textarea value={text} onChange={(e) => setText(e.target.value)} className="font-mono !text-[12px]" placeholder={'Order ID,Voucher Code,Order Total,Order Date\n240901ABC,SILI-JOYMA,450,2026-09-20'} />
+          </Field>
+          {parsed?.error && <p className="text-[13px] text-rose-600">{parsed.error}</p>}
+          {parsed && !parsed.error && <p className="text-[13px] text-ink-soft">Found {parsed.rows.length} orders with a code · using columns "{parsed.columns.code}" and "{parsed.columns.amount}"{parsed.columns.date ? ` and "${parsed.columns.date}"` : ''}.</p>}
+          <Button size="lg" className="w-full" disabled={!parsed || parsed.error || !parsed.rows.length} onClick={() => { const r = act(() => actions.importSales(parsed.rows, source)); if (r) setResult(r); }}>Import {parsed?.rows?.length || ''} orders</Button>
+        </div>
+      )}
     </Modal>
   );
 }

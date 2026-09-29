@@ -7,6 +7,7 @@ import { timeAgo, shortDate } from '../lib/format';
 import { Button, Card, Avatar, EmptyState, cx, useAct, useCopy } from '../components/ui';
 import { PostModal, CollabModal, ReportModal } from '../components/forms';
 import { useChat } from '../components/Shell';
+import { appUrl } from '../lib/links';
 
 export function TopicChip({ topic }) {
   const t = topicById(topic);
@@ -93,7 +94,7 @@ export function PostCard({ p, full = false }) {
           <button onClick={() => setMenu(!menu)} aria-label="More" className="p-1.5 rounded-lg hover:bg-bronze-soft text-ink-muted"><MoreHorizontal size={18} /></button>
           {menu && (
             <div className="absolute right-0 top-9 z-20 w-44 bg-white border border-line rounded-xl shadow-lift p-1" onMouseLeave={() => setMenu(false)}>
-              <button onClick={() => { setMenu(false); copy(`${window.location.origin}${window.location.pathname}#/community/${p.id}`, 'Link copied'); }} className="w-full flex items-center gap-2 px-3 py-2 rounded-lg text-[13px] hover:bg-canvas"><Share2 size={14} />Copy link</button>
+              <button onClick={() => { setMenu(false); copy(appUrl(`/community/${p.id}`), 'Link copied'); }} className="w-full flex items-center gap-2 px-3 py-2 rounded-lg text-[13px] hover:bg-canvas"><Share2 size={14} />Copy link</button>
               {p.authorId !== me && <button onClick={() => { setMenu(false); need(() => setReporting(true)); }} className="w-full flex items-center gap-2 px-3 py-2 rounded-lg text-[13px] hover:bg-canvas"><Flag size={14} />Report post</button>}
             </div>
           )}

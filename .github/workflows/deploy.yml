@@ -25,6 +25,8 @@ jobs:
       - run: npm ci
       - name: Check matching quality
         run: npm run test:match
+      - name: Check collaboration flows
+        run: npm run test:flows
       - run: npm run build
       - run: touch dist/.nojekyll && cp dist/index.html dist/404.html
       - uses: peaceiris/actions-gh-pages@v4

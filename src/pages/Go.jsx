@@ -3,7 +3,7 @@ import { useParams, Link } from 'react-router-dom';
 import { actions } from '../lib/store';
 import { Logo } from '../components/visuals';
 
-// Tracking link: /#/go/CODE records a click for that creator, then forwards to the shop.
+// Tracking link: /go/CODE records a click for that creator, then forwards to the shop.
 export default function Go() {
   const { code } = useParams();
   const [state, setState] = useState({ status: 'loading' });

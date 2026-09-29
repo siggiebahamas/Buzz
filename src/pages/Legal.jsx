@@ -80,6 +80,8 @@ export function Footer() {
       <div className="max-w-6xl mx-auto px-4 sm:px-6 py-8 flex flex-col sm:flex-row gap-3 sm:items-center justify-between text-[13px] text-ink-muted">
         <span>© {new Date().getFullYear()} Buzz · Made in the Philippines</span>
         <nav className="flex flex-wrap gap-x-5 gap-y-2">
+          <Link to="/pricing" className="hover:text-ink">Pricing</Link>
+          <Link to="/help" className="hover:text-ink">Help center</Link>
           <Link to="/terms" className="hover:text-ink">Terms</Link>
           <Link to="/privacy" className="hover:text-ink">Privacy</Link>
           <Link to="/community" className="hover:text-ink">Community</Link>

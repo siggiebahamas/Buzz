@@ -6,7 +6,7 @@ import { categoryById, PLATFORMS } from '../lib/constants';
 import { shortDate, peso } from '../lib/format';
 import { earnLabel, payBreakdown, giftLabel } from '../lib/pay';
 import { matchScore } from '../lib/match';
-import { ProductImage, OpportunityCard, FitChecks } from '../components/visuals';
+import { ProductImage, OpportunityCard, FitChecks, ShareMenu } from '../components/visuals';
 import { Button, Card, Badge, Avatar, cx, useToast, useCopy } from '../components/ui';
 import { ApplyModal, ReportModal } from '../components/forms';
 import { useChat } from '../components/Shell';
@@ -152,7 +152,7 @@ export default function OpportunityDetail() {
               <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-2">
                 <Button variant="outline" onClick={() => need(() => actions.toggleSave('campaign', c.id))}><Bookmark size={15} className={saved ? 'fill-brand text-brand' : ''} />{saved ? 'Saved' : 'Save'}</Button>
                 {!isOwner ? <Button variant="outline" onClick={() => need(() => chat.open(owner.id, c.id))}><MessageCircle size={15} />Ask</Button> : <span />}
-                <Button variant="outline" onClick={() => copy(window.location.href, 'Link copied')}><Share2 size={15} />Share</Button>
+                <ShareMenu path={`/opportunity/${c.id}`} text={`${c.title} on Buzz: ${earnLabel(c)}.`} />
               </div>
               <p className="text-[12px] text-ink-muted text-center flex items-center justify-center gap-1"><Clock size={12} />Posted {shortDate(c.createdAt)}{!isOwner && <> · <button onClick={() => need(() => setReporting(true))} className="inline-flex items-center gap-1 hover:text-ink"><Flag size={12} />Report</button></>}</p>
               {['flat', 'hybrid'].includes(c.compensation) && <p className="text-[12px] text-emerald-700 bg-emerald-50 rounded-lg p-2 flex gap-1.5"><ShieldCheck size={14} className="shrink-0 mt-px" />Fees are paid through Buzz escrow and released when your content is approved.</p>}

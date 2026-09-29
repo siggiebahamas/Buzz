@@ -4,6 +4,7 @@ import { ShieldAlert, Users, Store, MessageSquare, BadgeCheck, Ban, Star, Trash2
 import { useDB, userById, campaignById, actions, isAdmin, displayName, walletOf, reactionTotal } from '../lib/store';
 import { peso, timeAgo, compact } from '../lib/format';
 import { dailyPicksStatus, DAILY_PICKS_THRESHOLD } from '../lib/discover';
+import { HealthPanel, VerificationsPanel, ApprovalsPanel, DisputesPanel, ConciergePanel, SupportPanel } from './AdminPanels';
 import { Card, Button, Badge, Avatar, Segmented, EmptyState, IconTile, useAct, useConfirm, cx } from '../components/ui';
 
 function target(d, r) {
@@ -17,7 +18,7 @@ export default function Admin() {
   const d = useDB();
   const act = useAct();
   const ask = useConfirm();
-  const [tab, setTab] = useState('reports');
+  const [tab, setTab] = useState('health');
   const [q, setQ] = useState('');
   if (!isAdmin(d)) return <Navigate to="/" replace />;
 
@@ -46,13 +47,21 @@ export default function Admin() {
 
   return (
     <main className="max-w-6xl mx-auto px-4 sm:px-6 py-8 sm:py-10">
-      <div className="flex flex-wrap items-end justify-between gap-4">
+      <div className="flex flex-col gap-4">
         <div>
           <p className="text-[12px] font-semibold uppercase tracking-wider text-brand-dark">Admin</p>
           <h1 className="text-[28px] font-bold">Trust & Safety</h1>
           <p className="text-ink-muted">Review reports, verify people and keep fake listings off Buzz.</p>
         </div>
-        <Segmented value={tab} onChange={setTab} size="sm" options={[{ id: 'reports', label: `Reports · ${open.length}` }, { id: 'users', label: 'Users' }, { id: 'listings', label: 'Listings' }, { id: 'posts', label: 'Posts' }, { id: 'features', label: 'Features' }]} />
+        <Segmented value={tab} onChange={setTab} size="sm" options={[
+          { id: 'health', label: 'Health' },
+          { id: 'reports', label: `Reports · ${open.length}` },
+          { id: 'verify', label: `Verify · ${d.verifications.filter((v) => v.status === 'pending').length}` },
+          { id: 'approvals', label: `Creators · ${d.users.filter((u) => u.creator && u.approved === false).length}` },
+          { id: 'disputes', label: `Disputes · ${d.disputes.filter((x) => x.status !== 'resolved').length}` },
+          { id: 'concierge', label: `Hand-pick · ${d.concierge.filter((x) => x.status === 'open').length}` },
+          { id: 'support', label: `Support · ${d.tickets.filter((t) => t.status === 'open').length}` },
+          { id: 'users', label: 'Users' }, { id: 'listings', label: 'Listings' }, { id: 'posts', label: 'Posts' }, { id: 'features', label: 'Features' }]} />
       </div>
       <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-5 gap-3 mt-6">
         {stats.map(([Icon, v, l, tone]) => (
@@ -60,13 +69,19 @@ export default function Admin() {
         ))}
       </div>
 
-      {tab !== 'reports' && (
+      {['users', 'listings', 'posts'].includes(tab) && (
         <div className="relative mt-6 max-w-md">
           <Search size={16} className="absolute left-3 top-1/2 -translate-y-1/2 text-ink-muted" />
           <input id="admin-search" value={q} onChange={(e) => setQ(e.target.value)} placeholder="Search" className="w-full h-10 pl-9 pr-3 rounded-xl border border-line-strong bg-white text-sm focus:outline-none focus:border-brand" />
         </div>
       )}
 
+      {tab === 'health' && <HealthPanel />}
+      {tab === 'verify' && <VerificationsPanel />}
+      {tab === 'approvals' && <ApprovalsPanel />}
+      {tab === 'disputes' && <DisputesPanel />}
+      {tab === 'concierge' && <ConciergePanel />}
+      {tab === 'support' && <SupportPanel />}
       {tab === 'reports' && (
         <div className="space-y-3 mt-6">
           {d.reports.length === 0 && <Card><EmptyState icon={ShieldAlert} title="No reports" /></Card>}

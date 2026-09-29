@@ -2,6 +2,9 @@ import { useRef, useState } from 'react';
 import { Link } from 'react-router-dom';
 import { Upload, Plus, Trash2, ExternalLink } from 'lucide-react';
 import { useDB, actions } from '../../lib/store';
+import { peso } from '../../lib/format';
+import { tierBenchmark } from '../../lib/match';
+import { Lightbulb, Truck } from 'lucide-react';
 import { CATEGORIES, PLATFORMS, REGIONS } from '../../lib/constants';
 import { Card, Field, Input, Textarea, Select, Button, Avatar, Checkbox, cx, useAct } from '../../components/ui';
 import { useMode, PageHead } from './Layout';
@@ -32,13 +35,15 @@ export default function MyProfile() {
   const [hasBiz, setHasBiz] = useState(!!me.business);
   const [biz, setBiz] = useState(me.business || { name: '', type: '', category: 'food', website: '', shopUrl: '' });
   const [hasCr, setHasCr] = useState(!!me.creator);
+  const d = useDB();
+  const [ship, setShip] = useState(me.shipping || { name: me.name, phone: '', address: '', city: me.location || '' });
   const [cr, setCr] = useState(me.creator || { handle: '', niches: ['food'], platforms: [{ id: 'instagram', followers: 0 }], engagement: 0, rates: { reel: 0, post: 0, story: 0 }, audience: '' });
 
   const save = (e) => {
     e.preventDefault();
     if (!hasBiz && !hasCr) return act(() => { throw new Error('Keep at least one profile: creator or business.'); });
     act(() => actions.updateProfile({
-      base,
+      base: { ...base, shipping: ship },
       business: hasBiz ? biz : null,
       creator: hasCr ? { ...cr, engagement: Number(cr.engagement) || 0, platforms: cr.platforms.map((p) => ({ ...p, followers: Number(p.followers) || 0 })), rates: Object.fromEntries(Object.entries(cr.rates).map(([k, v]) => [k, Number(v) || 0])) } : null,
     }), 'Profile saved');
@@ -99,6 +104,7 @@ export default function MyProfile() {
                   <Field key={k} label={l}><Input type="number" min="0" value={cr.rates[k]} onChange={(e) => setCr({ ...cr, rates: { ...cr.rates, [k]: e.target.value } })} /></Field>
                 ))}
               </div>
+              <RateGuide d={d} me={me} cr={cr} />
               <Field label="Who is your audience?"><Input value={cr.audience} onChange={(e) => setCr({ ...cr, audience: e.target.value })} placeholder="Women 18–34, Metro Manila" /></Field>
             </div>
           )}
@@ -115,8 +121,45 @@ export default function MyProfile() {
             </div>
           )}
         </Card>
+        {hasCr && (
+          <Card className="p-6">
+            <p className="font-semibold flex items-center gap-2"><Truck size={17} className="text-brand-dark" />Shipping address for samples</p>
+            <p className="text-[12.5px] text-ink-muted mt-0.5">Private. Only shared with a brand after you're accepted to a campaign that ships you a product.</p>
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 mt-4">
+              <Field label="Receiver name"><Input value={ship.name} onChange={(e) => setShip({ ...ship, name: e.target.value })} /></Field>
+              <Field label="Mobile number"><Input value={ship.phone} onChange={(e) => setShip({ ...ship, phone: e.target.value })} placeholder="0917 123 4567" /></Field>
+              <Field label="House no., street, barangay" className="sm:col-span-2"><Input value={ship.address} onChange={(e) => setShip({ ...ship, address: e.target.value })} /></Field>
+              <Field label="City / municipality, province"><Input value={ship.city} onChange={(e) => setShip({ ...ship, city: e.target.value })} /></Field>
+            </div>
+          </Card>
+        )}
         <Button type="submit" size="lg" className="w-full">Save Profile</Button>
       </form>
     </>
+  );
+}
+
+// What similar creators charge, so small creators don't undersell and big ones don't price out.
+function RateGuide({ d, me, cr }) {
+  const followers = (cr.platforms || []).reduce((a, p) => a + (Number(p.followers) || 0), 0);
+  if (!followers) return null;
+  const { tier } = tierBenchmark(followers);
+  const peers = d.users.filter((u) => u.id !== me.id && u.creator?.rates?.reel && tierBenchmark(u.creator.platforms.reduce((a, p) => a + p.followers, 0)).tier === tier);
+  const niche = peers.filter((u) => u.creator.niches.some((n) => (cr.niches || []).includes(n)));
+  const pool = niche.length >= 3 ? niche : peers;
+  if (pool.length < 3) return null;
+  const rates = pool.map((u) => u.creator.rates.reel).sort((a, b) => a - b);
+  const q = (p) => rates[Math.min(rates.length - 1, Math.floor(p * (rates.length - 1)))];
+  const low = q(0.25);
+  const mid = q(0.5);
+  const high = q(0.75);
+  const mine = Number(cr.rates?.reel) || 0;
+  const tip = !mine ? 'Add a Reel rate so brands can see if you fit their budget.' : mine < low * 0.8 ? 'You may be undercharging. Brands on Buzz pay more for creators like you.' : mine > high * 1.25 ? 'You\'re priced above most similar creators, so you\'ll match fewer small-brand budgets.' : 'Your rate is in the normal range for creators like you.';
+  return (
+    <div className="rounded-xl bg-brand-softer border border-[#F6DDB2] p-3.5 text-[13px]">
+      <p className="font-semibold flex items-center gap-1.5"><Lightbulb size={15} className="text-brand-dark" />Rate guide for {tier} {niche.length >= 3 ? 'creators in your niche' : 'creators'} ({pool.length} on Buzz)</p>
+      <p className="mt-1">Most charge <b>{peso(low)}–{peso(high)}</b> per Reel or TikTok (typical: {peso(mid)}).</p>
+      <p className="text-ink-soft mt-0.5">{tip}</p>
+    </div>
   );
 }

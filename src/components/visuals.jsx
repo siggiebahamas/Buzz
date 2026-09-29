@@ -1,12 +1,13 @@
 import { useState } from 'react';
 import { Link } from 'react-router-dom';
-import { ImagePlus, ChevronLeft, ChevronRight, Bookmark, Star, MapPin, Users, BadgeCheck, Check, Minus, ChevronRight as Chev } from 'lucide-react';
+import { ImagePlus, ChevronLeft, ChevronRight, Bookmark, Star, MapPin, Users, BadgeCheck, Check, Minus, Share2, ChevronRight as Chev } from 'lucide-react';
 import { CATEGORIES, categoryById, PLATFORMS } from '../lib/constants';
 import { budgetLabel, compact } from '../lib/format';
 import { useDB, userById, applicantsCount, isSaved, actions, brandName, followersOf, ratingOf } from '../lib/store';
 import { matchScore } from '../lib/match';
 import { earnLabel, deliverableSummary } from '../lib/pay';
-import { Avatar, Badge, cx } from './ui';
+import { Avatar, Badge, Button, cx, useCopy } from './ui';
+import { appUrl } from '../lib/links';
 
 export function Logo({ className }) {
   return (
@@ -264,5 +265,24 @@ export function CreatorRow({ user, forCampaign }) {
       </div>
       <Chev size={18} className="text-ink-muted" />
     </Link>
+  );
+}
+
+// Share a page the way Filipinos share: Facebook, Messenger/Viber (copy a message), or a plain link.
+export function ShareMenu({ path, text, className }) {
+  const [open, setOpen] = useState(false);
+  const copy = useCopy();
+  const url = appUrl(path);
+  return (
+    <div className={cx('relative', className)}>
+      <Button variant="outline" className="w-full" onClick={() => setOpen(!open)}><Share2 size={15} />Share</Button>
+      {open && (
+        <div className="absolute right-0 bottom-12 z-30 w-60 bg-white border border-line rounded-xl shadow-lift p-1" onMouseLeave={() => setOpen(false)}>
+          <a href={`https://www.facebook.com/sharer/sharer.php?u=${encodeURIComponent(url)}`} target="_blank" rel="noreferrer" onClick={() => setOpen(false)} className="flex items-center gap-2 px-3 py-2 rounded-lg text-[13.5px] hover:bg-canvas">Share on Facebook</a>
+          <button onClick={() => { copy(`${text} ${url}`, 'Message copied. Paste it in Messenger or Viber.'); setOpen(false); }} className="w-full text-left flex items-center gap-2 px-3 py-2 rounded-lg text-[13.5px] hover:bg-canvas">Copy for Messenger / Viber</button>
+          <button onClick={() => { copy(url, 'Link copied'); setOpen(false); }} className="w-full text-left flex items-center gap-2 px-3 py-2 rounded-lg text-[13.5px] hover:bg-canvas">Copy link</button>
+        </div>
+      )}
+    </div>
   );
 }

@@ -1,5 +1,5 @@
 import { useState } from 'react';
-import { Link, useLocation, useNavigate } from 'react-router-dom';
+import { Link, useLocation, useNavigate, useSearchParams } from 'react-router-dom';
 import { Megaphone, Store, MailCheck } from 'lucide-react';
 import { useDB, actions, userById, displayName } from '../lib/store';
 import { CATEGORIES, PLATFORMS, REGIONS } from '../lib/constants';
@@ -103,11 +103,12 @@ export function Reset() {
 
 export function Signup() {
   const nav = useNavigate();
+  const [params] = useSearchParams();
   const act = useAct();
   const [role, setRole] = useState(null);
   const [agree, setAgree] = useState(false);
   const [err, setErr] = useState('');
-  const [f, setF] = useState({ name: '', email: '', password: '', region: 'Metro Manila', location: '', businessName: '', businessType: '', category: 'food', handle: '', niche: 'food', platform: 'instagram', followers: '' });
+  const [f, setF] = useState({ referral: params.get('ref') || '', name: '', email: '', password: '', region: 'Metro Manila', location: '', businessName: '', businessType: '', category: 'food', handle: '', niche: 'food', platform: 'instagram', followers: '' });
   const set = (k, v) => { setF((x) => ({ ...x, [k]: v })); setErr(''); };
   const submit = (e) => {
     e.preventDefault();
@@ -157,6 +158,7 @@ export function Signup() {
               </div>
             </>
           )}
+          <Field label="Referral code (optional)" hint={f.referral ? 'You and your friend each get ₱200 credit after your first paid collaboration.' : ''}><Input id="su-ref" value={f.referral} onChange={(e) => set('referral', e.target.value.toUpperCase())} /></Field>
           <div className="rounded-xl bg-canvas p-3">
             <Checkbox checked={agree} onChange={(v) => { setAgree(v); setErr(''); }}
               label={<>I agree to the <Link to="/terms" target="_blank" className="text-brand-dark underline">Terms of Service</Link> and <Link to="/privacy" target="_blank" className="text-brand-dark underline">Privacy Policy</Link></>}

@@ -1,11 +1,11 @@
 // Single local data store. Everything the app reads or writes goes through here,
 // so swapping localStorage for a real backend later only touches this file.
 import { useSyncExternalStore } from 'react';
-import { buildSeed, hashPw, SERVICE_FEE } from './seed';
+import { buildSeed, hashPw, SERVICE_FEE, contractTerms } from './seed';
 import { uid, DAY, peso } from './format';
 import { rankCreators } from './match';
 
-const KEY = 'buzz-db-v6';
+const KEY = 'buzz-db-v7';
 const listeners = new Set();
 
 function load() {
@@ -13,7 +13,7 @@ function load() {
     const raw = localStorage.getItem(KEY);
     if (raw) {
       const parsed = JSON.parse(raw);
-      if (parsed?.version === 6) return parsed;
+      if (parsed?.version === 7) return parsed;
     }
   } catch { /* storage blocked or corrupt: fall through to fresh seed */ }
   return buildSeed();
@@ -29,7 +29,7 @@ function save() {
   }
 }
 
-function commit(fn) {
+export function commit(fn) {
   const next = structuredClone(db);
   const result = fn(next);
   db = next;
@@ -53,7 +53,7 @@ export const campaignById = (d, id) => d.campaigns.find((c) => c.id === id);
 export const membersOf = (d, cid) => d.applications.filter((a) => a.campaignId === cid && a.status === 'accepted').map((a) => a.creatorId);
 export const applicantsCount = (d, cid) => d.applications.filter((a) => a.campaignId === cid).length;
 export const isSaved = (d, kind, refId) => d.saved.some((s) => s.userId === d.session.userId && s.kind === kind && s.refId === refId);
-export const creators = (d) => d.users.filter((u) => u.creator && !u.suspended);
+export const creators = (d) => d.users.filter((u) => u.creator && !u.suspended && u.approved !== false);
 export const liveCampaigns = (d) => d.campaigns.filter((c) => c.published && !c.removed && !userById(d, c.ownerId)?.suspended);
 export const isAdmin = (d) => !!currentUser(d)?.admin;
 export const walletOf = (d, userId) => {
@@ -63,6 +63,7 @@ export const walletOf = (d, userId) => {
   return { txs: txs.sort((a, b) => b.ts - a.ts), balance, held };
 };
 export { SERVICE_FEE };
+export const feeRate = (u) => (u?.plan === 'pro' ? 0.03 : SERVICE_FEE);
 export const brandName = (u) => u?.business?.name || u?.name || 'Unknown';
 export const displayName = (u) => (u?.business && !u.creator ? u.business.name : u?.name) || 'Unknown';
 export const ratingOf = (d, userId) => {
@@ -73,20 +74,20 @@ export const followersOf = (u) => (u?.creator?.platforms || []).reduce((a, p) =>
 
 const EMAIL_TOPIC = (link) => (link.includes('collaborations') ? 'apps' : link.includes('deliverables') ? 'deliverables' : link.includes('analytics') || link.includes('payments') ? 'sales' : link.includes('community') ? 'community' : 'apps');
 
-function email(d, userId, subject, body, link) {
+export function email(d, userId, subject, body, link) {
   const u = userById(d, userId);
   if (!u) return;
   d.emails.unshift({ id: uid('eml'), userId, to: u.email, subject, body, link, ts: Date.now() });
 }
 
-function notify(d, userId, text, link) {
+export function notify(d, userId, text, link) {
   if (!userId) return;
   d.notifications.unshift({ id: uid('ntf'), userId, text, link, ts: Date.now(), read: false });
   const prefs = userById(d, userId)?.settings?.notif;
   if (prefs?.email && prefs[EMAIL_TOPIC(link)] !== false) email(d, userId, text, `${text}\n\nOpen Buzz to take action.`, link);
 }
 
-function threadFor(d, a, b, campaignId = null) {
+export function threadFor(d, a, b, campaignId = null) {
   let t = d.threads.find((x) => x.participants.includes(a) && x.participants.includes(b) && (x.campaignId || null) === campaignId);
   if (!t) {
     t = { id: uid('thr'), participants: [a, b], campaignId, messages: [], lastRead: { [a]: Date.now(), [b]: 0 } };
@@ -95,7 +96,7 @@ function threadFor(d, a, b, campaignId = null) {
   return t;
 }
 
-function pushMessage(d, t, from, body) {
+export function pushMessage(d, t, from, body) {
   t.messages.push({ id: uid('msg'), from, body, ts: Date.now() });
   t.lastRead[from] = Date.now();
 }
@@ -152,13 +153,17 @@ export const actions = {
     save();
     listeners.forEach((l) => l());
   },
-  signup({ password, name, email, role, location, region, businessName, businessType, category, handle, niche, platform, followers }) {
+  signup({ referral, password, name, email: emailAddr, role, location, region, businessName, businessType, category, handle, niche, platform, followers }) {
     return commit((d) => {
-      if (d.users.some((u) => u.email.toLowerCase() === email.toLowerCase())) throw new Error('An account with this email already exists.');
+      const email_ = emailAddr.trim();
+      if (d.users.some((u) => u.email.toLowerCase() === email_.toLowerCase())) throw new Error('An account with this email already exists.');
       const u = {
-        id: uid('u'), name, email, color: '#F59E0B', photo: null, location: location || '', region: region || 'Metro Manila',
+        id: uid('u'), name, email: email_, color: '#F59E0B', photo: null, location: location || '', region: region || 'Metro Manila',
         joinedAt: Date.now(), bio: '', primary: role, pw: hashPw(password || ''), verified: false, suspended: false, admin: false,
         settings: { notif: { apps: true, deliverables: true, sales: true, community: false, email: true }, privacy: { public: true, showEarnings: false, showRates: true } },
+        plan: 'free', refCode: `${name.split(' ')[0].toUpperCase().replace(/[^A-Z]/g, '')}${Math.floor(10 + Math.random() * 89)}`,
+        referredBy: referral ? (d.users.find((x) => x.refCode === referral.trim().toUpperCase())?.id || null) : null, referralPaid: false,
+        approved: !(role === 'creator' && d.flags?.requireCreatorApproval),
         business: role === 'business' ? { name: businessName || name, type: businessType || '', category: category || 'fashion', website: '', shopUrl: '', tagline: businessType || '' } : null,
         creator: role === 'creator' ? {
           handle: (handle || name).replace(/^@/, '').replace(/\s+/g, '').toLowerCase(), niches: [niche || 'food'], engagement: 0,
@@ -168,6 +173,7 @@ export const actions = {
       d.users.push(u);
       d.session = { userId: u.id, mode: role };
       notify(d, u.id, 'Welcome to Buzz! Complete your profile to get better matches.', '/workspace/profile');
+      if (!u.approved) notify(d, u.id, 'Your creator profile is in review. We check every creator so brands can trust Buzz. It usually takes a day.', '/workspace/verification');
       email(d, u.id, 'Welcome to Buzz', `Hi ${name.split(' ')[0]}, your account is ready. Complete your profile so we can match you with the right ${role === 'creator' ? 'brands' : 'creators'}.`, '/workspace/profile');
       return u.id;
     });
@@ -193,8 +199,11 @@ export const actions = {
         Object.assign(c, data);
         return c.id;
       }
+      const owner = currentUser(d);
+      const active = d.campaigns.filter((x) => x.ownerId === owner.id && x.published && !x.removed && x.status !== 'completed').length;
+      if (data.published !== false && owner.plan !== 'pro' && active >= 2) throw new Error('The Free plan includes 2 active listings. Complete one, save this as private, or upgrade to Pro.');
       const c = {
-        id: uid('cmp'), ownerId: d.session.userId, createdAt: Date.now(), views: 0, status: 'recruiting', published: true,
+        id: uid('cmp'), ownerId: d.session.userId, needsShipping: data.type === 'Product' && data.compensation !== 'commission', createdAt: Date.now(), views: 0, status: 'recruiting', published: true,
         photoHints: [], shopUrl: '', contentRights: '90 days', region: currentUser(d).region, aov: 0,
         promo: (data.productName || 'BUZZ').split(' ')[0].toUpperCase().replace(/[^A-Z]/g, '').slice(0, 6) || 'BUZZ',
         ...data,
@@ -218,15 +227,15 @@ export const actions = {
   },
   // Content awaiting approval for 7+ days is approved automatically (see Terms).
   sweep() {
-    const due = db.deliverables.filter((x) => x.status === 'submitted' && x.submittedAt < Date.now() - 7 * DAY);
+    const due = db.deliverables.filter((x) => x.status === 'submitted' && !x.frozen && x.submittedAt < Date.now() - 7 * DAY);
     if (!due.length) return;
     commit((d) => {
-      d.deliverables.filter((x) => x.status === 'submitted' && x.submittedAt < Date.now() - 7 * DAY).forEach((x) => {
+      d.deliverables.filter((x) => x.status === 'submitted' && !x.frozen && x.submittedAt < Date.now() - 7 * DAY).forEach((x) => {
         x.status = 'approved';
         x.approvedAt = Date.now();
         x.note = 'Approved automatically after 7 days without a response.';
         notify(d, campaignById(d, x.campaignId).ownerId, `"${x.title}" was approved automatically after 7 days`, '/workspace/deliverables');
-        if (x.escrow === 'held') release(d, x);
+        if (x.escrow === 'held' && !x.frozen) release(d, x);
       });
     });
   },
@@ -295,6 +304,15 @@ export const actions = {
           }
         });
         if (c.status === 'recruiting') c.status = 'active';
+        // Every collaboration gets a written agreement both sides sign.
+        if (!d.contracts.some((k) => k.applicationId === a.id)) {
+          d.contracts.unshift({ id: uid('ctr'), applicationId: a.id, campaignId: c.id, brandId: c.ownerId, creatorId: a.creatorId, createdAt: Date.now(), terms: contractTerms(c, a, userById(d, c.ownerId), creator), brandSignedAt: null, brandSignName: '', creatorSignedAt: null, creatorSignName: '' });
+          notify(d, c.ownerId, `Sign the agreement with ${creator.name} for ${c.productName}`, '/workspace/contracts');
+          notify(d, a.creatorId, `Sign your agreement with ${displayName(userById(d, c.ownerId))} for ${c.productName}`, '/workspace/contracts');
+        }
+        if (c.needsShipping && !d.shipments.some((x) => x.campaignId === c.id && x.creatorId === a.creatorId)) {
+          d.shipments.unshift({ id: uid('shp'), campaignId: c.id, creatorId: a.creatorId, courier: '', tracking: '', status: 'to_ship', shippedAt: null, deliveredAt: null });
+        }
       }
       const actor = d.session.userId;
       const other = actor === a.creatorId ? c.ownerId : a.creatorId;
@@ -329,7 +347,7 @@ export const actions = {
       x.note = note;
       if (approve) x.approvedAt = Date.now();
       notify(d, x.creatorId, approve ? `"${x.title}" was approved` : `Revision requested on "${x.title}"`, '/workspace/deliverables');
-      if (approve && x.escrow === 'held') release(d, x);
+      if (approve && x.escrow === 'held' && !x.frozen) release(d, x);
     });
   },
   markPaid(id) {
@@ -348,7 +366,7 @@ export const actions = {
       const me = d.session.userId;
       list.forEach((x) => {
         x.escrow = 'held';
-        d.transactions.push({ id: uid('tx'), userId: me, type: 'fund', amount: -Math.round(x.fee * (1 + SERVICE_FEE)), ts: Date.now(), ref: x.id, note: `Escrow for ${x.title} via ${method}` });
+        d.transactions.push({ id: uid('tx'), userId: me, type: 'fund', amount: -Math.round(x.fee * (1 + feeRate(currentUser(d)))), ts: Date.now(), ref: x.id, note: `Escrow for ${x.title} via ${method}` });
         notify(d, x.creatorId, `${peso(x.fee)} for "${x.title}" is now secured in escrow`, '/workspace/payments');
         if (x.status === 'approved') release(d, x);
       });
@@ -519,7 +537,7 @@ export const actions = {
   },
 };
 
-function release(d, x) {
+export function release(d, x) {
   x.escrow = 'released';
   x.paidAt = Date.now();
   d.transactions.push({ id: uid('tx'), userId: x.creatorId, type: 'release', amount: x.fee, ts: Date.now(), ref: x.id, note: `Payment released: ${x.title}` });

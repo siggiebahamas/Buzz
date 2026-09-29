@@ -11,6 +11,8 @@ import { Card, Button, Badge, Avatar, IconTile, EmptyState, cx, useAct, useConfi
 import { CampaignForm, InviteModal, ReviewModal } from '../../components/forms';
 import { useChat } from '../../components/Shell';
 import { STATUS_TONE } from './shared';
+import { Truck, FileSignature, Sparkles as SparkIcon } from 'lucide-react';
+import { Modal, Field, Input, Select, Textarea } from '../../components/ui';
 import { trackingUrl } from './Campaigns';
 
 export default function CampaignManage() {
@@ -123,6 +125,8 @@ export default function CampaignManage() {
         <p className="text-[12px] text-ink-muted mt-3">Manage content and payments in <Link to="/workspace/deliverables" className="text-brand-dark">Deliverables</Link>. Log promo-code sales in <Link to="/workspace/analytics" className="text-brand-dark">Analytics</Link>.</p>
       </Card>
 
+      <CampaignOps c={c} accepted={accepted} />
+
       <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 mt-4">
         <Card className="p-5">
           <h2 className="font-bold text-[17px] mb-3">Applications {pending.length > 0 && <span className="text-brand-dark">({pending.length})</span>}</h2>
@@ -206,3 +210,87 @@ export default function CampaignManage() {
 const Stat = ({ icon, v, l }) => (
   <Card className="p-4 flex items-center gap-3"><IconTile icon={icon} /><div><p className="text-[18px] font-bold leading-tight">{v}</p><p className="text-[12px] text-ink-muted">{l}</p></div></Card>
 );
+
+const COURIERS = ['J&T Express', 'LBC', 'Lalamove', 'Grab Express', 'Ninja Van', 'Flash Express', '2GO', 'Other'];
+
+// Agreements, samples to ship and hand-picked creator requests for one campaign.
+function CampaignOps({ c, accepted }) {
+  const d = useDB();
+  const act = useAct();
+  const [ship, setShip] = useState(null);
+  const [handpick, setHandpick] = useState(false);
+  const [note, setNote] = useState('');
+  const contracts = d.contracts.filter((k) => k.campaignId === c.id);
+  const unsigned = contracts.filter((k) => !k.brandSignedAt || !k.creatorSignedAt);
+  const shipments = d.shipments.filter((x) => x.campaignId === c.id);
+  const request = d.concierge.find((x) => x.campaignId === c.id);
+  return (
+    <div className="grid grid-cols-1 lg:grid-cols-3 gap-4 mt-4">
+      <Card className="p-5">
+        <p className="font-bold flex items-center gap-2"><FileSignature size={16} className="text-brand-dark" />Agreements</p>
+        {contracts.length === 0 ? <p className="text-[13px] text-ink-muted mt-2">Created automatically when you accept a creator.</p> : (
+          <>
+            <p className="text-[13px] text-ink-soft mt-2">{contracts.length - unsigned.length} of {contracts.length} signed by both sides</p>
+            {unsigned.length > 0 && <Link to="/workspace/contracts" className="inline-block mt-3"><Button size="sm">Review & sign</Button></Link>}
+          </>
+        )}
+      </Card>
+      <Card className="p-5">
+        <p className="font-bold flex items-center gap-2"><Truck size={16} className="text-brand-dark" />Samples to ship</p>
+        {!c.needsShipping ? <p className="text-[13px] text-ink-muted mt-2">This campaign doesn't ship a product.</p> : shipments.length === 0 ? <p className="text-[13px] text-ink-muted mt-2">Accepted creators appear here with their address.</p> : (
+          <div className="mt-2 space-y-2">
+            {shipments.map((x) => {
+              const u = userById(d, x.creatorId);
+              return (
+                <div key={x.id} className="flex items-center gap-2 text-[13px]">
+                  <Avatar user={u} size={24} /><span className="flex-1 truncate">{u.name}</span>
+                  {x.status === 'to_ship' ? <Button size="sm" className="h-7 text-[12px]" onClick={() => setShip(x)}>Ship</Button>
+                    : <Badge tone={x.status === 'delivered' ? 'green' : 'blue'}>{x.status === 'delivered' ? 'Received' : `Shipped · ${x.courier}`}</Badge>}
+                </div>
+              );
+            })}
+          </div>
+        )}
+      </Card>
+      <Card className="p-5 bg-brand-softer border-[#F6DDB2]">
+        <p className="font-bold flex items-center gap-2"><SparkIcon size={16} className="text-brand-dark" />Hand-picked by Buzz</p>
+        {request ? (
+          <p className="text-[13px] mt-2">{request.status === 'open' ? 'Our team is picking creators for you. We usually reply within one working day.' : `We picked ${request.picks.length} creators and sent them invites.`}</p>
+        ) : (
+          <>
+            <p className="text-[13px] text-ink-soft mt-2">Not sure who to pick? Our team reviews the matches, checks each creator and invites the best ones for you.</p>
+            <Button size="sm" className="mt-3" onClick={() => setHandpick(true)}>Ask Buzz to pick</Button>
+          </>
+        )}
+      </Card>
+      {ship && <ShipModal x={ship} onClose={() => setShip(null)} />}
+      {handpick && (
+        <Modal open onClose={() => setHandpick(false)} title="Ask Buzz to hand-pick creators" subtitle={c.productName}>
+          <Field label="Anything we should know?"><Textarea value={note} onChange={(e) => setNote(e.target.value)} placeholder="e.g. We want creators who cook at home, not restaurant reviewers. Budget is firm." /></Field>
+          <p className="text-[12.5px] text-ink-muted mt-2">Free plan: 1 request. Pro: unlimited.</p>
+          <Button size="lg" className="w-full mt-4" onClick={() => { if (act(() => actions.requestConcierge(c.id, note), 'Request sent. We\'ll invite creators for you.')) setHandpick(false); }}>Send request</Button>
+        </Modal>
+      )}
+    </div>
+  );
+}
+
+function ShipModal({ x, onClose }) {
+  const d = useDB();
+  const act = useAct();
+  const u = userById(d, x.creatorId);
+  const [f, setF] = useState({ courier: COURIERS[0], tracking: '' });
+  const a = u.shipping;
+  return (
+    <Modal open onClose={onClose} title={`Ship to ${u.name}`}>
+      <div className="rounded-xl bg-canvas p-3 text-[13.5px]">
+        {a?.address ? <><p className="font-semibold">{a.name} · {a.phone}</p><p className="text-ink-soft">{a.address}, {a.city}</p></> : <p className="text-ink-muted">{u.name} hasn't added a shipping address yet. Message them for it.</p>}
+      </div>
+      <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 mt-4">
+        <Field label="Courier"><Select value={f.courier} onChange={(e) => setF({ ...f, courier: e.target.value })}>{COURIERS.map((c) => <option key={c}>{c}</option>)}</Select></Field>
+        <Field label="Tracking number"><Input value={f.tracking} onChange={(e) => setF({ ...f, tracking: e.target.value })} /></Field>
+      </div>
+      <Button size="lg" className="w-full mt-4" disabled={!f.tracking.trim()} onClick={() => { if (act(() => actions.updateShipment(x.id, { ...f, tracking: f.tracking.trim(), status: 'shipped' }), 'Marked as shipped. The creator was notified.')) onClose(); }}><Truck size={16} />Mark as shipped</Button>
+    </Modal>
+  );
+}

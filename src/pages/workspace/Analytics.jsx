@@ -1,13 +1,13 @@
 import { useState } from 'react';
 import { Link } from 'react-router-dom';
-import { CircleDollarSign, Wallet, TrendingUp, ShoppingBag, MousePointerClick, Percent, Sparkles, Clock, Receipt, Activity, CheckCircle2, Handshake, Plus, Info } from 'lucide-react';
+import { CircleDollarSign, Wallet, TrendingUp, ShoppingBag, MousePointerClick, Percent, Sparkles, Clock, Receipt, Activity, CheckCircle2, Handshake, Plus, Info, Upload } from 'lucide-react';
 import { useDB, userById, campaignById, brandName } from '../../lib/store';
 import { businessMetrics, creatorMetrics, getRange, series } from '../../lib/metrics';
 import { peso, compact, pct, shortDate } from '../../lib/format';
 import { PLATFORMS } from '../../lib/constants';
 import { Card, Button, Badge, Avatar, EmptyState } from '../../components/ui';
 import { LineChart, Funnel, Progress } from '../../components/charts';
-import { LogSaleModal } from '../../components/forms';
+import { LogSaleModal, ImportSalesModal } from '../../components/forms';
 import { useMode, ModeToggle, PageHead } from './Layout';
 import { PeriodPicker, Kpi, defaultCustom, STATUS_TONE } from './shared';
 
@@ -19,6 +19,7 @@ export default function Analytics() {
   const [period, setPeriod] = useState('quarter');
   const [custom, setCustom] = useState(defaultCustom);
   const [logging, setLogging] = useState(false);
+  const [importing, setImporting] = useState(false);
   const range = getRange(period, custom);
   const biz = mode === 'business';
   const m = biz ? businessMetrics(d, me.id, range) : creatorMetrics(d, me.id, range);
@@ -28,7 +29,7 @@ export default function Analytics() {
   return (
     <>
       <PageHead title="Analytics" sub={biz ? 'What your creator campaigns actually sell, and what they cost' : 'What your content earns and sells for brands'}
-        action={<><ModeToggle />{biz && <Button onClick={() => setLogging(true)} disabled={!m.links.length}><Plus size={16} />Log promo-code sale</Button>}</>} />
+        action={<><ModeToggle />{biz && <Button variant="outline" onClick={() => setImporting(true)} disabled={!m.links.length}><Upload size={16} />Import sales</Button>}{biz && <Button onClick={() => setLogging(true)} disabled={!m.links.length}><Plus size={16} />Log one sale</Button>}</>} />
       <div className="flex justify-end mb-5"><PeriodPicker period={period} setPeriod={setPeriod} custom={custom} setCustom={setCustom} /></div>
 
       {biz ? (
@@ -204,6 +205,7 @@ export default function Analytics() {
         Sales are credited when a buyer uses a creator's tracking link or promo code. Spend counts a fee when the brand approves the content, and commission when the sale happens. Engagement = (likes + comments + shares + saves) ÷ reach.
       </p>
       {logging && <LogSaleModal open links={m.links} onClose={() => setLogging(false)} />}
+      {importing && <ImportSalesModal onClose={() => setImporting(false)} />}
     </>
   );
 }

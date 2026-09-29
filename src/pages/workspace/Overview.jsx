@@ -30,15 +30,26 @@ export default function Overview() {
     [Rocket, 'Measure Results', 'See the clicks, sales and earnings your content drives.', 'View Analytics', '/workspace/analytics'],
   ];
 
-  const attention = biz ? [
+  const myCamps = new Set(d.campaigns.filter((c) => c.ownerId === me.id).map((c) => c.id));
+  const toSign = d.contracts.filter((k) => (biz ? k.brandId === me.id && !k.brandSignedAt : k.creatorId === me.id && !k.creatorSignedAt)).length;
+  const drafts = biz ? d.deliverables.filter((x) => myCamps.has(x.campaignId) && x.draft?.status === 'pending').length : d.deliverables.filter((x) => x.creatorId === me.id && x.draft?.status === 'changes').length;
+  const toShip = d.shipments.filter((x) => myCamps.has(x.campaignId) && x.status === 'to_ship').length;
+  const inTransit = d.shipments.filter((x) => x.creatorId === me.id && x.status === 'shipped').length;
+  const attention = (biz ? [
+    [toSign, 'agreements to sign', '/workspace/contracts'],
     [m.pendingApps, 'applications to review', '/workspace/collaborations'],
-    [m.toReview, 'deliverables to approve', '/workspace/deliverables'],
-    [m.owed ? peso(m.owed) : 0, 'owed to creators for approved work', '/workspace/deliverables'],
+    [drafts, 'drafts to review', '/workspace/deliverables'],
+    [m.toReview, 'posts to approve', '/workspace/deliverables'],
+    [toShip, 'samples to ship', '/workspace/campaigns'],
+    [m.owed ? peso(m.owed) : 0, 'owed for approved work', '/workspace/payments'],
   ] : [
+    [toSign, 'agreements to sign', '/workspace/contracts'],
     [m.invites, 'brand invites to answer', '/workspace/collaborations'],
+    [drafts, 'drafts with changes requested', '/workspace/deliverables'],
     [m.overdue, 'overdue deliverables', '/workspace/deliverables'],
-    [m.pendingPayout ? peso(m.pendingPayout) : 0, 'approved and waiting for payment', '/workspace/deliverables'],
-  ];
+    [inTransit, 'samples on the way', '/workspace/collaborations'],
+    [m.pendingPayout ? peso(m.pendingPayout) : 0, 'approved, waiting for payment', '/workspace/payments'],
+  ]);
 
   const kpis = biz ? [
     [CircleDollarSign, peso(m.cur.revenue, { compact: true }), 'Sales from creators', m.change.revenue],
@@ -78,8 +89,9 @@ export default function Overview() {
 
       <div className="mt-6 rounded-2xl bg-white border border-line px-5 py-3.5 flex flex-wrap items-center gap-x-6 gap-y-2">
         <span className="flex items-center gap-2 text-[13.5px] font-semibold"><AlertCircle size={17} className="text-brand-dark" />Needs your attention</span>
-        {attention.map(([v, l, to]) => (
-          <Link key={l} to={to} className={cx('text-[13.5px] hover:underline', v ? 'text-ink' : 'text-ink-faint')}><b>{v || 0}</b> {l}</Link>
+        {attention.filter(([v]) => v).length === 0 && <span className="text-[13.5px] text-emerald-700">You're all caught up.</span>}
+        {attention.filter(([v]) => v).map(([v, l, to]) => (
+          <Link key={l} to={to} className="text-[13.5px] text-ink hover:underline"><b>{v}</b> {l}</Link>
         ))}
       </div>
 

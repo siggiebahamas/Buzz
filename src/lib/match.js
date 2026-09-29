@@ -256,10 +256,13 @@ function qualityFactor(u, c) {
   const f = followersOn(u, c.platforms || []) || followersOn(u, []);
   const { tier, avg } = tierBenchmark(f);
   const eng = Number(u.creator.engagement) || 0;
-  const score = Math.max(0, Math.min(1, (eng / avg) * 0.6));
+  // Verified numbers count in full; self-reported ones are trusted a little less.
+  const trust = u.creator.statsVerified ? 1 : 0.85;
+  const score = Math.max(0, Math.min(1, (eng / avg) * 0.6)) * trust;
+  const tag = u.creator.statsVerified ? ' (verified)' : ' (self-reported)';
   const text = eng >= avg
-    ? { c: `Your ${eng}% engagement beats the ${avg}% typical for ${tier} creators`, b: `${eng}% engagement, above the ${avg}% typical for ${tier} creators` }
-    : { c: `Your ${eng}% engagement is under the ${avg}% typical for ${tier} creators`, b: `${eng}% engagement, under the ${avg}% typical for ${tier} creators` };
+    ? { c: `Your ${eng}% engagement beats the ${avg}% typical for ${tier} creators${u.creator.statsVerified ? '' : '. Verify your stats to rank higher'}`, b: `${eng}% engagement${tag}, above the ${avg}% typical for ${tier} creators` }
+    : { c: `Your ${eng}% engagement is under the ${avg}% typical for ${tier} creators`, b: `${eng}% engagement${tag}, under the ${avg}% typical for ${tier} creators` };
   return { score, status: eng >= avg ? 'good' : eng >= avg * 0.7 ? 'ok' : 'bad', text };
 }
 
@@ -283,11 +286,13 @@ function resultsFactor(u, c, ctx, brand) {
   }
   // Creator side: is this brand good to work with?
   const s = ctx?.brandStats[c.ownerId];
-  if (!s || (!s.reviews && !s.deliverables)) return { score: 0.6, status: 'ok', text: { c: 'New brand on Buzz: fees are still protected by escrow', b: '' }, fresh: true };
+  const brandVerified = ctx?.users[c.ownerId]?.business?.verified;
+  if (!s || (!s.reviews && !s.deliverables)) return { score: brandVerified ? 0.7 : 0.55, status: 'ok', text: { c: `New brand on Buzz${brandVerified ? ', verified business' : ''}: fees are still protected by escrow`, b: '' }, fresh: true };
   const ratingScore = s.rating != null ? (s.rating - 3) / 2 : 0.6;
   const payScore = s.funded ?? 0.6;
-  const score = Math.min(1, ratingScore * 0.5 + payScore * 0.5);
+  const score = Math.min(1, ratingScore * 0.45 + payScore * 0.45 + (brandVerified ? 0.1 : 0));
   const bits = [];
+  if (brandVerified) bits.push('verified business');
   if (s.rating != null) bits.push(`${s.rating.toFixed(1)}★ from ${s.reviews} creator${s.reviews > 1 ? 's' : ''}`);
   if (s.funded != null) bits.push(`funds ${Math.round(s.funded * 100)}% of fees in escrow`);
   return { score, status: score >= 0.7 ? 'good' : score >= 0.45 ? 'ok' : 'bad', text: { c: `Good brand to work with: ${bits.join(' · ') || 'no issues reported'}`, b: '' } };

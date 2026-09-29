@@ -1,6 +1,7 @@
 import { useState } from 'react';
 import { NavLink, Outlet } from 'react-router-dom';
-import { LayoutGrid, UserRound, Briefcase, Handshake, ListChecks, BarChart3, MessageSquare, Bookmark, Settings, HelpCircle, Wallet } from 'lucide-react';
+import { LayoutGrid, UserRound, Briefcase, Handshake, ListChecks, BarChart3, MessageSquare, Bookmark, Settings, HelpCircle, Wallet, FileSignature, Scale, BadgeCheck, Gift, Library } from 'lucide-react';
+import { Link } from 'react-router-dom';
 import { useDB, currentUser, unreadCount, actions } from '../../lib/store';
 import { Avatar, Segmented, Modal, cx } from '../../components/ui';
 
@@ -31,7 +32,7 @@ export function PageHead({ title, sub, action }) {
 }
 
 const FAQ = [
-  ['How do tracking links work?', 'Every accepted creator gets a link like buzz/#/go/CODE. Each visit counts as a click, then forwards to the brand\'s shop. Sales come from the link or from the matching promo code, which the brand logs in Analytics.'],
+  ['How do tracking links work?', 'Every accepted creator gets a link like buzz/go/CODE. Each visit counts as a click, then forwards to the brand\'s shop. Sales come from the link or from the matching promo code, which the brand logs in Analytics.'],
   ['How is Match % calculated?', 'Niche fit (40), platforms (20), rate vs. budget (20), location (10) and engagement (10). Hover any match % to see the breakdown.'],
   ['What is ROAS?', 'Return on ad spend: attributed revenue ÷ what you spent on creators. 3.0× means every ₱1 spent brought back ₱3 in sales.'],
   ['How do payments work?', 'Brands pay each creator fee into Buzz escrow (plus a 5% service fee). The money is released to the creator\'s wallet the moment the brand approves the content, or automatically after 7 days without a response. Creators withdraw to GCash, Maya or a bank.'],
@@ -49,18 +50,34 @@ export default function WorkspaceLayout() {
   const dels = mode === 'business'
     ? d.deliverables.filter((x) => x.status === 'submitted' && d.campaigns.find((c) => c.id === x.campaignId)?.ownerId === me.id).length
     : d.deliverables.filter((x) => x.creatorId === me.id && ['todo', 'revision'].includes(x.status) && x.dueAt < Date.now() + 7 * 86400000).length;
-  const items = [
-    ['/workspace', 'Overview', LayoutGrid, 0, true],
-    ['/workspace/profile', 'My Profile', UserRound],
-    ['/workspace/campaigns', 'Campaigns', Briefcase],
-    ['/workspace/collaborations', 'Collaborations', Handshake, pendingApps],
-    ['/workspace/deliverables', 'Deliverables', ListChecks, dels],
-    ['/workspace/analytics', 'Analytics', BarChart3],
-    ['/workspace/payments', 'Payments', Wallet],
-    ['/workspace/messages', 'Messages', MessageSquare, unreadCount(d)],
-    ['/workspace/saved', 'Saved', Bookmark],
-    ['/workspace/settings', 'Settings', Settings],
-  ];
+  const toSign = d.contracts.filter((k) => (k.brandId === me.id && !k.brandSignedAt) || (k.creatorId === me.id && !k.creatorSignedAt)).length;
+  const openDisputes = d.disputes.filter((x) => (x.openedBy === me.id || x.againstId === me.id) && x.status !== 'resolved').length;
+  const hasDisputes = d.disputes.some((x) => x.openedBy === me.id || x.againstId === me.id);
+  const verified = mode === 'business' ? me.business?.verified : me.creator?.statsVerified;
+  const groups = [
+    ['Work', [
+      ['/workspace', 'Overview', LayoutGrid, 0, true],
+      ['/workspace/campaigns', 'Campaigns', Briefcase],
+      ['/workspace/collaborations', 'Collaborations', Handshake, pendingApps],
+      ['/workspace/deliverables', 'Deliverables', ListChecks, dels],
+      ['/workspace/contracts', 'Agreements', FileSignature, toSign],
+      ['/workspace/messages', 'Messages', MessageSquare, unreadCount(d)],
+      mode === 'business' && ['/workspace/library', 'Content library', Library],
+    ]],
+    ['Money & results', [
+      ['/workspace/analytics', 'Analytics', BarChart3],
+      ['/workspace/payments', 'Payments', Wallet],
+      hasDisputes && ['/workspace/disputes', 'Disputes', Scale, openDisputes],
+      ['/workspace/referrals', 'Invite & earn', Gift],
+    ]],
+    ['Account', [
+      ['/workspace/profile', 'My Profile', UserRound],
+      ['/workspace/verification', verified ? 'Verified' : 'Get verified', BadgeCheck, verified ? 0 : 0],
+      ['/workspace/saved', 'Saved', Bookmark],
+      ['/workspace/settings', 'Settings', Settings],
+    ]],
+  ].map(([g, list]) => [g, list.filter(Boolean)]);
+  const items = groups.flatMap(([, list]) => list);
   return (
     <div className="lg:flex min-h-[calc(100vh-64px)]">
       <div className="lg:hidden sticky top-16 z-20 bg-white border-b border-line overflow-x-auto">
@@ -75,21 +92,29 @@ export default function WorkspaceLayout() {
       </div>
       <div className="hidden lg:block w-[250px] shrink-0 bg-white border-r border-line">
       <aside className="flex flex-col sticky top-16 h-[calc(100vh-64px)]">
-        <nav className="p-3 space-y-0.5 flex-1">
-          {items.map(([to, label, Icon, badge, end]) => (
-            <NavLink key={to} to={to} end={end} className={({ isActive }) => cx('flex items-center gap-3 px-3.5 h-11 rounded-xl text-[15px] transition-colors', isActive ? 'bg-brand-soft text-ink font-medium' : 'text-ink-soft hover:bg-canvas')}>
-              <Icon size={18} strokeWidth={1.7} />{label}
-              {badge > 0 && <span className="ml-auto min-w-[20px] h-5 px-1.5 rounded-full bg-brand text-white text-[11px] font-bold grid place-items-center">{badge}</span>}
-            </NavLink>
+        <nav className="p-3 flex-1 overflow-y-auto">
+          {groups.map(([g, list]) => (
+            <div key={g} className="mb-3">
+              <p className="px-3.5 pt-2 pb-1 text-[10.5px] font-semibold uppercase tracking-[0.12em] text-ink-faint">{g}</p>
+              {list.map(([to, label, Icon, badge, end]) => (
+                <NavLink key={to} to={to} end={end} className={({ isActive }) => cx('flex items-center gap-3 px-3.5 h-10 rounded-xl text-[14.5px] transition-colors', isActive ? 'bg-brand-soft text-ink font-medium' : 'text-ink-soft hover:bg-canvas')}>
+                  <Icon size={17} strokeWidth={1.7} />{label}
+                  {badge > 0 && <span className="ml-auto min-w-[20px] h-5 px-1.5 rounded-full bg-brand text-white text-[11px] font-bold grid place-items-center">{badge}</span>}
+                </NavLink>
+              ))}
+            </div>
           ))}
         </nav>
         <div className="p-3 border-t border-line space-y-3">
-          <button onClick={() => setHelp(true)} className="w-full flex items-center gap-2 h-10 px-3 rounded-xl border border-line text-[13.5px] text-ink-soft hover:bg-canvas"><HelpCircle size={16} />Need Help?</button>
+          <div className="flex gap-2">
+            <button onClick={() => setHelp(true)} className="flex-1 flex items-center gap-2 h-10 px-3 rounded-xl border border-line text-[13.5px] text-ink-soft hover:bg-canvas"><HelpCircle size={16} />Quick help</button>
+            <Link to="/help" className="h-10 px-3 rounded-xl border border-line text-[13.5px] text-ink-soft hover:bg-canvas grid place-items-center">Support</Link>
+          </div>
           <div className="flex items-center gap-2.5 px-1">
             <Avatar user={me} size={34} />
             <div className="min-w-0">
               <p className="text-[13.5px] font-medium truncate">{me.name}</p>
-              <p className="text-[12px] text-ink-muted">{mode === 'creator' ? 'Influencer' : 'Business Owner'}</p>
+              <p className="text-[12px] text-ink-muted">{mode === 'creator' ? 'Influencer' : 'Business Owner'}{me.plan === 'pro' ? ' · Pro' : ''}</p>
             </div>
           </div>
         </div>

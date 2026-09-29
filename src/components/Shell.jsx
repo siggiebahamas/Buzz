@@ -1,6 +1,6 @@
 import { createContext, useContext, useEffect, useRef, useState } from 'react';
 import { NavLink, Link, useNavigate, useLocation } from 'react-router-dom';
-import { Bell, MessageCircle, X, Send, ArrowLeft, LogOut, RotateCcw, UserRound, Repeat, Search, ShieldAlert, Compass, Sparkles, Users, LayoutGrid } from 'lucide-react';
+import { Bell, MessageCircle, X, Send, ArrowLeft, LogOut, RotateCcw, UserRound, Repeat, Search, ShieldAlert, Smartphone, LifeBuoy, Sparkles as SparklesIcon, Compass, Sparkles, Users, LayoutGrid } from 'lucide-react';
 import { useDB, currentUser, userById, actions, unreadCount, displayName, campaignById } from '../lib/store';
 import { timeAgo } from '../lib/format';
 import { Logo } from './visuals';
@@ -62,6 +62,8 @@ function AccountMenu() {
   const [open, setOpen] = useState(false);
   const [switching, setSwitching] = useState(false);
   const ask = useConfirm();
+  const [installable, setInstallable] = useState(!!window.__buzzInstall);
+  useEffect(() => { const h = () => setInstallable(true); window.addEventListener('buzz-installable', h); return () => window.removeEventListener('buzz-installable', h); }, []);
   const [q, setQ] = useState('');
   const ref = useRef(null);
   useOutside(ref, () => { setOpen(false); setSwitching(false); });
@@ -81,6 +83,9 @@ function AccountMenu() {
           {!switching ? (
             <div className="p-1.5">
               <MenuItem icon={UserRound} onClick={() => { setOpen(false); nav(`/profile/${me.id}`); }}>View public profile</MenuItem>
+              {installable && <MenuItem icon={Smartphone} onClick={() => { window.__buzzInstall?.prompt(); setInstallable(false); setOpen(false); }}>Install the Buzz app</MenuItem>}
+              <MenuItem icon={SparklesIcon} onClick={() => { setOpen(false); nav('/pricing'); }}>{me.plan === 'pro' ? 'Your plan: Pro' : 'Upgrade to Pro'}</MenuItem>
+              <MenuItem icon={LifeBuoy} onClick={() => { setOpen(false); nav('/help'); }}>Help & support</MenuItem>
               {me.admin && <MenuItem icon={ShieldAlert} onClick={() => { setOpen(false); nav('/admin'); }}>Admin: Trust & Safety</MenuItem>}
               <MenuItem icon={Repeat} onClick={() => setSwitching(true)}>Switch demo account</MenuItem>
               <MenuItem icon={RotateCcw} onClick={async () => { setOpen(false); if (await ask({ title: 'Reset demo data?', body: 'Every change you made is replaced with the original sample brands, creators and campaigns.', confirm: 'Reset', danger: true })) { actions.resetDemo(); nav('/'); } }}>Reset demo data</MenuItem>

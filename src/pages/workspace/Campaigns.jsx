@@ -11,7 +11,9 @@ import { CampaignForm } from '../../components/forms';
 import { useMode, ModeToggle, PageHead } from './Layout';
 import { STATUS_TONE } from './shared';
 
-export const trackingUrl = (code) => `${window.location.origin}${window.location.pathname}#/go/${code}`;
+import { appUrl } from '../../lib/links';
+
+export const trackingUrl = (code) => appUrl(`/go/${code}`);
 
 export default function Campaigns() {
   const d = useDB();

@@ -3,6 +3,7 @@ import { Routes, Route, Navigate, useLocation } from 'react-router-dom';
 import { Header, ChatProvider } from './components/Shell';
 import { ToastProvider, ConfirmProvider } from './components/ui';
 import { useDB, actions } from './lib/store';
+import './lib/ops';
 import Discover from './pages/Discover';
 import Opportunities from './pages/Opportunities';
 import OpportunityDetail from './pages/OpportunityDetail';
@@ -13,6 +14,13 @@ import { Login, Signup, Reset } from './pages/Auth';
 import { Terms, Privacy, Footer } from './pages/Legal';
 import Admin from './pages/Admin';
 import Payments from './pages/workspace/Payments';
+import Contracts from './pages/workspace/Contracts';
+import Disputes from './pages/workspace/Disputes';
+import Verification from './pages/workspace/Verification';
+import Referrals from './pages/workspace/Referrals';
+import Library from './pages/workspace/Library';
+import Help from './pages/Help';
+import Pricing from './pages/Pricing';
 import Go from './pages/Go';
 import WorkspaceLayout from './pages/workspace/Layout';
 import Overview from './pages/workspace/Overview';
@@ -61,6 +69,8 @@ export default function App() {
           <Route path="/signup" element={<Signup />} />
           <Route path="/reset" element={<Reset />} />
           <Route path="/terms" element={<Terms />} />
+          <Route path="/help" element={<Help />} />
+          <Route path="/pricing" element={<Pricing />} />
           <Route path="/privacy" element={<Privacy />} />
           <Route path="/admin" element={<RequireAuth><Admin /></RequireAuth>} />
           <Route path="/go/:code" element={<Go />} />
@@ -73,6 +83,11 @@ export default function App() {
             <Route path="deliverables" element={<Deliverables />} />
             <Route path="analytics" element={<Analytics />} />
             <Route path="payments" element={<Payments />} />
+            <Route path="contracts" element={<Contracts />} />
+            <Route path="disputes" element={<Disputes />} />
+            <Route path="verification" element={<Verification />} />
+            <Route path="referrals" element={<Referrals />} />
+            <Route path="library" element={<Library />} />
             <Route path="messages" element={<Messages />} />
             <Route path="saved" element={<Saved />} />
             <Route path="settings" element={<Settings />} />
