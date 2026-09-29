@@ -23,8 +23,8 @@ export default function Saved() {
   return (
     <>
       <PageHead title="Saved" sub="Products, creators and posts you bookmarked" />
-      {camps.length > 0 && <><h2 className="text-[18px] font-bold mb-3">Opportunities</h2><div className="grid grid-cols-3 gap-5 mb-8">{camps.map((c) => <OpportunityCard key={c.id} campaign={c} />)}</div></>}
-      {people.length > 0 && <><h2 className="text-[18px] font-bold mb-3">Creators</h2><div className="grid grid-cols-3 gap-5 mb-8">{people.map((u) => <CreatorCard key={u.id} user={u} />)}</div></>}
+      {camps.length > 0 && <><h2 className="text-[18px] font-bold mb-3">Opportunities</h2><div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-5 mb-8">{camps.map((c) => <OpportunityCard key={c.id} campaign={c} />)}</div></>}
+      {people.length > 0 && <><h2 className="text-[18px] font-bold mb-3">Creators</h2><div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-5 mb-8">{people.map((u) => <CreatorCard key={u.id} user={u} />)}</div></>}
       {posts.length > 0 && <><h2 className="text-[18px] font-bold mb-3">Community posts</h2><div className="space-y-4 max-w-3xl">{posts.map((p) => <PostCard key={p.id} p={p} />)}</div></>}
     </>
   );

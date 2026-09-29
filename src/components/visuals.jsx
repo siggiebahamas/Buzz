@@ -1,6 +1,6 @@
 import { useState } from 'react';
 import { Link } from 'react-router-dom';
-import { ImagePlus, ChevronLeft, ChevronRight, Bookmark, Star, MapPin, Users, ChevronRight as Chev } from 'lucide-react';
+import { ImagePlus, ChevronLeft, ChevronRight, Bookmark, Star, MapPin, Users, BadgeCheck, ChevronRight as Chev } from 'lucide-react';
 import { CATEGORIES, categoryById, PLATFORMS } from '../lib/constants';
 import { budgetLabel, compact } from '../lib/format';
 import { useDB, userById, applicantsCount, isSaved, actions, brandName, followersOf, ratingOf } from '../lib/store';
@@ -129,7 +129,7 @@ export function OpportunityCard({ campaign }) {
       </div>
       <div className="p-4 flex flex-col flex-1">
         <div className="flex items-center justify-between gap-2 mb-1.5">
-          <span className="text-[12px] text-ink-muted truncate">{brandName(owner)} · {owner?.region}</span>
+          <span className="text-[12px] text-ink-muted truncate inline-flex items-center gap-1 min-w-0"><span className="truncate">{brandName(owner)}</span>{owner?.verified && <BadgeCheck size={13} className="text-sky-600 shrink-0" />}<span className="shrink-0">· {owner?.region}</span></span>
           <MatchPill {...m} />
         </div>
         <h3 className="text-[14.5px] font-bold text-ink leading-snug line-clamp-2">{campaign.title}</h3>
@@ -186,7 +186,7 @@ export function CreatorCard({ user, forCampaign }) {
         <Avatar user={user} size={52} />
         <div className="min-w-0 flex-1">
           <div className="flex items-start justify-between gap-2">
-            <p className="text-[14.5px] font-bold text-ink truncate">{user.name}</p>
+            <p className="text-[14.5px] font-bold text-ink truncate inline-flex items-center gap-1">{user.name}{user.verified && <BadgeCheck size={14} className="text-sky-600 shrink-0" />}</p>
             <MatchPill {...m} />
           </div>
           <p className="text-[12px] text-ink-muted truncate">{cats}</p>

@@ -5,7 +5,7 @@ import { useDB, userById, brandName, membersOf, applicantsCount } from '../../li
 import { businessMetrics, creatorMetrics, getRange } from '../../lib/metrics';
 import { peso, compact, budgetLabel } from '../../lib/format';
 import { ProductImage } from '../../components/visuals';
-import { Card, Badge, Button, EmptyState, useToast } from '../../components/ui';
+import { Card, Badge, Button, EmptyState, useCopy } from '../../components/ui';
 import { Progress } from '../../components/charts';
 import { CampaignForm } from '../../components/forms';
 import { useMode, ModeToggle, PageHead } from './Layout';
@@ -16,7 +16,7 @@ export const trackingUrl = (code) => `${window.location.origin}${window.location
 export default function Campaigns() {
   const d = useDB();
   const nav = useNavigate();
-  const toast = useToast();
+  const copy = useCopy();
   const { mode, me } = useMode();
   const [creating, setCreating] = useState(false);
   const allTime = getRange('custom', { from: '2000-01-01', to: new Date().toISOString().slice(0, 10) });
@@ -32,9 +32,9 @@ export default function Campaigns() {
               const c = row.campaign;
               const owner = userById(d, c.ownerId);
               return (
-                <Card key={c.id} className="p-4 flex items-center gap-5">
+                <Card key={c.id} className="p-4 flex flex-wrap items-center gap-4 sm:gap-5">
                   <ProductImage campaign={c} mini className="h-20 w-20 shrink-0" rounded="rounded-xl" />
-                  <div className="flex-1 min-w-0">
+                  <div className="flex-1 min-w-[200px]">
                     <div className="flex items-center gap-2"><Link to={`/opportunity/${c.id}`} className="font-bold hover:underline">{c.productName}</Link><Badge tone={STATUS_TONE[c.status]} className="capitalize">{c.status}</Badge></div>
                     <p className="text-[12.5px] text-ink-muted">by {brandName(owner)}</p>
                     <div className="flex items-center gap-3 mt-2">
@@ -46,8 +46,8 @@ export default function Campaigns() {
                     <div className="text-[12.5px] w-60">
                       <p className="text-ink-muted mb-1">Your promo code & link</p>
                       <div className="flex gap-1.5">
-                        <button onClick={() => { navigator.clipboard?.writeText(row.link.code); toast('Code copied'); }} className="h-8 px-2.5 rounded-lg bg-brand-soft font-mono font-semibold text-[12px] inline-flex items-center gap-1">{row.link.code}<Copy size={12} /></button>
-                        <button onClick={() => { navigator.clipboard?.writeText(trackingUrl(row.link.code)); toast('Tracking link copied'); }} className="h-8 px-2.5 rounded-lg border border-line inline-flex items-center gap-1"><Link2 size={13} />Link</button>
+                        <button onClick={() => copy(row.link.code, 'Code copied')} className="h-8 px-2.5 rounded-lg bg-brand-soft font-mono font-semibold text-[12px] inline-flex items-center gap-1">{row.link.code}<Copy size={12} /></button>
+                        <button onClick={() => copy(trackingUrl(row.link.code), 'Tracking link copied')} className="h-8 px-2.5 rounded-lg border border-line inline-flex items-center gap-1"><Link2 size={13} />Link</button>
                       </div>
                     </div>
                   )}
@@ -75,9 +75,9 @@ export default function Campaigns() {
             const c = row.campaign;
             return (
               <Link key={c.id} to={`/workspace/campaigns/${c.id}`} className="block">
-                <Card className="p-4 flex items-center gap-5 hover:shadow-lift transition-shadow">
+                <Card className="p-4 flex flex-wrap items-center gap-4 sm:gap-5 hover:shadow-lift transition-shadow">
                   <ProductImage campaign={c} mini className="h-20 w-20 shrink-0" rounded="rounded-xl" />
-                  <div className="flex-1 min-w-0">
+                  <div className="flex-1 min-w-[200px]">
                     <div className="flex items-center gap-2">
                       <p className="font-bold text-[15.5px]">{c.productName}</p>
                       <Badge tone={STATUS_TONE[c.status]} className="capitalize">{c.status}</Badge>

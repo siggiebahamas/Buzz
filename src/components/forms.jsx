@@ -92,29 +92,29 @@ export function CampaignForm({ open, onClose, initial, onSaved }) {
         <Field label="Product photos (first one is the cover)" hint="Clear product shots win. Up to 5 photos.">
           <PhotoPicker photos={f.photos} onChange={(p) => set('photos', p)} />
         </Field>
-        <div className="grid grid-cols-2 gap-4">
+        <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
           <Field label="Product / service name"><Input value={f.productName} onChange={(e) => set('productName', e.target.value)} placeholder="e.g. Sili Republic Hot Sauce" /></Field>
           <Field label="Listing type"><Select value={f.type} onChange={(e) => set('type', e.target.value)}>{LISTING_TYPES.map((t) => <option key={t}>{t}</option>)}</Select></Field>
         </div>
         <Field label="Headline creators will see"><Input value={f.title} onChange={(e) => set('title', e.target.value)} placeholder="Looking for 5 food creators for our hot sauce launch" /></Field>
         <Field label="Brief"><Textarea value={f.description} onChange={(e) => set('description', e.target.value)} placeholder="What is it, what makes it special, what kind of content do you want?" /></Field>
-        <div className="grid grid-cols-2 gap-4">
+        <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
           <Field label="Category"><Select value={f.category} onChange={(e) => set('category', e.target.value)}>{CATEGORIES.slice(1).map((c) => <option key={c.id} value={c.id}>{c.label}</option>)}</Select></Field>
           <Field label="Target audience"><Input value={f.audience} onChange={(e) => set('audience', e.target.value)} placeholder="Women 18–34, Metro Manila" /></Field>
         </div>
 
         <div className="rounded-2xl bg-canvas/70 border border-line p-4 space-y-4">
-          <div className="grid grid-cols-2 gap-4">
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
             <Field label="How you'll pay creators"><Select value={f.compensation} onChange={(e) => set('compensation', e.target.value)}>{Object.entries(COMP_TYPES).map(([k, v]) => <option key={k} value={k}>{v}</option>)}</Select></Field>
             <Field label="Creators needed"><Input type="number" min="1" value={f.slots} onChange={(e) => set('slots', e.target.value)} /></Field>
           </div>
           {needsFee && (
-            <div className="grid grid-cols-2 gap-4">
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
               <Field label="Fee per creator: min (₱)"><Input type="number" min="0" value={f.budgetMin} onChange={(e) => set('budgetMin', e.target.value)} /></Field>
               <Field label="Fee per creator: max (₱)"><Input type="number" min="0" value={f.budgetMax} onChange={(e) => set('budgetMax', e.target.value)} /></Field>
             </div>
           )}
-          <div className="grid grid-cols-2 gap-4">
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
             {needsCom && <Field label="Commission on each sale (%)"><Input type="number" min="1" max="60" value={f.commissionRate} onChange={(e) => set('commissionRate', e.target.value)} /></Field>}
             <Field label="Average order value (₱)" hint="Used to estimate creator earnings."><Input type="number" min="0" value={f.aov} onChange={(e) => set('aov', e.target.value)} /></Field>
           </div>
@@ -133,7 +133,7 @@ export function CampaignForm({ open, onClose, initial, onSaved }) {
             <Button type="button" variant="outline" size="sm" onClick={() => set('deliverables', [...f.deliverables, { type: 'Story set', qty: 1, platform: 'instagram' }])}><Plus size={14} />Add deliverable</Button>
           </div>
         </Field>
-        <div className="grid grid-cols-3 gap-4">
+        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
           <Field label="Apply by"><Input type="date" value={new Date(f.deadline).toISOString().slice(0, 10)} onChange={(e) => set('deadline', new Date(e.target.value).getTime())} /></Field>
           <Field label="Content rights"><Select value={f.contentRights} onChange={(e) => set('contentRights', e.target.value)}>{['30 days', '60 days', '90 days', '1 year', 'None'].map((x) => <option key={x}>{x}</option>)}</Select></Field>
           <Field label="Shop link"><Input value={f.shopUrl} onChange={(e) => set('shopUrl', e.target.value)} placeholder="Shopee / Lazada / site" /></Field>
@@ -218,7 +218,7 @@ export function PostModal({ open, onClose, defaultTopic = 'ideas', onPosted }) {
     <Modal open={open} onClose={onClose} title="Share with the Community" subtitle="Ask, share progress or find collaborators.">
       <form onSubmit={submit} className="space-y-4">
         <Field label="Post title"><Input value={f.title} onChange={(e) => set('title', e.target.value)} placeholder="Give your post a punchy headline…" /></Field>
-        <div className="grid grid-cols-2 gap-4">
+        <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
           <Field label="Topic"><Select value={f.topic} onChange={(e) => set('topic', e.target.value)}>{COMMUNITY_TOPICS.map((t) => <option key={t.id} value={t.id}>{t.label}</option>)}</Select></Field>
           <Field label="Which product / campaign is this about?">
             <Select value={f.campaignId} onChange={(e) => set('campaignId', e.target.value)}>
@@ -251,13 +251,13 @@ export function CollabModal({ open, onClose }) {
   return (
     <Modal open={open} onClose={onClose} title="Start a collab" subtitle="Team up with other founders or creators and split the cost.">
       <form onSubmit={submit} className="space-y-4">
-        <div className="grid grid-cols-2 gap-4">
+        <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
           <Field label="Type"><Select value={f.kind} onChange={(e) => set('kind', e.target.value)}>{Object.entries(COLLAB_KINDS).map(([k, v]) => <option key={k} value={k}>{v}</option>)}</Select></Field>
           <Field label="Category"><Select value={f.category} onChange={(e) => set('category', e.target.value)}>{CATEGORIES.slice(1).map((c) => <option key={c.id} value={c.id}>{c.label}</option>)}</Select></Field>
         </div>
         <Field label="Title"><Input value={f.title} onChange={(e) => set('title', e.target.value)} placeholder="Taste of Cebu pasalubong box" /></Field>
         <Field label="What's the plan?"><Textarea value={f.description} onChange={(e) => set('description', e.target.value)} placeholder="Who you're looking for, how costs are split, what each member gets." /></Field>
-        <div className="grid grid-cols-2 gap-4">
+        <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
           <Field label="Total members (incl. you)"><Input type="number" min="2" value={f.slots} onChange={(e) => set('slots', e.target.value)} /></Field>
           <Field label="Join by"><Input type="date" value={new Date(f.deadline).toISOString().slice(0, 10)} onChange={(e) => set('deadline', new Date(e.target.value).getTime())} /></Field>
         </div>
@@ -287,7 +287,7 @@ export function SubmitDeliverableModal({ open, onClose, deliverable }) {
         {!editingStats && <Field label="Link to your post"><Input required value={url} onChange={(e) => setUrl(e.target.value)} placeholder="https://www.instagram.com/reel/…" /></Field>}
         <div>
           <p className="text-[12px] font-semibold uppercase tracking-wide text-ink-muted mb-1.5">Post stats (from your insights)</p>
-          <div className="grid grid-cols-5 gap-2">
+          <div className="grid grid-cols-3 sm:grid-cols-5 gap-2">
             {['reach', 'likes', 'comments', 'shares', 'saves'].map((k) => (
               <label key={k} className="block">
                 <span className="block text-[11.5px] text-ink-muted capitalize mb-1">{k}</span>
@@ -352,3 +352,26 @@ export function ReviewModal({ open, onClose, campaignId, toUser }) {
 }
 
 export { REGIONS };
+
+const REPORT_REASONS = {
+  campaign: ['Misleading pay or terms', 'Scam or suspicious', 'Prohibited product', 'Copied or counterfeit', 'Other'],
+  user: ['Fake followers', 'Impersonation', 'Didn\'t deliver or didn\'t pay', 'Harassment', 'Other'],
+  post: ['Spam or self-promotion', 'Harassment', 'False information', 'Other'],
+};
+
+export function ReportModal({ kind, refId, onClose }) {
+  const act = useAct();
+  const [reason, setReason] = useState(REPORT_REASONS[kind][0]);
+  const [note, setNote] = useState('');
+  return (
+    <Modal open onClose={onClose} title="Report to Buzz" subtitle="Reports are private. Our team reviews every one within 24 hours.">
+      <div className="space-y-2">
+        {REPORT_REASONS[kind].map((r) => (
+          <button key={r} type="button" onClick={() => setReason(r)} className={cx('w-full text-left px-3.5 py-2.5 rounded-xl border text-[14px]', reason === r ? 'border-brand bg-brand-softer font-medium' : 'border-line hover:bg-canvas')}>{r}</button>
+        ))}
+      </div>
+      <Field label="Details (optional)" className="mt-4"><Textarea id="report-note" value={note} onChange={(e) => setNote(e.target.value)} placeholder="What happened?" /></Field>
+      <Button size="lg" className="w-full mt-4" onClick={() => { if (act(() => actions.report(kind, refId, reason, note.trim()), 'Report sent. Thanks for keeping Buzz safe.')) onClose(); }}>Send report</Button>
+    </Modal>
+  );
+}

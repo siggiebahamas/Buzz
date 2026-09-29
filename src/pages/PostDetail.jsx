@@ -1,17 +1,19 @@
 import { useState } from 'react';
 import { useParams, Link, useNavigate } from 'react-router-dom';
-import { ArrowLeft, Heart, ThumbsUp, BellRing, Bell } from 'lucide-react';
+import { ArrowLeft, Heart, ThumbsUp, BellRing, Bell, Flag } from 'lucide-react';
 import { useDB, userById, displayName, actions, campaignById } from '../lib/store';
 import { timeAgo } from '../lib/format';
 import { Card, Avatar, Button, Textarea, cx } from '../components/ui';
 import { ProductImage } from '../components/visuals';
 import { TopicChip } from './Community';
+import { ReportModal } from '../components/forms';
 
 export default function PostDetail() {
   const { id } = useParams();
   const d = useDB();
   const nav = useNavigate();
   const [text, setText] = useState('');
+  const [reporting, setReporting] = useState(false);
   const p = d.posts.find((x) => x.id === id);
   if (!p) return <main className="p-10 text-center text-ink-muted">Post not found.</main>;
   const me = d.session.userId;
@@ -26,7 +28,7 @@ export default function PostDetail() {
   };
 
   return (
-    <main className="max-w-3xl mx-auto px-6 py-8">
+    <main className="max-w-3xl mx-auto px-4 sm:px-6 py-8">
       <button onClick={() => nav(-1)} className="inline-flex items-center gap-1.5 text-[13.5px] text-ink-muted hover:text-ink mb-5"><ArrowLeft size={16} />Back to Community</button>
       <Card className="p-7">
         <div className="flex items-center gap-2"><TopicChip topic={p.topic} /><span className="text-[12.5px] text-ink-muted">{timeAgo(p.createdAt)}</span></div>
@@ -35,7 +37,7 @@ export default function PostDetail() {
           {author ? <><Avatar user={author} size={32} /><Link to={`/profile/${author.id}`} className="text-[13.5px] font-medium hover:underline">{displayName(author)}</Link></> : <span className="text-[13.5px] text-ink-muted">Posted anonymously</span>}
         </div>
         <p className="text-[15px] text-ink-soft mt-5 leading-relaxed whitespace-pre-line">{p.body}</p>
-        {p.photos?.length > 0 && <div className="grid grid-cols-2 gap-3 mt-5">{p.photos.map((src, i) => <img key={i} src={src} alt="" className="rounded-xl border border-line w-full object-cover" />)}</div>}
+        {p.photos?.length > 0 && <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 mt-5">{p.photos.map((src, i) => <img key={i} src={src} alt="" className="rounded-xl border border-line w-full object-cover" />)}</div>}
         {camp && (
           <Link to={`/opportunity/${camp.id}`} className="mt-5 flex items-center gap-3 rounded-xl border border-line p-3 hover:bg-canvas">
             <ProductImage campaign={camp} mini className="h-12 w-12" rounded="rounded-lg" />
@@ -46,6 +48,7 @@ export default function PostDetail() {
           <Button variant={p.likes.includes(me) ? 'soft' : 'outline'} size="sm" onClick={() => need(() => actions.toggleIn(p.id, 'likes'))}><Heart size={15} className={cx(p.likes.includes(me) && 'fill-rose-500 text-rose-500')} />{p.likes.length}</Button>
           <Button variant={p.interested.includes(me) ? 'soft' : 'outline'} size="sm" onClick={() => need(() => actions.toggleIn(p.id, 'interested'))}><ThumbsUp size={15} />Interested · {p.interested.length}</Button>
           {camp && <Button variant={following ? 'soft' : 'outline'} size="sm" onClick={() => need(() => actions.toggleIn(p.id, 'followers'))}>{following ? <BellRing size={15} /> : <Bell size={15} />}{following ? 'Following updates' : 'Follow this project'}</Button>}
+          {p.authorId !== me && <Button variant="ghost" size="sm" className="ml-auto" onClick={() => need(() => setReporting(true))}><Flag size={14} />Report</Button>}
         </div>
         {p.interested.length > 0 && (
           <div className="mt-4 flex items-center gap-2 text-[12.5px] text-ink-muted">
@@ -74,6 +77,7 @@ export default function PostDetail() {
         <Textarea value={text} onChange={(e) => setText(e.target.value)} placeholder="Add to the conversation…" />
         <div className="flex justify-end mt-2"><Button type="submit" disabled={!text.trim()}>Reply</Button></div>
       </form>
+      {reporting && <ReportModal kind="post" refId={p.id} onClose={() => setReporting(false)} />}
     </main>
   );
 }

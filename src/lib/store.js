@@ -1,10 +1,10 @@
 // Single local data store. Everything the app reads or writes goes through here,
 // so swapping localStorage for a real backend later only touches this file.
 import { useSyncExternalStore } from 'react';
-import { buildSeed } from './seed';
+import { buildSeed, hashPw, SERVICE_FEE } from './seed';
 import { uid, DAY, peso } from './format';
 
-const KEY = 'buzz-db-v2';
+const KEY = 'buzz-db-v3';
 const listeners = new Set();
 
 function load() {
@@ -12,7 +12,7 @@ function load() {
     const raw = localStorage.getItem(KEY);
     if (raw) {
       const parsed = JSON.parse(raw);
-      if (parsed?.version === 1) return parsed;
+      if (parsed?.version === 3) return parsed;
     }
   } catch { /* storage blocked or corrupt: fall through to fresh seed */ }
   return buildSeed();
@@ -52,7 +52,16 @@ export const campaignById = (d, id) => d.campaigns.find((c) => c.id === id);
 export const membersOf = (d, cid) => d.applications.filter((a) => a.campaignId === cid && a.status === 'accepted').map((a) => a.creatorId);
 export const applicantsCount = (d, cid) => d.applications.filter((a) => a.campaignId === cid).length;
 export const isSaved = (d, kind, refId) => d.saved.some((s) => s.userId === d.session.userId && s.kind === kind && s.refId === refId);
-export const creators = (d) => d.users.filter((u) => u.creator);
+export const creators = (d) => d.users.filter((u) => u.creator && !u.suspended);
+export const liveCampaigns = (d) => d.campaigns.filter((c) => c.published && !c.removed && !userById(d, c.ownerId)?.suspended);
+export const isAdmin = (d) => !!currentUser(d)?.admin;
+export const walletOf = (d, userId) => {
+  const txs = d.transactions.filter((t) => t.userId === userId);
+  const balance = txs.filter((t) => ['release', 'payout', 'refund'].includes(t.type)).reduce((a, t) => a + t.amount, 0);
+  const held = d.deliverables.filter((x) => x.escrow === 'held' && (x.creatorId === userId || campaignById(d, x.campaignId)?.ownerId === userId)).reduce((a, x) => a + x.fee, 0);
+  return { txs: txs.sort((a, b) => b.ts - a.ts), balance, held };
+};
+export { SERVICE_FEE };
 export const brandName = (u) => u?.business?.name || u?.name || 'Unknown';
 export const displayName = (u) => (u?.business && !u.creator ? u.business.name : u?.name) || 'Unknown';
 export const ratingOf = (d, userId) => {
@@ -61,9 +70,19 @@ export const ratingOf = (d, userId) => {
 };
 export const followersOf = (u) => (u?.creator?.platforms || []).reduce((a, p) => a + Number(p.followers || 0), 0);
 
+const EMAIL_TOPIC = (link) => (link.includes('collaborations') ? 'apps' : link.includes('deliverables') ? 'deliverables' : link.includes('analytics') || link.includes('payments') ? 'sales' : link.includes('community') ? 'community' : 'apps');
+
+function email(d, userId, subject, body, link) {
+  const u = userById(d, userId);
+  if (!u) return;
+  d.emails.unshift({ id: uid('eml'), userId, to: u.email, subject, body, link, ts: Date.now() });
+}
+
 function notify(d, userId, text, link) {
   if (!userId) return;
   d.notifications.unshift({ id: uid('ntf'), userId, text, link, ts: Date.now(), read: false });
+  const prefs = userById(d, userId)?.settings?.notif;
+  if (prefs?.email && prefs[EMAIL_TOPIC(link)] !== false) email(d, userId, text, `${text}\n\nOpen Buzz to take action.`, link);
 }
 
 function threadFor(d, a, b, campaignId = null) {
@@ -88,6 +107,43 @@ export const actions = {
       d.session = { userId, mode: u?.primary === 'creator' ? 'creator' : 'business' };
     });
   },
+  loginWithPassword(emailAddr, password) {
+    const u = db.users.find((x) => x.email.toLowerCase() === emailAddr.trim().toLowerCase());
+    if (!u || u.pw !== hashPw(password)) throw new Error('Wrong email or password.');
+    if (u.suspended) throw new Error('This account is suspended. Contact support@buzz.ph.');
+    actions.login(u.id);
+  },
+  requestReset(emailAddr) {
+    const u = db.users.find((x) => x.email.toLowerCase() === emailAddr.trim().toLowerCase());
+    if (!u) return; // Same response either way so emails can't be probed.
+    commit((d) => {
+      const code = String(Math.floor(100000 + Math.random() * 900000));
+      d.resets = d.resets.filter((r) => r.userId !== u.id);
+      d.resets.push({ userId: u.id, code, exp: Date.now() + 30 * 60000 });
+      email(d, u.id, 'Your Buzz password reset code', `Your code is ${code}. It expires in 30 minutes. If you didn't ask for this, ignore this email.`, '/reset');
+    });
+  },
+  resetPassword(emailAddr, code, password) {
+    commit((d) => {
+      const u = d.users.find((x) => x.email.toLowerCase() === emailAddr.trim().toLowerCase());
+      const r = u && d.resets.find((x) => x.userId === u.id && x.code === code.trim());
+      if (!r) throw new Error('That code is wrong. Check the latest email we sent.');
+      if (r.exp < Date.now()) throw new Error('That code expired. Request a new one.');
+      if (password.length < 8) throw new Error('Use at least 8 characters.');
+      u.pw = hashPw(password);
+      d.resets = d.resets.filter((x) => x !== r);
+      email(d, u.id, 'Your Buzz password was changed', 'Your password was just changed. If this wasn\'t you, reset it again right away.', '/login');
+    });
+  },
+  changePassword(oldPw, newPw) {
+    commit((d) => {
+      const u = currentUser(d);
+      if (u.pw !== hashPw(oldPw)) throw new Error('Your current password is wrong.');
+      if (newPw.length < 8) throw new Error('Use at least 8 characters.');
+      u.pw = hashPw(newPw);
+      email(d, u.id, 'Your Buzz password was changed', 'Your password was just changed from Settings.', '/workspace/settings');
+    });
+  },
   logout() { commit((d) => { d.session = { userId: null, mode: 'business' }; }); },
   setMode(mode) { commit((d) => { d.session.mode = mode; }); },
   resetDemo() {
@@ -95,12 +151,13 @@ export const actions = {
     save();
     listeners.forEach((l) => l());
   },
-  signup({ name, email, role, location, region, businessName, businessType, category, handle, niche, platform, followers }) {
+  signup({ password, name, email, role, location, region, businessName, businessType, category, handle, niche, platform, followers }) {
     return commit((d) => {
       if (d.users.some((u) => u.email.toLowerCase() === email.toLowerCase())) throw new Error('An account with this email already exists.');
       const u = {
         id: uid('u'), name, email, color: '#F59E0B', photo: null, location: location || '', region: region || 'Metro Manila',
-        joinedAt: Date.now(), bio: '', primary: role,
+        joinedAt: Date.now(), bio: '', primary: role, pw: hashPw(password || ''), verified: false, suspended: false, admin: false,
+        settings: { notif: { apps: true, deliverables: true, sales: true, community: false, email: true }, privacy: { public: true, showEarnings: false, showRates: true } },
         business: role === 'business' ? { name: businessName || name, type: businessType || '', category: category || 'fashion', website: '', shopUrl: '', tagline: businessType || '' } : null,
         creator: role === 'creator' ? {
           handle: (handle || name).replace(/^@/, '').replace(/\s+/g, '').toLowerCase(), niches: [niche || 'food'], engagement: 0,
@@ -110,6 +167,7 @@ export const actions = {
       d.users.push(u);
       d.session = { userId: u.id, mode: role };
       notify(d, u.id, 'Welcome to Buzz! Complete your profile to get better matches.', '/workspace/profile');
+      email(d, u.id, 'Welcome to Buzz', `Hi ${name.split(' ')[0]}, your account is ready. Complete your profile so we can match you with the right ${role === 'creator' ? 'brands' : 'creators'}.`, '/workspace/profile');
       return u.id;
     });
   },
@@ -151,8 +209,25 @@ export const actions = {
       membersOf(d, cid).forEach((m) => notify(d, m, `${c.productName} moved to ${status}`, `/opportunity/${cid}`));
     });
   },
+  // Content awaiting approval for 7+ days is approved automatically (see Terms).
+  sweep() {
+    const due = db.deliverables.filter((x) => x.status === 'submitted' && x.submittedAt < Date.now() - 7 * DAY);
+    if (!due.length) return;
+    commit((d) => {
+      d.deliverables.filter((x) => x.status === 'submitted' && x.submittedAt < Date.now() - 7 * DAY).forEach((x) => {
+        x.status = 'approved';
+        x.approvedAt = Date.now();
+        x.note = 'Approved automatically after 7 days without a response.';
+        notify(d, campaignById(d, x.campaignId).ownerId, `"${x.title}" was approved automatically after 7 days`, '/workspace/deliverables');
+        if (x.escrow === 'held') release(d, x);
+      });
+    });
+  },
   deleteCampaign(cid) {
     commit((d) => {
+      d.deliverables.filter((x) => x.campaignId === cid && x.escrow === 'held').forEach((x) => {
+        d.transactions.push({ id: uid('tx'), userId: d.session.userId, type: 'refund', amount: Math.round(x.fee * (1 + SERVICE_FEE)), ts: Date.now(), ref: x.id, note: `Escrow refund: ${x.title}` });
+      });
       d.campaigns = d.campaigns.filter((c) => c.id !== cid);
       d.applications = d.applications.filter((a) => a.campaignId !== cid);
       d.deliverables = d.deliverables.filter((x) => x.campaignId !== cid);
@@ -208,6 +283,8 @@ export const actions = {
               fee: ['commission', 'gifted'].includes(c.compensation) ? 0 : Math.round((a.rate || c.budgetMin) / perPiece / 50) * 50,
               status: 'todo', submittedAt: null, approvedAt: null, paidAt: null, contentUrl: '', stats: null, note: '',
             });
+            const last = d.deliverables[d.deliverables.length - 1];
+            last.escrow = last.fee ? 'unfunded' : 'none';
           }
         });
         if (c.status === 'recruiting') c.status = 'active';
@@ -223,7 +300,7 @@ export const actions = {
   // ---------- deliverables ----------
   addDeliverable(data) {
     commit((d) => {
-      d.deliverables.push({ id: uid('del'), status: 'todo', submittedAt: null, approvedAt: null, paidAt: null, contentUrl: '', stats: null, note: '', ...data });
+      d.deliverables.push({ id: uid('del'), status: 'todo', submittedAt: null, approvedAt: null, paidAt: null, contentUrl: '', stats: null, note: '', escrow: Number(data.fee) ? 'unfunded' : 'none', ...data });
       notify(d, data.creatorId, `New deliverable: ${data.title}`, '/workspace/deliverables');
     });
   },
@@ -245,13 +322,75 @@ export const actions = {
       x.note = note;
       if (approve) x.approvedAt = Date.now();
       notify(d, x.creatorId, approve ? `"${x.title}" was approved` : `Revision requested on "${x.title}"`, '/workspace/deliverables');
+      if (approve && x.escrow === 'held') release(d, x);
     });
   },
   markPaid(id) {
     commit((d) => {
       const x = d.deliverables.find((y) => y.id === id);
       x.paidAt = Date.now();
-      notify(d, x.creatorId, `Payment of ${peso(x.fee)} sent for "${x.title}"`, '/workspace/analytics');
+      x.escrow = 'outside';
+      notify(d, x.creatorId, `${displayName(currentUser(d))} marked ${peso(x.fee)} as paid outside Buzz for "${x.title}"`, '/workspace/payments');
+    });
+  },
+  // Brand pays fees into escrow (test mode: no real money moves).
+  fundEscrow(ids, method) {
+    commit((d) => {
+      const list = d.deliverables.filter((x) => ids.includes(x.id) && x.escrow === 'unfunded' && x.fee > 0);
+      if (!list.length) throw new Error('Nothing left to fund.');
+      const me = d.session.userId;
+      list.forEach((x) => {
+        x.escrow = 'held';
+        d.transactions.push({ id: uid('tx'), userId: me, type: 'fund', amount: -Math.round(x.fee * (1 + SERVICE_FEE)), ts: Date.now(), ref: x.id, note: `Escrow for ${x.title} via ${method}` });
+        notify(d, x.creatorId, `${peso(x.fee)} for "${x.title}" is now secured in escrow`, '/workspace/payments');
+        if (x.status === 'approved') release(d, x);
+      });
+    });
+  },
+  withdraw(amount, method, account) {
+    commit((d) => {
+      const me = d.session.userId;
+      const { balance } = walletOf(d, me);
+      const amt = Number(amount);
+      if (!(amt >= 100)) throw new Error('Minimum withdrawal is ₱100.');
+      if (amt > balance) throw new Error(`You can withdraw up to ${peso(balance)}.`);
+      if (!account.trim()) throw new Error('Add the account number to send to.');
+      d.transactions.push({ id: uid('tx'), userId: me, type: 'payout', amount: -amt, ts: Date.now(), ref: null, note: `Withdrawal to ${method} •••• ${account.trim().slice(-4)}` });
+      email(d, me, `Withdrawal of ${peso(amt)} is on its way`, `We sent ${peso(amt)} to your ${method} account ending in ${account.trim().slice(-4)}.`, '/workspace/payments');
+    });
+  },
+
+  // ---------- trust & safety ----------
+  report(kind, refId, reason, note) {
+    commit((d) => {
+      if (d.reports.some((r) => r.kind === kind && r.refId === refId && r.reporterId === d.session.userId && r.status === 'open')) throw new Error('You already reported this. Our team is reviewing it.');
+      d.reports.unshift({ id: uid('rep'), kind, refId, reporterId: d.session.userId, reason, note, ts: Date.now(), status: 'open' });
+      d.users.filter((u) => u.admin).forEach((a) => notify(d, a.id, `New report: ${reason}`, '/admin'));
+    });
+  },
+  resolveReport(id, status) {
+    commit((d) => { const r = d.reports.find((x) => x.id === id); r.status = status; r.resolvedAt = Date.now(); });
+  },
+  adminUser(id, patch) {
+    commit((d) => {
+      const u = userById(d, id);
+      Object.assign(u, patch);
+      if (patch.verified) notify(d, id, 'Your profile is now verified. The badge shows on your profile and cards.', `/profile/${id}`);
+      if (patch.suspended) email(d, id, 'Your Buzz account is suspended', 'Your account was suspended after a review. Reply to this email to appeal.', '/');
+    });
+  },
+  adminCampaign(id, patch) {
+    commit((d) => {
+      const c = campaignById(d, id);
+      Object.assign(c, patch);
+      if (patch.removed) notify(d, c.ownerId, `Your listing "${c.productName}" was removed for breaking the listing rules`, '/workspace/campaigns');
+    });
+  },
+  adminRemovePost(id) {
+    commit((d) => {
+      const p = d.posts.find((x) => x.id === id);
+      d.posts = d.posts.filter((x) => x.id !== id);
+      if (p) notify(d, p.authorId, `Your post "${p.title}" was removed by a moderator`, '/community');
     });
   },
 
@@ -352,6 +491,13 @@ export const actions = {
     });
   },
 };
+
+function release(d, x) {
+  x.escrow = 'released';
+  x.paidAt = Date.now();
+  d.transactions.push({ id: uid('tx'), userId: x.creatorId, type: 'release', amount: x.fee, ts: Date.now(), ref: x.id, note: `Payment released: ${x.title}` });
+  notify(d, x.creatorId, `${peso(x.fee)} released to your Buzz wallet for "${x.title}"`, '/workspace/payments');
+}
 
 export function unreadCount(d) {
   const me = d.session.userId;

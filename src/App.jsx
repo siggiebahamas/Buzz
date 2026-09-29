@@ -1,15 +1,18 @@
 import { useEffect } from 'react';
 import { Routes, Route, Navigate, useLocation } from 'react-router-dom';
 import { Header, ChatProvider } from './components/Shell';
-import { ToastProvider } from './components/ui';
-import { useDB } from './lib/store';
+import { ToastProvider, ConfirmProvider } from './components/ui';
+import { useDB, actions } from './lib/store';
 import Discover from './pages/Discover';
 import Opportunities from './pages/Opportunities';
 import OpportunityDetail from './pages/OpportunityDetail';
 import Profile from './pages/Profile';
 import Community from './pages/Community';
 import PostDetail from './pages/PostDetail';
-import { Login, Signup } from './pages/Auth';
+import { Login, Signup, Reset } from './pages/Auth';
+import { Terms, Privacy, Footer } from './pages/Legal';
+import Admin from './pages/Admin';
+import Payments from './pages/workspace/Payments';
 import Go from './pages/Go';
 import WorkspaceLayout from './pages/workspace/Layout';
 import Overview from './pages/workspace/Overview';
@@ -39,8 +42,11 @@ function ScrollTop() {
 export default function App() {
   const { pathname } = useLocation();
   const bare = pathname.startsWith('/go/');
+  const inWorkspace = pathname.startsWith('/workspace');
+  useEffect(() => { actions.sweep(); }, []);
   return (
     <ToastProvider>
+      <ConfirmProvider>
       <ChatProvider>
         <ScrollTop />
         {!bare && <Header />}
@@ -53,6 +59,10 @@ export default function App() {
           <Route path="/community/:id" element={<PostDetail />} />
           <Route path="/login" element={<Login />} />
           <Route path="/signup" element={<Signup />} />
+          <Route path="/reset" element={<Reset />} />
+          <Route path="/terms" element={<Terms />} />
+          <Route path="/privacy" element={<Privacy />} />
+          <Route path="/admin" element={<RequireAuth><Admin /></RequireAuth>} />
           <Route path="/go/:code" element={<Go />} />
           <Route path="/workspace" element={<RequireAuth><WorkspaceLayout /></RequireAuth>}>
             <Route index element={<Overview />} />
@@ -62,13 +72,16 @@ export default function App() {
             <Route path="collaborations" element={<Collaborations />} />
             <Route path="deliverables" element={<Deliverables />} />
             <Route path="analytics" element={<Analytics />} />
+            <Route path="payments" element={<Payments />} />
             <Route path="messages" element={<Messages />} />
             <Route path="saved" element={<Saved />} />
             <Route path="settings" element={<Settings />} />
           </Route>
           <Route path="*" element={<Navigate to="/" replace />} />
         </Routes>
+        {!bare && !inWorkspace && <Footer />}
       </ChatProvider>
+      </ConfirmProvider>
     </ToastProvider>
   );
 }

@@ -40,11 +40,11 @@ export default function Collaborations() {
   return (
     <>
       <PageHead title="Collaborations" sub={biz ? 'Applications, invites and partners across your campaigns' : 'Your applications, brand invites and partnerships'} action={<ModeToggle />} />
-      <div className="flex gap-2 mb-5">
+      <div className="flex gap-2 mb-5 overflow-x-auto pb-1">
         {groups.map(([id, label, f]) => {
           const n = mine.filter(f).length;
           return (
-            <button key={id} onClick={() => setTab(id)} className={cx('h-9 px-4 rounded-full text-[13.5px] border inline-flex items-center gap-2', tab === id ? 'bg-ink text-white border-ink' : 'bg-white border-line-strong text-ink-soft hover:bg-canvas')}>
+            <button key={id} onClick={() => setTab(id)} className={cx('h-9 px-4 rounded-full text-[13.5px] border inline-flex items-center gap-2 whitespace-nowrap', tab === id ? 'bg-ink text-white border-ink' : 'bg-white border-line-strong text-ink-soft hover:bg-canvas')}>
               {label}<span className={cx('text-[11.5px] px-1.5 rounded-full', tab === id ? 'bg-white/20' : 'bg-canvas')}>{n}</span>
             </button>
           );
@@ -62,7 +62,7 @@ export default function Collaborations() {
             const m = matchScore(creator, c);
             const [label, tone] = STATUS[a.status];
             return (
-              <Card key={a.id} className="p-4 flex items-start gap-4">
+              <Card key={a.id} className="p-4 flex flex-wrap sm:flex-nowrap items-start gap-4">
                 <ProductImage campaign={c} mini className="h-16 w-16 shrink-0" rounded="rounded-xl" />
                 <div className="flex-1 min-w-0">
                   <div className="flex items-center gap-2 flex-wrap">
@@ -76,7 +76,7 @@ export default function Collaborations() {
                   {a.pitch && <p className="text-[13.5px] text-ink-soft mt-2">"{a.pitch}"</p>}
                   <p className="text-[12px] text-ink-muted mt-1.5">{a.source === 'invite' ? 'Invited' : 'Applied'} {timeAgo(a.createdAt)}{a.rate ? ` · Rate ${peso(a.rate)}` : ''}</p>
                 </div>
-                <div className="flex flex-col items-end gap-2 shrink-0">
+                <div className="flex flex-col items-start sm:items-end gap-2 w-full sm:w-auto sm:shrink-0">
                   {biz && <MatchPill {...m} />}
                   <div className="flex gap-2">
                     <Button size="sm" variant="ghost" onClick={() => chat.open(other.id, c.id)}><MessageCircle size={15} /></Button>

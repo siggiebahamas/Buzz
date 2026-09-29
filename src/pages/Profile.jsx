@@ -1,12 +1,12 @@
 import { useEffect, useState } from 'react';
 import { useParams, Link, useNavigate } from 'react-router-dom';
-import { MapPin, MessageCircle, Bookmark, Send, Star, Users, Activity, MousePointerClick, ShoppingBag, ArrowLeft, ExternalLink, Store } from 'lucide-react';
+import { MapPin, MessageCircle, Bookmark, Send, Star, Users, Activity, MousePointerClick, ShoppingBag, ArrowLeft, ExternalLink, Store, BadgeCheck, Flag } from 'lucide-react';
 import { useDB, userById, currentUser, actions, isSaved, ratingOf, followersOf, displayName, campaignById } from '../lib/store';
 import { categoryById, PLATFORMS } from '../lib/constants';
 import { compact, peso, timeAgo } from '../lib/format';
 import { OpportunityCard } from '../components/visuals';
 import { Avatar, Button, Card, Badge, Stars, EmptyState } from '../components/ui';
-import { InviteModal } from '../components/forms';
+import { InviteModal, ReportModal } from '../components/forms';
 import { useChat } from '../components/Shell';
 
 export default function Profile() {
@@ -17,13 +17,14 @@ export default function Profile() {
   const u = userById(d, id);
   const me = currentUser(d);
   const [inviting, setInviting] = useState(false);
+  const [reporting, setReporting] = useState(false);
   useEffect(() => { actions.recordProfileView(id); }, [id]);
   if (!u) return <main className="p-10 text-center text-ink-muted">Profile not found.</main>;
 
   const isMe = me?.id === u.id;
   const rating = ratingOf(d, u.id);
   const reviews = d.reviews.filter((r) => r.toId === u.id);
-  const listings = d.campaigns.filter((c) => c.ownerId === u.id && c.published);
+  const listings = d.campaigns.filter((c) => c.ownerId === u.id && c.published && !c.removed);
   const need = (fn) => (me ? fn() : nav('/login'));
 
   // Results this creator drove through their tracking links on Buzz.
@@ -36,14 +37,16 @@ export default function Profile() {
   const saved = me && isSaved(d, 'creator', u.id);
 
   return (
-    <main className="max-w-5xl mx-auto px-6 py-8">
+    <main className="max-w-5xl mx-auto px-4 sm:px-6 py-8">
       <button onClick={() => nav(-1)} className="inline-flex items-center gap-1.5 text-[13.5px] text-ink-muted hover:text-ink mb-5"><ArrowLeft size={16} />Back</button>
-      <Card className="p-7">
-        <div className="flex items-start gap-5">
+      <Card className="p-5 sm:p-7">
+        <div className="flex flex-col sm:flex-row items-start gap-5">
           <Avatar user={u} size={88} />
           <div className="flex-1 min-w-0">
             <div className="flex items-center gap-2 flex-wrap">
               <h1 className="text-[26px] font-bold text-ink">{u.name}</h1>
+              {u.verified && <Badge tone="blue"><BadgeCheck size={12} />Verified</Badge>}
+              {u.suspended && <Badge tone="red">Suspended</Badge>}
               {u.creator && <Badge tone="soft">Creator</Badge>}
               {u.business && <Badge tone="blue">Founder · {u.business.name}</Badge>}
             </div>
@@ -52,12 +55,13 @@ export default function Profile() {
             <p className="text-[14.5px] text-ink-soft mt-3 max-w-2xl">{u.bio || 'No bio yet.'}</p>
             {rating.avg && <p className="mt-2 flex items-center gap-2 text-[13px]"><Stars value={rating.avg} /> <b>{rating.avg.toFixed(1)}</b> <span className="text-ink-muted">({rating.count} review{rating.count > 1 ? 's' : ''})</span></p>}
           </div>
-          <div className="flex flex-col gap-2 shrink-0">
+          <div className="flex flex-row flex-wrap sm:flex-col gap-2 shrink-0">
             {isMe ? <Link to="/workspace/profile"><Button variant="outline">Edit profile</Button></Link> : (
               <>
                 <Button onClick={() => need(() => chat.open(u.id))}><MessageCircle size={16} />Message</Button>
                 {u.creator && <Button variant="outline" onClick={() => need(() => setInviting(true))}><Send size={15} />Invite to campaign</Button>}
                 {u.creator && <Button variant="ghost" onClick={() => need(() => actions.toggleSave('creator', u.id))}><Bookmark size={15} className={saved ? 'fill-brand text-brand' : ''} />{saved ? 'Saved' : 'Save'}</Button>}
+                <Button variant="ghost" size="sm" onClick={() => need(() => setReporting(true))}><Flag size={14} />Report</Button>
               </>
             )}
           </div>
@@ -66,13 +70,13 @@ export default function Profile() {
 
       {u.creator && (
         <>
-          <div className="grid grid-cols-4 gap-4 mt-4">
+          <div className="grid grid-cols-2 lg:grid-cols-4 gap-4 mt-4">
             <Stat icon={Users} value={compact(followersOf(u))} label="Total followers" />
             <Stat icon={Activity} value={`${u.creator.engagement}%`} label="Avg. engagement" />
             <Stat icon={MousePointerClick} value={compact(clicks)} label="Clicks driven on Buzz" />
             <Stat icon={ShoppingBag} value={`${sales.length} · ${peso(sales.reduce((a, e) => a + e.amount, 0), { compact: true })}`} label="Sales driven on Buzz" />
           </div>
-          <div className="grid grid-cols-3 gap-4 mt-4">
+          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4 mt-4">
             <Card className="p-5">
               <p className="font-bold mb-3">Platforms</p>
               {u.creator.platforms.length === 0 && <p className="text-[13px] text-ink-muted">None added yet.</p>}
@@ -97,7 +101,7 @@ export default function Profile() {
           </div>
           <h2 className="text-[18px] font-bold mt-8 mb-3">Past campaign content</h2>
           {portfolio.length === 0 ? <Card><EmptyState title="No published campaign content yet" /></Card> : (
-            <div className="grid grid-cols-3 gap-4">
+            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
               {portfolio.map((x) => {
                 const c = campaignById(d, x.campaignId);
                 const eng = ((x.stats.likes + x.stats.comments + x.stats.shares + x.stats.saves) / Math.max(1, x.stats.reach)) * 100;
@@ -118,7 +122,7 @@ export default function Profile() {
       {u.business && (
         <>
           <h2 className="text-[18px] font-bold mt-8 mb-3 flex items-center gap-2"><Store size={18} className="text-brand-dark" />{u.business.name}: open opportunities</h2>
-          {listings.length === 0 ? <Card><EmptyState title="No open opportunities right now" /></Card> : <div className="grid grid-cols-3 gap-5">{listings.map((c) => <OpportunityCard key={c.id} campaign={c} />)}</div>}
+          {listings.length === 0 ? <Card><EmptyState title="No open opportunities right now" /></Card> : <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-5">{listings.map((c) => <OpportunityCard key={c.id} campaign={c} />)}</div>}
         </>
       )}
 
@@ -141,6 +145,7 @@ export default function Profile() {
         </div>
       )}
       {inviting && <InviteModal open onClose={() => setInviting(false)} creator={u} />}
+      {reporting && <ReportModal kind="user" refId={u.id} onClose={() => setReporting(false)} />}
     </main>
   );
 }

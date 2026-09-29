@@ -1,6 +1,6 @@
 import { useState } from 'react';
 import { NavLink, Outlet } from 'react-router-dom';
-import { LayoutGrid, UserRound, Briefcase, Handshake, ListChecks, BarChart3, MessageSquare, Bookmark, Settings, HelpCircle } from 'lucide-react';
+import { LayoutGrid, UserRound, Briefcase, Handshake, ListChecks, BarChart3, MessageSquare, Bookmark, Settings, HelpCircle, Wallet } from 'lucide-react';
 import { useDB, currentUser, unreadCount, actions } from '../../lib/store';
 import { Avatar, Segmented, Modal, cx } from '../../components/ui';
 
@@ -20,12 +20,12 @@ export function ModeToggle() {
 
 export function PageHead({ title, sub, action }) {
   return (
-    <div className="flex items-start justify-between gap-4 mb-7">
-      <div>
-        <h1 className="text-[28px] font-bold text-ink">{title}</h1>
-        {sub && <p className="text-[15px] text-ink-muted mt-0.5">{sub}</p>}
+    <div className="flex flex-col sm:flex-row sm:items-start justify-between gap-4 mb-7">
+      <div className="min-w-0">
+        <h1 className="text-[24px] sm:text-[28px] font-bold text-ink">{title}</h1>
+        {sub && <p className="text-[14px] sm:text-[15px] text-ink-muted mt-0.5">{sub}</p>}
       </div>
-      <div className="flex items-center gap-3">{action}</div>
+      <div className="flex flex-wrap items-center gap-3">{action}</div>
     </div>
   );
 }
@@ -34,7 +34,8 @@ const FAQ = [
   ['How do tracking links work?', 'Every accepted creator gets a link like buzz/#/go/CODE. Each visit counts as a click, then forwards to the brand\'s shop. Sales come from the link or from the matching promo code, which the brand logs in Analytics.'],
   ['How is Match % calculated?', 'Niche fit (40), platforms (20), rate vs. budget (20), location (10) and engagement (10). Hover any match % to see the breakdown.'],
   ['What is ROAS?', 'Return on ad spend: attributed revenue ÷ what you spent on creators. 3.0× means every ₱1 spent brought back ₱3 in sales.'],
-  ['How do payments work?', 'For now, brands pay creators directly (GCash, bank) and mark the deliverable as paid. Both sides see the same payout status.'],
+  ['How do payments work?', 'Brands pay each creator fee into Buzz escrow (plus a 5% service fee). The money is released to the creator\'s wallet the moment the brand approves the content, or automatically after 7 days without a response. Creators withdraw to GCash, Maya or a bank.'],
+  ['Something looks fake. What do I do?', 'Use Report on the listing, profile or post. Our team reviews every report within 24 hours.'],
   ['Can I be both a creator and a business owner?', 'Yes. Add both profiles in My Profile, then switch views with the toggle at the top of your workspace.'],
 ];
 
@@ -55,13 +56,24 @@ export default function WorkspaceLayout() {
     ['/workspace/collaborations', 'Collaborations', Handshake, pendingApps],
     ['/workspace/deliverables', 'Deliverables', ListChecks, dels],
     ['/workspace/analytics', 'Analytics', BarChart3],
+    ['/workspace/payments', 'Payments', Wallet],
     ['/workspace/messages', 'Messages', MessageSquare, unreadCount(d)],
     ['/workspace/saved', 'Saved', Bookmark],
     ['/workspace/settings', 'Settings', Settings],
   ];
   return (
-    <div className="flex min-h-[calc(100vh-64px)]">
-      <div className="w-[250px] shrink-0 bg-white border-r border-line">
+    <div className="lg:flex min-h-[calc(100vh-64px)]">
+      <div className="lg:hidden sticky top-16 z-20 bg-white border-b border-line overflow-x-auto">
+        <div className="flex gap-1 px-3 py-2 w-max">
+          {items.map(([to, label, Icon, badge, end]) => (
+            <NavLink key={to} to={to} end={end} className={({ isActive }) => cx('flex items-center gap-1.5 px-3 h-9 rounded-lg text-[13.5px] whitespace-nowrap', isActive ? 'bg-brand-soft text-ink font-medium' : 'text-ink-soft')}>
+              <Icon size={15} strokeWidth={1.8} />{label}{badge > 0 && <span className="min-w-[18px] h-[18px] px-1 rounded-full bg-brand text-white text-[10.5px] font-bold grid place-items-center">{badge}</span>}
+            </NavLink>
+          ))}
+          <button onClick={() => setHelp(true)} className="flex items-center gap-1.5 px-3 h-9 rounded-lg text-[13.5px] text-ink-soft whitespace-nowrap"><HelpCircle size={15} />Help</button>
+        </div>
+      </div>
+      <div className="hidden lg:block w-[250px] shrink-0 bg-white border-r border-line">
       <aside className="flex flex-col sticky top-16 h-[calc(100vh-64px)]">
         <nav className="p-3 space-y-0.5 flex-1">
           {items.map(([to, label, Icon, badge, end]) => (
@@ -83,7 +95,7 @@ export default function WorkspaceLayout() {
         </div>
       </aside>
       </div>
-      <div className="flex-1 min-w-0 px-10 py-9">
+      <div className="flex-1 min-w-0 px-4 sm:px-6 lg:px-10 py-6 lg:py-9">
         <div className="max-w-[1180px] mx-auto"><Outlet /></div>
       </div>
       <Modal open={help} onClose={() => setHelp(false)} title="Help & FAQ">

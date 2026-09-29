@@ -172,10 +172,10 @@ export function PillMenu({ label, value, options, onChange }) {
 
 export function Segmented({ options, value, onChange, dark = true, size = 'md' }) {
   return (
-    <div className="inline-flex bg-[#F1EEE8] rounded-xl p-1 gap-1">
+    <div className="inline-flex bg-[#F1EEE8] rounded-xl p-1 gap-1 max-w-full overflow-x-auto">
       {options.map((o) => (
         <button key={o.id} onClick={() => onChange(o.id)}
-          className={cx('rounded-lg font-medium transition-colors', size === 'sm' ? 'px-3 h-8 text-[13px]' : 'px-4 h-9 text-[13.5px]',
+          className={cx('rounded-lg font-medium transition-colors whitespace-nowrap', size === 'sm' ? 'px-3 h-8 text-[13px]' : 'px-4 h-9 text-[13.5px]',
             value === o.id ? (dark ? 'bg-ink text-white shadow' : 'bg-brand text-white shadow') : 'text-ink-muted hover:text-ink')}>
           {o.label}
         </button>
@@ -197,7 +197,7 @@ export function EmptyState({ icon: Icon, title, body, action }) {
 
 export function SectionHead({ title, icon: Icon, sub, action }) {
   return (
-    <div className="flex items-end justify-between gap-4 mb-4">
+    <div className="flex flex-wrap items-end justify-between gap-x-4 gap-y-2 mb-4">
       <div>
         <h2 className="text-[20px] font-bold text-ink flex items-center gap-2">{Icon && <Icon size={19} className="text-brand-dark" />}{title}</h2>
         {sub && <p className="text-[13px] text-ink-muted mt-0.5">{sub}</p>}
@@ -240,6 +240,41 @@ export function useAct() {
     } catch (e) {
       toast(e.message || 'Something went wrong', 'err');
       return false;
+    }
+  };
+}
+
+// ---------- confirm dialog (browser confirm() is blocked in embedded viewers) ----------
+const ConfirmCtx = createContext(() => Promise.resolve(false));
+export const useConfirm = () => useContext(ConfirmCtx);
+export function ConfirmProvider({ children }) {
+  const [req, setReq] = useState(null);
+  const ask = useCallback((opts) => new Promise((resolve) => setReq({ ...opts, resolve })), []);
+  const close = (v) => { req?.resolve(v); setReq(null); };
+  return (
+    <ConfirmCtx.Provider value={ask}>
+      {children}
+      <Modal open={!!req} onClose={() => close(false)} title={req?.title || 'Are you sure?'} width="max-w-md">
+        {req?.body && <p className="text-[14px] text-ink-soft">{req.body}</p>}
+        <div className="flex justify-end gap-2 mt-5">
+          <Button variant="outline" onClick={() => close(false)}>Cancel</Button>
+          <Button variant={req?.danger ? 'dark' : 'primary'} onClick={() => close(true)}>{req?.confirm || 'Confirm'}</Button>
+        </div>
+      </Modal>
+    </ConfirmCtx.Provider>
+  );
+}
+
+// Clipboard can be refused inside some app views; tell the person what to copy instead.
+export function useCopy() {
+  const toast = useToast();
+  return (text, label = 'Copied') => {
+    try {
+      const p = navigator.clipboard?.writeText(text);
+      if (!p) throw new Error('no clipboard');
+      p.then(() => toast(label), () => toast(`Copy this: ${text}`));
+    } catch {
+      toast(`Copy this: ${text}`);
     }
   };
 }

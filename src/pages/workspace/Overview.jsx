@@ -65,7 +65,7 @@ export default function Overview() {
     <>
       <PageHead title="My Workspace" sub={`Welcome back, ${me.name.split(' ')[0]}`} action={<ModeToggle />} />
       <h2 className="text-[20px] font-bold mb-4">Your {biz ? 'Business' : 'Influencer'} Journey</h2>
-      <div className="grid grid-cols-4 gap-4">
+      <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
         {journey.map(([Icon, t, s, cta, to], i) => (
           <Card key={t} className="p-5 flex flex-col">
             <div className="flex items-start justify-between"><IconTile icon={Icon} size="lg" /><span className="text-[26px] font-bold text-[#EDE6DA]">{i + 1}</span></div>
@@ -76,23 +76,23 @@ export default function Overview() {
         ))}
       </div>
 
-      <div className="mt-6 rounded-2xl bg-white border border-line px-5 py-3.5 flex items-center gap-6">
+      <div className="mt-6 rounded-2xl bg-white border border-line px-5 py-3.5 flex flex-wrap items-center gap-x-6 gap-y-2">
         <span className="flex items-center gap-2 text-[13.5px] font-semibold"><AlertCircle size={17} className="text-brand-dark" />Needs your attention</span>
         {attention.map(([v, l, to]) => (
           <Link key={l} to={to} className={cx('text-[13.5px] hover:underline', v ? 'text-ink' : 'text-ink-faint')}><b>{v || 0}</b> {l}</Link>
         ))}
       </div>
 
-      <div className="flex items-center justify-between mt-9 mb-4">
+      <div className="flex flex-wrap gap-3 items-center justify-between mt-9 mb-4">
         <h2 className="text-[20px] font-bold">Important Metrics at a Glance</h2>
         <PeriodPicker period={period} setPeriod={setPeriod} custom={custom} setCustom={setCustom} />
       </div>
-      <div className="grid grid-cols-5 gap-4">
+      <div className="grid grid-cols-2 lg:grid-cols-5 gap-4">
         {kpis.map(([icon, v, l, ch, inv]) => <Kpi key={l} icon={icon} value={v} label={l} change={ch} invert={inv} />)}
       </div>
       <p className="text-[12px] text-ink-muted mt-2">Trends compare with the previous period of the same length. <Link to="/workspace/analytics" className="text-brand-dark">See full analytics</Link></p>
 
-      <div className="grid grid-cols-3 gap-4 mt-8">
+      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4 mt-8">
         <Card className="p-5">
           <p className="font-bold mb-3 flex items-center gap-2"><Bell size={16} className="text-brand-dark" />Recent Activity</p>
           {activity.length === 0 && <p className="text-[13px] text-ink-muted">Nothing yet.</p>}

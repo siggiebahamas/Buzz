@@ -2,6 +2,7 @@ export const DAY = 86400000;
 
 export function peso(n, { compact = false } = {}) {
   if (n == null || Number.isNaN(n)) return '—';
+  if (n < 0) return `−${peso(-n, { compact })}`;
   if (compact && Math.abs(n) >= 1000) {
     const v = n / 1000;
     return `₱${v >= 100 ? Math.round(v) : v.toFixed(v % 1 === 0 ? 0 : 1)}K`;

@@ -3,5 +3,6 @@
 @tailwind utilities;
 
 html { -webkit-font-smoothing: antialiased; }
-body { background: #F8F6F2; color: #1C1917; }
+body { background: #F8F6F2; color: #1C1917; overflow-x: hidden; }
+@media (max-width: 767px) { body { padding-bottom: calc(64px + env(safe-area-inset-bottom, 0px)); } }
 ::selection { background: #FDE3B5; }

@@ -1,11 +1,12 @@
 import { useState } from 'react';
 import { Link } from 'react-router-dom';
-import { ExternalLink, Plus, Wallet, BarChart2, Check, RotateCcw, Upload } from 'lucide-react';
+import { ExternalLink, Plus, Wallet, BarChart2, Check, RotateCcw, Upload, Lock, ShieldCheck } from 'lucide-react';
 import { useDB, userById, campaignById, brandName, actions, membersOf } from '../../lib/store';
 import { PLATFORMS, DELIVERABLE_TYPES } from '../../lib/constants';
 import { peso, compact, dueLabel, DAY, shortDate } from '../../lib/format';
 import { Card, Button, Badge, Avatar, Select, Modal, Field, Input, Textarea, cx, useAct } from '../../components/ui';
 import { SubmitDeliverableModal } from '../../components/forms';
+import { FundModal } from './Payments';
 import { useMode, ModeToggle, PageHead } from './Layout';
 
 const COLS = [
@@ -30,15 +31,15 @@ function AddDeliverable({ onClose, campaigns }) {
     <Modal open onClose={onClose} title="Add a deliverable" subtitle="The creator gets notified with the due date and fee.">
       {campaigns.length === 0 ? <p className="text-sm text-ink-muted">You need a campaign with at least one accepted creator first.</p> : (
         <form onSubmit={submit} className="space-y-4">
-          <div className="grid grid-cols-2 gap-3">
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
             <Field label="Campaign"><Select value={f.campaignId} onChange={(e) => { set('campaignId', e.target.value); set('creatorId', membersOf(d, e.target.value)[0] || ''); }}>{campaigns.map((c) => <option key={c.id} value={c.id}>{c.productName}</option>)}</Select></Field>
             <Field label="Creator"><Select value={f.creatorId} onChange={(e) => set('creatorId', e.target.value)}>{members.map((m) => <option key={m} value={m}>{userById(d, m)?.name}</option>)}</Select></Field>
           </div>
-          <div className="grid grid-cols-2 gap-3">
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
             <Field label="Type"><Select value={f.type} onChange={(e) => set('type', e.target.value)}>{DELIVERABLE_TYPES.map((t) => <option key={t}>{t}</option>)}</Select></Field>
             <Field label="Platform"><Select value={f.platform} onChange={(e) => set('platform', e.target.value)}>{Object.entries(PLATFORMS).map(([k, p]) => <option key={k} value={k}>{p.label}</option>)}</Select></Field>
           </div>
-          <div className="grid grid-cols-2 gap-3">
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
             <Field label="Due date"><Input type="date" value={f.due} onChange={(e) => set('due', e.target.value)} /></Field>
             <Field label="Fee (₱)"><Input type="number" min="0" value={f.fee} onChange={(e) => set('fee', e.target.value)} /></Field>
           </div>
@@ -72,18 +73,18 @@ export default function Deliverables() {
   const all = d.deliverables.filter((x) => (biz ? campIds.has(x.campaignId) : x.creatorId === me.id));
   const rows = all.filter((x) => cid === 'all' || x.campaignId === cid);
   const campaignsInView = [...new Set(all.map((x) => x.campaignId))].map((id) => campaignById(d, id)).filter(Boolean);
-  const unpaid = rows.filter((x) => x.status === 'approved' && x.fee && !x.paidAt).reduce((a, x) => a + x.fee, 0);
+  const unpaid = rows.filter((x) => x.fee && !x.paidAt).reduce((a, x) => a + x.fee, 0);
   const overdue = rows.filter((x) => ['todo', 'revision'].includes(x.status) && x.dueAt < Date.now()).length;
 
   return (
     <>
       <PageHead title="Deliverables" sub={biz ? 'Approve content and track payments to creators' : 'Your content tasks, due dates and payouts'}
         action={<><ModeToggle />{biz && <Button onClick={() => setModal({ kind: 'add' })}><Plus size={16} />Add deliverable</Button>}</>} />
-      <div className="flex items-center gap-4 mb-5">
-        <div className="w-72"><Select value={cid} onChange={(e) => setCid(e.target.value)}><option value="all">All campaigns</option>{campaignsInView.map((c) => <option key={c.id} value={c.id}>{c.productName}</option>)}</Select></div>
+      <div className="flex flex-wrap items-center gap-3 sm:gap-4 mb-5">
+        <div className="w-full sm:w-72"><Select value={cid} onChange={(e) => setCid(e.target.value)}><option value="all">All campaigns</option>{campaignsInView.map((c) => <option key={c.id} value={c.id}>{c.productName}</option>)}</Select></div>
         <span className="text-[13px] text-ink-muted">{rows.length} deliverables · {overdue > 0 ? <b className="text-rose-600">{overdue} overdue</b> : 'none overdue'} · {peso(unpaid)} {biz ? 'to pay' : 'waiting for payment'}</span>
       </div>
-      <div className="grid grid-cols-4 gap-4 items-start">
+      <div className="grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-4 gap-4 items-start">
         {COLS.map(([status, label]) => {
           const items = rows.filter((x) => x.status === status).sort((a, b) => (status === 'approved' ? b.approvedAt - a.approvedAt : a.dueAt - b.dueAt));
           return (
@@ -110,7 +111,14 @@ export default function Deliverables() {
                         <span className="font-semibold">{x.fee ? peso(x.fee) : 'Commission'}</span>
                       </div>
                       {x.stats && <p className="text-[12px] text-ink-muted mt-1">{compact(x.stats.reach)} reach · {eng.toFixed(1)}% eng.</p>}
-                      {status === 'approved' && x.fee > 0 && <div className="mt-2">{x.paidAt ? <Badge tone="green">Paid {shortDate(x.paidAt)}</Badge> : <Badge tone="soft">Payment pending</Badge>}</div>}
+                      {x.fee > 0 && (
+                        <div className="mt-2">
+                          {x.escrow === 'released' && <Badge tone="green">Paid {shortDate(x.paidAt)}</Badge>}
+                          {x.escrow === 'outside' && <Badge tone="green">Paid outside Buzz</Badge>}
+                          {x.escrow === 'held' && <Badge tone="green"><ShieldCheck size={11} />Secured in escrow</Badge>}
+                          {x.escrow === 'unfunded' && <Badge tone={status === 'approved' ? 'red' : 'soft'}>{status === 'approved' ? 'Approved, unpaid' : 'Not funded yet'}</Badge>}
+                        </div>
+                      )}
                       <div className="flex flex-wrap gap-1.5 mt-3">
                         {x.contentUrl && <a href={x.contentUrl} target="_blank" rel="noreferrer" className="h-7 px-2 rounded-lg border border-line text-[12px] inline-flex items-center gap-1 hover:bg-canvas"><ExternalLink size={12} />Post</a>}
                         {!biz && ['todo', 'revision'].includes(status) && <Button size="sm" className="h-7 text-[12px]" onClick={() => setModal({ kind: 'submit', x })}><Upload size={12} />Submit</Button>}
@@ -121,7 +129,8 @@ export default function Deliverables() {
                             <Button size="sm" variant="outline" className="h-7 text-[12px]" onClick={() => setModal({ kind: 'revise', x })}><RotateCcw size={12} />Revise</Button>
                           </>
                         )}
-                        {biz && status === 'approved' && x.fee > 0 && !x.paidAt && <Button size="sm" variant="soft" className="h-7 text-[12px]" onClick={() => act(() => actions.markPaid(x.id), 'Marked as paid')}><Wallet size={12} />Mark paid</Button>}
+                        {biz && x.escrow === 'unfunded' && <Button size="sm" variant="soft" className="h-7 text-[12px]" onClick={() => setModal({ kind: 'fund', ids: [x.id] })}><Lock size={12} />{status === 'approved' ? 'Pay now' : 'Fund escrow'}</Button>}
+                        {biz && status === 'approved' && x.escrow === 'unfunded' && <Button size="sm" variant="ghost" className="h-7 text-[12px]" onClick={() => act(() => actions.markPaid(x.id), 'Marked as paid outside Buzz')}><Wallet size={12} />Paid outside</Button>}
                       </div>
                     </Card>
                   );
@@ -133,6 +142,7 @@ export default function Deliverables() {
       </div>
       {modal?.kind === 'add' && <AddDeliverable onClose={() => setModal(null)} campaigns={myCamps.filter((c) => membersOf(d, c.id).length)} />}
       {modal?.kind === 'submit' && <SubmitDeliverableModal open deliverable={modal.x} onClose={() => setModal(null)} />}
+      {modal?.kind === 'fund' && <FundModal ids={modal.ids} onClose={() => setModal(null)} />}
       {modal?.kind === 'revise' && <RevisionModal x={modal.x} onClose={() => setModal(null)} />}
     </>
   );

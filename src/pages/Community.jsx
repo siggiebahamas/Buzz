@@ -4,7 +4,7 @@ import { Plus, Heart, MessageCircle, ThumbsUp, Bookmark, Share2, ArrowRight, Fla
 import { useDB, userById, displayName, actions, isSaved, campaignById, currentUser } from '../lib/store';
 import { COMMUNITY_TOPICS, topicById, COLLAB_KINDS, categoryById } from '../lib/constants';
 import { timeAgo, shortDate } from '../lib/format';
-import { Button, Card, Avatar, Segmented, Select, EmptyState, cx, useAct, useToast } from '../components/ui';
+import { Button, Card, Avatar, Segmented, Select, EmptyState, cx, useAct, useCopy } from '../components/ui';
 import { PostModal, CollabModal } from '../components/forms';
 
 export function TopicChip({ topic }) {
@@ -15,7 +15,7 @@ export function TopicChip({ topic }) {
 export function PostCard({ p }) {
   const d = useDB();
   const nav = useNavigate();
-  const toast = useToast();
+  const copy = useCopy();
   const me = d.session.userId;
   const author = p.anonymous ? null : userById(d, p.authorId);
   const camp = p.campaignId ? campaignById(d, p.campaignId) : null;
@@ -38,7 +38,7 @@ export function PostCard({ p }) {
         {p.photos?.length > 0 && (
           <div className="flex gap-2 mt-3">{p.photos.slice(0, 4).map((src, i) => <img key={i} src={src} alt="" className="h-24 w-32 object-cover rounded-xl border border-line" />)}</div>
         )}
-        <div className="flex items-center gap-5 mt-4 pt-3 border-t border-line text-[13px] text-ink-muted">
+        <div className="flex flex-wrap items-center gap-x-5 gap-y-2 mt-4 pt-3 border-t border-line text-[13px] text-ink-muted">
           <button onClick={() => need(() => actions.toggleIn(p.id, 'likes'))} className={cx('inline-flex items-center gap-1.5 hover:text-ink', p.likes.includes(me) && 'text-rose-500')}><Heart size={16} className={p.likes.includes(me) ? 'fill-rose-500' : ''} />{p.likes.length}</button>
           <Link to={`/community/${p.id}`} className="inline-flex items-center gap-1.5 hover:text-ink"><MessageCircle size={16} />{p.comments.length}</Link>
           <button onClick={() => need(() => actions.toggleIn(p.id, 'interested'))} className={cx('inline-flex items-center gap-1.5 hover:text-ink', p.interested.includes(me) && 'text-brand-dark font-medium')}>
@@ -46,7 +46,7 @@ export function PostCard({ p }) {
           </button>
           <span className="ml-auto flex items-center gap-3">
             <button onClick={() => need(() => actions.toggleSave('post', p.id))} aria-label="Save" className="hover:text-ink"><Bookmark size={16} className={me && isSaved(d, 'post', p.id) ? 'fill-brand text-brand' : ''} /></button>
-            <button onClick={() => { navigator.clipboard?.writeText(`${window.location.origin}${window.location.pathname}#/community/${p.id}`); toast('Link copied'); }} aria-label="Share" className="hover:text-ink"><Share2 size={16} /></button>
+            <button onClick={() => copy(`${window.location.origin}${window.location.pathname}#/community/${p.id}`, 'Link copied')} aria-label="Share" className="hover:text-ink"><Share2 size={16} /></button>
           </span>
         </div>
       </div>
@@ -109,14 +109,14 @@ export default function Community() {
   const faces = d.users.filter((u) => u.id !== me?.id).slice(0, 5);
 
   return (
-    <main className="max-w-3xl mx-auto px-6 py-10">
+    <main className="max-w-3xl mx-auto px-4 sm:px-6 py-10">
       <div className="flex items-center justify-between">
-        <h1 className="text-[30px] font-bold text-ink">Community</h1>
+        <h1 className="text-[26px] sm:text-[30px] font-bold text-ink">Community</h1>
         <Button onClick={() => need(() => setModal(tab === 'collabs' ? 'collab' : 'post'))}><Plus size={17} />{tab === 'collabs' ? 'Start a Collab' : 'Create Post'}</Button>
       </div>
 
-      <div className="mt-6 rounded-2xl bg-brand-softer border border-[#F6DDB2] px-6 py-5 flex items-center gap-4">
-        <div className="flex-1">
+      <div className="mt-6 rounded-2xl bg-brand-softer border border-[#F6DDB2] px-5 sm:px-6 py-5 flex flex-wrap items-center gap-4">
+        <div className="flex-1 min-w-[220px]">
           <p className="text-[18px] font-bold text-ink">Ask the community anything</p>
           <p className="text-[14px] text-ink-muted">Share, learn, and grow together with {d.users.length} founders and creators.</p>
         </div>
@@ -138,7 +138,7 @@ export default function Community() {
           <div className="flex items-center justify-between mt-8 mb-4">
             <h2 className="text-[20px] font-bold">Trending Discussions</h2>
           </div>
-          <div className="grid grid-cols-4 gap-3">
+          <div className="grid grid-cols-2 lg:grid-cols-4 gap-3">
             {trending.map((p, i) => (
               <Link key={p.id} to={`/community/${p.id}`} className="bg-white border border-line rounded-2xl p-4 hover:shadow-lift transition-shadow">
                 <div className={cx('h-10 w-10 rounded-xl grid place-items-center', i === 0 ? 'bg-rose-50 text-rose-500' : 'bg-brand-soft text-brand-dark')}>{i === 0 ? <Flame size={19} /> : <Award size={19} />}</div>
@@ -148,9 +148,9 @@ export default function Community() {
             ))}
           </div>
 
-          <div className="flex items-center justify-between mt-10 mb-4">
+          <div className="flex flex-wrap gap-3 items-center justify-between mt-10 mb-4">
             <h2 className="text-[20px] font-bold">Latest Discussions</h2>
-            <div className="w-52"><Select value={sort} onChange={(e) => setSort(e.target.value)}><option value="latest">Sort: Latest</option><option value="liked">Sort: Most Liked</option><option value="discussed">Sort: Most Discussed</option></Select></div>
+            <div className="w-full sm:w-52"><Select value={sort} onChange={(e) => setSort(e.target.value)}><option value="latest">Sort: Latest</option><option value="liked">Sort: Most Liked</option><option value="discussed">Sort: Most Discussed</option></Select></div>
           </div>
           <div className="space-y-4">
             {sorted.length === 0 ? <Card><EmptyState title="No posts in this topic yet" body="Be the first to start the conversation." /></Card> : sorted.map((p) => <PostCard key={p.id} p={p} />)}
@@ -159,7 +159,7 @@ export default function Community() {
       ) : (
         <>
           <p className="text-[14px] text-ink-muted mt-5">Team up to cut costs and reach more people: bundle products, run joint giveaways, share a shoot or a bazaar booth, or form a creator squad.</p>
-          <div className="grid grid-cols-2 gap-4 mt-5">{d.collabs.map((c) => <CollabCard key={c.id} c={c} />)}</div>
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 mt-5">{d.collabs.map((c) => <CollabCard key={c.id} c={c} />)}</div>
           {d.collabs.length === 0 && <Card className="mt-5"><EmptyState icon={Users} title="No collabs yet" /></Card>}
         </>
       )}

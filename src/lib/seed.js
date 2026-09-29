@@ -2,6 +2,15 @@
 // Everything is generated relative to "now" so dates always look current.
 import { DAY } from './format';
 
+export const SERVICE_FEE = 0.05;
+
+// Demo-only password hash (FNV-1a). Real accounts will use the backend's auth.
+export function hashPw(pw) {
+  let h = 0x811c9dc5;
+  for (let i = 0; i < pw.length; i++) { h ^= pw.charCodeAt(i); h = Math.imul(h, 0x01000193) >>> 0; }
+  return h.toString(16);
+}
+
 function rng(seed) {
   let s = seed >>> 0;
   return () => {
@@ -313,9 +322,49 @@ export function buildSeed() {
     for (let k = 0; k < count; k++) profileViews.push({ userId: ME, ts: now - d * DAY - r() * DAY });
   }
 
+  // Accounts: demo password, verification badges, one admin (you).
+  const VERIFIED = new Set([ME, 'u_sili', 'u_protina', 'u_kalamansi', 'u_mangga', 'c_bianca', 'c_kaye', 'c_migo', 'c_aya', 'c_sam']);
+  users.forEach((u) => {
+    u.pw = hashPw('buzz1234');
+    u.verified = VERIFIED.has(u.id);
+    u.suspended = false;
+    u.admin = u.id === ME;
+    u.settings = { notif: { apps: true, deliverables: true, sales: true, community: false, email: true }, privacy: { public: true, showEarnings: false, showRates: true } };
+  });
+
+  // Escrow: brands fund fees up front, Buzz releases them when content is approved.
+  const transactions = [];
+  const tx = (userId, type, amount, ts, ref, note) => transactions.push({ id: id('tx'), userId, type, amount, ts, ref, note });
+  deliverables.forEach((x) => {
+    const c = campaignById[x.campaignId];
+    if (!x.fee) { x.escrow = 'none'; return; }
+    if (x.paidAt) {
+      x.escrow = 'released';
+      tx(c.ownerId, 'fund', -Math.round(x.fee * (1 + SERVICE_FEE)), x.approvedAt - 3 * DAY, x.id, `Escrow for ${x.title}`);
+      tx(x.creatorId, 'release', x.fee, x.paidAt, x.id, `Payment released: ${x.title}`);
+    } else if (x.status !== 'approved' && r() < 0.7) {
+      x.escrow = 'held';
+      tx(c.ownerId, 'fund', -Math.round(x.fee * (1 + SERVICE_FEE)), Math.min(now - DAY, x.dueAt - 10 * DAY), x.id, `Escrow for ${x.title}`);
+    } else {
+      x.escrow = 'unfunded';
+    }
+  });
+  // Creators have withdrawn part of what they earned.
+  users.filter((u) => u.creator).forEach((u) => {
+    const earned = transactions.filter((t) => t.userId === u.id && t.type === 'release').reduce((a, t) => a + t.amount, 0);
+    if (earned > 1500) tx(u.id, 'payout', -Math.round(earned * 0.6 / 100) * 100, now - between(2, 10) * DAY, null, 'Withdrawal to GCash •••• 4821');
+  });
+
+  const reports = [
+    { id: id('rep'), kind: 'post', refId: posts[6].id, reporterId: 'c_kaye', reason: 'Spam or self-promotion', note: 'Looks like an ad, not a question.', ts: now - 20 * 3600000, status: 'open' },
+    { id: id('rep'), kind: 'campaign', refId: 'cmp_ipon', reporterId: 'c_hannah', reason: 'Misleading pay or terms', note: 'Pay per install is not explained.', ts: now - 2 * DAY, status: 'open' },
+    { id: id('rep'), kind: 'user', refId: 'c_marco', reporterId: 'u_cloud9', reason: 'Fake followers', note: 'Engagement looks bought.', ts: now - 5 * DAY, status: 'dismissed' },
+  ];
+
   return {
-    version: 1,
+    version: 3,
     session: { userId: ME, mode: 'business' },
     users, campaigns, applications, links, events, deliverables, reviews, posts, collabs, threads, notifications, saved, profileViews,
+    transactions, reports, emails: [], resets: [],
   };
 }

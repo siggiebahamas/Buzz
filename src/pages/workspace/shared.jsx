@@ -3,17 +3,17 @@ import { Card, IconTile, Trend, Input, cx } from '../../components/ui';
 
 export function PeriodPicker({ period, setPeriod, custom, setCustom }) {
   return (
-    <div className="flex items-center gap-3">
+    <div className="flex flex-wrap items-center gap-3 max-w-full">
       {period === 'custom' && (
-        <div className="flex items-center gap-2">
+        <div className="flex flex-wrap items-center gap-2">
           <Input type="date" value={custom.from} onChange={(e) => setCustom({ ...custom, from: e.target.value })} className="!h-9 !w-[150px]" />
           <span className="text-ink-muted text-sm">to</span>
           <Input type="date" value={custom.to} onChange={(e) => setCustom({ ...custom, to: e.target.value })} className="!h-9 !w-[150px]" />
         </div>
       )}
-      <div className="inline-flex bg-[#F1EEE8] rounded-xl p-1 gap-0.5">
+      <div className="inline-flex bg-[#F1EEE8] rounded-xl p-1 gap-0.5 overflow-x-auto max-w-full">
         {PERIODS.map((p) => (
-          <button key={p.id} onClick={() => setPeriod(p.id)} className={cx('px-3 h-8 rounded-lg text-[13px] transition-colors', period === p.id ? 'bg-brand text-white font-medium shadow' : 'text-ink-muted hover:text-ink')}>{p.label}</button>
+          <button key={p.id} onClick={() => setPeriod(p.id)} className={cx('px-3 h-8 rounded-lg text-[13px] transition-colors whitespace-nowrap', period === p.id ? 'bg-brand text-white font-medium shadow' : 'text-ink-muted hover:text-ink')}>{p.label}</button>
         ))}
       </div>
     </div>

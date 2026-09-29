@@ -59,7 +59,7 @@ export default function MyProfile() {
               <input ref={fileRef} type="file" accept="image/*" hidden onChange={async (e) => { if (e.target.files[0]) setBase({ ...base, photo: await readImage(e.target.files[0]) }); }} />
             </div>
           </div>
-          <div className="grid grid-cols-3 gap-4">
+          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
             <Field label="Full name"><Input value={base.name} onChange={(e) => setBase({ ...base, name: e.target.value })} /></Field>
             <Field label="City"><Input value={base.location} onChange={(e) => setBase({ ...base, location: e.target.value })} /></Field>
             <Field label="Region"><Select value={base.region} onChange={(e) => setBase({ ...base, region: e.target.value })}>{REGIONS.map((r) => <option key={r}>{r}</option>)}</Select></Field>
@@ -71,7 +71,7 @@ export default function MyProfile() {
           <Checkbox checked={hasCr} onChange={setHasCr} label="I'm a creator" hint="Shows your audience, rates and results to brands." />
           {hasCr && (
             <div className="space-y-4 mt-5">
-              <div className="grid grid-cols-2 gap-4">
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                 <Field label="Handle"><Input value={cr.handle} onChange={(e) => setCr({ ...cr, handle: e.target.value.replace(/^@/, '') })} /></Field>
                 <Field label="Average engagement rate (%)" hint="From your insights: interactions ÷ reach"><Input type="number" step="0.1" min="0" value={cr.engagement} onChange={(e) => setCr({ ...cr, engagement: e.target.value })} /></Field>
               </div>
@@ -94,7 +94,7 @@ export default function MyProfile() {
                   <Button type="button" variant="outline" size="sm" onClick={() => setCr({ ...cr, platforms: [...cr.platforms, { id: 'tiktok', followers: 0 }] })}><Plus size={14} />Add platform</Button>
                 </div>
               </Field>
-              <div className="grid grid-cols-3 gap-4">
+              <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
                 {[['reel', 'Reel / TikTok (₱)'], ['post', 'Feed post (₱)'], ['story', 'Story set (₱)']].map(([k, l]) => (
                   <Field key={k} label={l}><Input type="number" min="0" value={cr.rates[k]} onChange={(e) => setCr({ ...cr, rates: { ...cr.rates, [k]: e.target.value } })} /></Field>
                 ))}
@@ -107,7 +107,7 @@ export default function MyProfile() {
         <Card className="p-6">
           <Checkbox checked={hasBiz} onChange={setHasBiz} label="I own a business" hint="Lets you post opportunities and hire creators." />
           {hasBiz && (
-            <div className="grid grid-cols-2 gap-4 mt-5">
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 mt-5">
               <Field label="Business name"><Input value={biz.name} onChange={(e) => setBiz({ ...biz, name: e.target.value })} /></Field>
               <Field label="What you sell"><Input value={biz.type} onChange={(e) => setBiz({ ...biz, type: e.target.value })} /></Field>
               <Field label="Main category"><Select value={biz.category} onChange={(e) => setBiz({ ...biz, category: e.target.value })}>{CATEGORIES.slice(1).map((c) => <option key={c.id} value={c.id}>{c.label}</option>)}</Select></Field>

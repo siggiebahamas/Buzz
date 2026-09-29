@@ -1,10 +1,10 @@
 import { createContext, useContext, useEffect, useRef, useState } from 'react';
 import { NavLink, Link, useNavigate, useLocation } from 'react-router-dom';
-import { Bell, MessageCircle, X, Send, ArrowLeft, LogOut, RotateCcw, UserRound, Repeat, Search } from 'lucide-react';
+import { Bell, MessageCircle, X, Send, ArrowLeft, LogOut, RotateCcw, UserRound, Repeat, Search, ShieldAlert, Compass, Sparkles, Users, LayoutGrid } from 'lucide-react';
 import { useDB, currentUser, userById, actions, unreadCount, displayName, campaignById } from '../lib/store';
 import { timeAgo } from '../lib/format';
 import { Logo } from './visuals';
-import { Avatar, Button, cx } from './ui';
+import { Avatar, Button, cx, useConfirm } from './ui';
 
 const ChatCtx = createContext({ open: () => {} });
 export const useChat = () => useContext(ChatCtx);
@@ -32,7 +32,7 @@ function Notifications() {
         {unread > 0 && <span className="absolute top-1 right-1 min-w-[16px] h-4 px-1 rounded-full bg-brand text-[10px] font-bold text-white grid place-items-center">{unread}</span>}
       </button>
       {open && (
-        <div className="absolute right-0 mt-2 w-[340px] bg-white border border-line rounded-2xl shadow-lift z-40 overflow-hidden">
+        <div className="fixed sm:absolute right-3 sm:right-0 left-3 sm:left-auto top-16 sm:top-auto mt-0 sm:mt-2 sm:w-[340px] bg-white border border-line rounded-2xl shadow-lift z-40 overflow-hidden">
           <div className="flex items-center justify-between px-4 py-3 border-b border-line">
             <p className="font-semibold text-sm">Notifications</p>
             {unread > 0 && <button onClick={() => actions.markNotificationsRead()} className="text-[12px] text-brand-dark font-medium">Mark all read</button>}
@@ -61,6 +61,7 @@ function AccountMenu() {
   const nav = useNavigate();
   const [open, setOpen] = useState(false);
   const [switching, setSwitching] = useState(false);
+  const ask = useConfirm();
   const [q, setQ] = useState('');
   const ref = useRef(null);
   useOutside(ref, () => { setOpen(false); setSwitching(false); });
@@ -80,8 +81,9 @@ function AccountMenu() {
           {!switching ? (
             <div className="p-1.5">
               <MenuItem icon={UserRound} onClick={() => { setOpen(false); nav(`/profile/${me.id}`); }}>View public profile</MenuItem>
+              {me.admin && <MenuItem icon={ShieldAlert} onClick={() => { setOpen(false); nav('/admin'); }}>Admin: Trust & Safety</MenuItem>}
               <MenuItem icon={Repeat} onClick={() => setSwitching(true)}>Switch demo account</MenuItem>
-              <MenuItem icon={RotateCcw} onClick={() => { if (confirm('Reset all demo data to the original sample set?')) { actions.resetDemo(); setOpen(false); nav('/'); } }}>Reset demo data</MenuItem>
+              <MenuItem icon={RotateCcw} onClick={async () => { setOpen(false); if (await ask({ title: 'Reset demo data?', body: 'Every change you made is replaced with the original sample brands, creators and campaigns.', confirm: 'Reset', danger: true })) { actions.resetDemo(); nav('/'); } }}>Reset demo data</MenuItem>
               <MenuItem icon={LogOut} onClick={() => { actions.logout(); setOpen(false); nav('/'); }} danger>Sign out</MenuItem>
             </div>
           ) : (
@@ -120,14 +122,16 @@ export function Header() {
   const d = useDB();
   const me = currentUser(d);
   const loc = useLocation();
-  const tabs = [['/', 'Discover'], ['/opportunities', 'Opportunities'], ['/community', 'Community'], ['/workspace', 'My Workspace']];
+  const tabs = [['/', 'Discover', Compass], ['/opportunities', 'Opportunities', Sparkles], ['/community', 'Community', Users], ['/workspace', 'My Workspace', LayoutGrid]];
+  const isActive = (to) => (to === '/' ? loc.pathname === '/' : loc.pathname.startsWith(to) || (to === '/opportunities' && (loc.pathname.startsWith('/opportunity') || loc.pathname.startsWith('/profile'))));
   return (
+    <>
     <header className="sticky top-0 z-30 bg-white/95 backdrop-blur border-b border-line">
-      <div className="max-w-[1320px] mx-auto h-16 px-6 flex items-center">
+      <div className="max-w-[1320px] mx-auto h-16 px-4 sm:px-6 flex items-center">
         <div className="flex-1"><Logo /></div>
-        <nav className="flex items-center gap-8">
+        <nav className="hidden md:flex items-center gap-8">
           {tabs.map(([to, label]) => {
-            const active = to === '/' ? loc.pathname === '/' : loc.pathname.startsWith(to) || (to === '/opportunities' && loc.pathname.startsWith('/opportunity')) || (to === '/opportunities' && loc.pathname.startsWith('/profile'));
+            const active = isActive(to);
             return (
               <NavLink key={to} to={to} className={cx('relative h-16 grid place-items-center text-[15px] transition-colors', active ? 'text-ink font-medium' : 'text-ink-muted hover:text-ink')}>
                 {label}
@@ -146,6 +150,14 @@ export function Header() {
         </div>
       </div>
     </header>
+    <nav className="md:hidden fixed bottom-0 inset-x-0 z-30 bg-white border-t border-line grid grid-cols-4" style={{ paddingBottom: 'env(safe-area-inset-bottom, 0px)' }}>
+      {tabs.map(([to, label, Icon]) => (
+        <NavLink key={to} to={to} className={cx('flex flex-col items-center gap-0.5 py-2 text-[11px]', isActive(to) ? 'text-brand-dark font-semibold' : 'text-ink-muted')}>
+          <Icon size={20} strokeWidth={1.8} />{label.replace('My ', '')}
+        </NavLink>
+      ))}
+    </nav>
+    </>
   );
 }
 
@@ -238,7 +250,7 @@ export function ChatProvider({ children }) {
       {me && (
         <>
           {open && (
-            <div className="fixed bottom-24 right-6 z-40 w-[380px] h-[520px] bg-white border border-line rounded-2xl shadow-lift overflow-hidden flex flex-col">
+            <div className="fixed bottom-[148px] md:bottom-24 right-3 left-3 sm:left-auto sm:right-6 z-40 sm:w-[380px] h-[min(520px,calc(100vh-220px))] bg-white border border-line rounded-2xl shadow-lift overflow-hidden flex flex-col">
               {thread ? <Conversation thread={thread} onBack={() => setThreadId(null)} /> : (
                 <>
                   <div className="flex items-center justify-between px-4 py-3 border-b border-line">
@@ -250,7 +262,7 @@ export function ChatProvider({ children }) {
               )}
             </div>
           )}
-          <button onClick={() => setOpen(!open)} className="fixed bottom-6 right-6 z-40 h-14 w-14 rounded-full bg-brand text-white shadow-lift grid place-items-center hover:bg-brand-dark transition-colors" aria-label="Messages">
+          <button onClick={() => setOpen(!open)} className="fixed bottom-[76px] md:bottom-6 right-4 md:right-6 z-40 h-14 w-14 rounded-full bg-brand text-white shadow-lift grid place-items-center hover:bg-brand-dark transition-colors" aria-label="Messages">
             {open ? <X size={22} /> : <MessageCircle size={23} strokeWidth={2} />}
             {!open && unread > 0 && <span className="absolute -top-0.5 -right-0.5 min-w-[20px] h-5 px-1 rounded-full bg-ink text-white text-[11px] font-bold grid place-items-center">{unread}</span>}
           </button>

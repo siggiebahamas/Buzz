@@ -33,13 +33,13 @@ export default function Analytics() {
 
       {biz ? (
         <>
-          <div className="grid grid-cols-4 gap-4">
+          <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
             <Kpi icon={CircleDollarSign} value={peso(m.cur.revenue)} label="Sales from creators" change={m.change.revenue} hint="Orders through tracking links and promo codes" />
             <Kpi icon={Wallet} value={peso(m.cur.spend)} label="Spent on creators" change={m.change.spend} invert hint={`${peso(m.cur.fees)} fees + ${peso(m.cur.commission)} commission`} />
             <Kpi icon={TrendingUp} value={roasTxt(m.cur.roas)} label="Return on spend (ROAS)" change={m.change.roas} tone="green" hint="Sales ÷ spend. Above 1× means creators pay for themselves" />
             <Kpi icon={Receipt} value={m.cur.cpo != null ? peso(m.cur.cpo) : '—'} label="Cost per order" change={m.change.cpo} invert hint="Spend ÷ orders. Compare with your margin per order" />
           </div>
-          <div className="grid grid-cols-4 gap-4 mt-4">
+          <div className="grid grid-cols-2 lg:grid-cols-4 gap-4 mt-4">
             <Kpi icon={ShoppingBag} value={m.cur.orders.toLocaleString()} label="Orders" change={m.change.orders} tone="neutral" />
             <Kpi icon={MousePointerClick} value={compact(m.cur.clicks)} label="Link clicks" change={m.change.clicks} tone="neutral" />
             <Kpi icon={Percent} value={pct(m.cur.conversion, 2)} label="Click-to-order rate" change={m.change.conversion} tone="neutral" hint="Low? The product page or price may be the problem, not the creator" />
@@ -48,13 +48,13 @@ export default function Analytics() {
         </>
       ) : (
         <>
-          <div className="grid grid-cols-4 gap-4">
+          <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
             <Kpi icon={Wallet} value={peso(m.cur.earnings)} label="Earnings received" change={m.change.earnings} hint={`${peso(m.cur.paid)} fees + ${peso(m.cur.commission)} commission`} />
             <Kpi icon={Clock} value={peso(m.pendingPayout)} label="Approved, waiting for payment" tone="neutral" hint="Follow up with the brand if it's past 7 days" />
             <Kpi icon={CircleDollarSign} value={peso(m.cur.revenue)} label="Sales you drove for brands" change={m.change.revenue} tone="green" hint="Your best pitch for the next campaign" />
             <Kpi icon={ShoppingBag} value={m.cur.orders.toLocaleString()} label="Orders from your link & code" change={m.change.orders} tone="neutral" />
           </div>
-          <div className="grid grid-cols-4 gap-4 mt-4">
+          <div className="grid grid-cols-2 lg:grid-cols-4 gap-4 mt-4">
             <Kpi icon={MousePointerClick} value={compact(m.cur.clicks)} label="Link clicks" change={m.change.clicks} tone="neutral" />
             <Kpi icon={Activity} value={compact(m.cur.reach)} label="Audience reach" change={m.change.reach} tone="neutral" />
             <Kpi icon={Sparkles} value={pct(m.cur.engagement)} label="Engagement rate" change={m.change.engagement} tone="neutral" />
@@ -63,7 +63,7 @@ export default function Analytics() {
         </>
       )}
 
-      <div className="grid grid-cols-[1fr_340px] gap-4 mt-4">
+      <div className="grid grid-cols-1 lg:grid-cols-[1fr_340px] gap-4 mt-4">
         <Card className="p-5">
           <div className="flex items-center justify-between mb-2">
             <p className="font-bold">{biz ? 'Sales vs. spend' : 'Earnings over time'}</p>
@@ -86,7 +86,7 @@ export default function Analytics() {
               <span className="text-[12px] text-ink-muted">Who actually sells, ranked by sales in this period</span>
             </div>
             {m.perCreator.length === 0 ? <EmptyState icon={Handshake} title="No creators yet" body="Accept creators on a campaign to start tracking." /> : (
-              <table className="w-full text-[13.5px]">
+              <div className="overflow-x-auto"><table className="w-full text-[13.5px] min-w-[640px]">
                 <thead><tr className="text-left text-[12px] text-ink-muted border-b border-line">
                   <th className="py-2 font-medium">Creator</th><th className="font-medium">Campaign</th><th className="font-medium text-right">Clicks</th><th className="font-medium text-right">Orders</th><th className="font-medium text-right">Conv.</th><th className="font-medium text-right">Sales</th><th className="font-medium text-right">Cost</th><th className="font-medium text-right">ROAS</th>
                 </tr></thead>
@@ -107,11 +107,11 @@ export default function Analytics() {
                     );
                   })}
                 </tbody>
-              </table>
+              </table></div>
             )}
           </Card>
 
-          <div className="grid grid-cols-2 gap-4 mt-4">
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 mt-4">
             <Card className="p-5">
               <p className="font-bold mb-3">Campaigns</p>
               <div className="space-y-4">
@@ -133,7 +133,7 @@ export default function Analytics() {
             </Card>
             <Card className="p-5">
               <p className="font-bold mb-3">Payments to creators</p>
-              <div className="grid grid-cols-2 gap-3">
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
                 <div className="rounded-xl bg-canvas p-3"><p className="text-[12px] text-ink-muted">Paid this period</p><p className="text-[20px] font-bold">{peso(m.cur.paid)}</p></div>
                 <div className="rounded-xl bg-brand-softer p-3"><p className="text-[12px] text-ink-muted">Owed for approved work</p><p className="text-[20px] font-bold">{peso(m.owed)}</p></div>
                 <div className="rounded-xl bg-canvas p-3"><p className="text-[12px] text-ink-muted">Commission accrued</p><p className="text-[20px] font-bold">{peso(m.cur.commission)}</p></div>
@@ -147,7 +147,7 @@ export default function Analytics() {
         <Card className="p-5 mt-4">
           <p className="font-bold mb-3">By campaign</p>
           {m.perCampaign.length === 0 ? <EmptyState title="No campaigns yet" /> : (
-            <table className="w-full text-[13.5px]">
+            <div className="overflow-x-auto"><table className="w-full text-[13.5px] min-w-[640px]">
               <thead><tr className="text-left text-[12px] text-ink-muted border-b border-line">
                 <th className="py-2 font-medium">Campaign</th><th className="font-medium">Your code</th><th className="font-medium text-right">Clicks</th><th className="font-medium text-right">Orders</th><th className="font-medium text-right">Sales driven</th><th className="font-medium text-right">Earned</th><th className="font-medium text-right">Pending</th>
               </tr></thead>
@@ -164,7 +164,7 @@ export default function Analytics() {
                   </tr>
                 ))}
               </tbody>
-            </table>
+            </table></div>
           )}
           <p className="text-[12px] text-ink-muted mt-3">All-time totals per campaign. The cards above follow the selected period.</p>
         </Card>
@@ -173,7 +173,7 @@ export default function Analytics() {
       <Card className="p-5 mt-4">
         <p className="font-bold mb-3">Content performance</p>
         {content.length === 0 ? <p className="text-[13px] text-ink-muted">No posts went live in this period.</p> : (
-          <table className="w-full text-[13.5px]">
+          <div className="overflow-x-auto"><table className="w-full text-[13.5px] min-w-[640px]">
             <thead><tr className="text-left text-[12px] text-ink-muted border-b border-line">
               <th className="py-2 font-medium">Content</th><th className="font-medium">{biz ? 'Creator' : 'Brand'}</th><th className="font-medium">Posted</th><th className="font-medium text-right">Reach</th><th className="font-medium text-right">Likes</th><th className="font-medium text-right">Comments</th><th className="font-medium text-right">Shares</th><th className="font-medium text-right">Saves</th><th className="font-medium text-right">Eng. rate</th>
             </tr></thead>
@@ -196,7 +196,7 @@ export default function Analytics() {
                 );
               })}
             </tbody>
-          </table>
+          </table></div>
         )}
       </Card>
 

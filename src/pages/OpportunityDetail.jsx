@@ -1,13 +1,13 @@
 import { useEffect, useState } from 'react';
 import { useParams, Link, useNavigate } from 'react-router-dom';
-import { ArrowLeft, Bookmark, MessageCircle, Calendar, Users, FileText, MapPin, Target, CheckCircle2, Clock, Eye, Share2, Star } from 'lucide-react';
-import { useDB, campaignById, userById, currentUser, applicantsCount, membersOf, isSaved, actions, brandName, ratingOf } from '../lib/store';
+import { ArrowLeft, Bookmark, MessageCircle, Calendar, Users, FileText, MapPin, Target, CheckCircle2, Clock, Eye, Share2, Star, Flag, BadgeCheck, ShieldCheck } from 'lucide-react';
+import { useDB, liveCampaigns, campaignById, userById, currentUser, applicantsCount, membersOf, isSaved, actions, brandName, ratingOf } from '../lib/store';
 import { categoryById, COMP_TYPES, PLATFORMS } from '../lib/constants';
 import { budgetLabel, shortDate, peso } from '../lib/format';
 import { matchScore } from '../lib/match';
 import { ProductImage, OpportunityCard } from '../components/visuals';
-import { Button, Card, Badge, Avatar, cx, useToast } from '../components/ui';
-import { ApplyModal } from '../components/forms';
+import { Button, Card, Badge, Avatar, cx, useToast, useCopy } from '../components/ui';
+import { ApplyModal, ReportModal } from '../components/forms';
 import { useChat } from '../components/Shell';
 
 export default function OpportunityDetail() {
@@ -15,13 +15,15 @@ export default function OpportunityDetail() {
   const d = useDB();
   const nav = useNavigate();
   const toast = useToast();
+  const copy = useCopy();
   const chat = useChat();
   const c = campaignById(d, id);
   const me = currentUser(d);
   const [photo, setPhoto] = useState(0);
   const [applying, setApplying] = useState(false);
+  const [reporting, setReporting] = useState(false);
   useEffect(() => { if (c) actions.viewCampaign(id); }, [id]); // eslint-disable-line react-hooks/exhaustive-deps
-  if (!c) return <main className="max-w-3xl mx-auto p-10 text-center text-ink-muted">This opportunity no longer exists. <Link to="/opportunities" className="text-brand-dark">Browse others</Link></main>;
+  if (!c || (c.removed && !me?.admin && me?.id !== c?.ownerId)) return <main className="max-w-3xl mx-auto p-10 text-center text-ink-muted">This opportunity no longer exists. <Link to="/opportunities" className="text-brand-dark">Browse others</Link></main>;
 
   const owner = userById(d, c.ownerId);
   const isOwner = me?.id === c.ownerId;
@@ -31,15 +33,15 @@ export default function OpportunityDetail() {
   const saved = me && isSaved(d, 'campaign', c.id);
   const rating = ratingOf(d, owner.id);
   const photos = c.photos?.length ? c.photos.length : (c.photoHints?.length || 1);
-  const similar = d.campaigns.filter((x) => x.id !== c.id && x.published && x.category === c.category && x.status !== 'completed').slice(0, 3);
+  const similar = liveCampaigns(d).filter((x) => x.id !== c.id && x.category === c.category && x.status !== 'completed').slice(0, 3);
   const estEarn = c.compensation === 'commission' || c.compensation === 'hybrid' ? Math.round((c.aov || 0) * c.commissionRate / 100) : 0;
 
   const need = (fn) => (me ? fn() : nav('/login', { state: { from: `/opportunity/${c.id}` } }));
 
   return (
-    <main className="max-w-6xl mx-auto px-6 py-8">
+    <main className="max-w-6xl mx-auto px-4 sm:px-6 py-8">
       <button onClick={() => nav(-1)} className="inline-flex items-center gap-1.5 text-[13.5px] text-ink-muted hover:text-ink mb-5"><ArrowLeft size={16} />Back</button>
-      <div className="grid grid-cols-[1fr_360px] gap-8">
+      <div className="grid grid-cols-1 lg:grid-cols-[1fr_360px] gap-8">
         <div>
           <ProductImage key={photo} campaign={c} index={photo} className="aspect-[16/10] border border-line" rounded="rounded-2xl" showNav />
           {photos > 1 && (
@@ -63,7 +65,7 @@ export default function OpportunityDetail() {
           <Card className="mt-6 p-6">
             <h2 className="font-bold text-ink mb-2">The brief</h2>
             <p className="text-[14.5px] text-ink-soft leading-relaxed whitespace-pre-line">{c.description}</p>
-            <div className="grid grid-cols-2 gap-4 mt-6">
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 mt-6">
               <Fact icon={Target} label="Target audience" value={c.audience || '—'} />
               <Fact icon={MapPin} label="Brand location" value={`${owner.location} · ${c.region}`} />
               <Fact icon={Calendar} label="Apply by" value={shortDate(c.deadline)} />
@@ -135,12 +137,13 @@ export default function OpportunityDetail() {
               ) : (
                 <Button size="lg" className="w-full" onClick={() => need(() => (me.creator ? setApplying(true) : toast('Add a creator profile in My Profile to apply.', 'err')))}>Apply to collaborate</Button>
               )}
-              <div className="grid grid-cols-3 gap-2">
+              <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-2">
                 <Button variant="outline" onClick={() => need(() => actions.toggleSave('campaign', c.id))}><Bookmark size={15} className={saved ? 'fill-brand text-brand' : ''} />{saved ? 'Saved' : 'Save'}</Button>
                 {!isOwner ? <Button variant="outline" onClick={() => need(() => chat.open(owner.id, c.id))}><MessageCircle size={15} />Ask</Button> : <span />}
-                <Button variant="outline" onClick={() => { navigator.clipboard?.writeText(window.location.href); toast('Link copied'); }}><Share2 size={15} />Share</Button>
+                <Button variant="outline" onClick={() => copy(window.location.href, 'Link copied')}><Share2 size={15} />Share</Button>
               </div>
-              <p className="text-[12px] text-ink-muted text-center flex items-center justify-center gap-1"><Clock size={12} />Posted {shortDate(c.createdAt)}</p>
+              <p className="text-[12px] text-ink-muted text-center flex items-center justify-center gap-1"><Clock size={12} />Posted {shortDate(c.createdAt)}{!isOwner && <> · <button onClick={() => need(() => setReporting(true))} className="inline-flex items-center gap-1 hover:text-ink"><Flag size={12} />Report</button></>}</p>
+              {['flat', 'hybrid'].includes(c.compensation) && <p className="text-[12px] text-emerald-700 bg-emerald-50 rounded-lg p-2 flex gap-1.5"><ShieldCheck size={14} className="shrink-0 mt-px" />Fees are paid through Buzz escrow and released when your content is approved.</p>}
             </div>
           </Card>
 
@@ -149,7 +152,7 @@ export default function OpportunityDetail() {
             <Link to={`/profile/${owner.id}`} className="flex items-center gap-3">
               <Avatar user={owner} size={44} />
               <div>
-                <p className="font-bold text-ink hover:underline">{brandName(owner)}</p>
+                <p className="font-bold text-ink hover:underline inline-flex items-center gap-1">{brandName(owner)}{owner.verified && <BadgeCheck size={15} className="text-sky-600" />}</p>
                 <p className="text-[12.5px] text-ink-muted">{owner.name} · {owner.business?.type}</p>
               </div>
             </Link>
@@ -162,10 +165,11 @@ export default function OpportunityDetail() {
       {similar.length > 0 && (
         <section className="mt-14">
           <h2 className="text-[20px] font-bold mb-4">More in {categoryById(c.category).label}</h2>
-          <div className="grid grid-cols-3 gap-5">{similar.map((x) => <OpportunityCard key={x.id} campaign={x} />)}</div>
+          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-5">{similar.map((x) => <OpportunityCard key={x.id} campaign={x} />)}</div>
         </section>
       )}
       {applying && <ApplyModal open onClose={() => setApplying(false)} campaign={c} />}
+      {reporting && <ReportModal kind="campaign" refId={c.id} onClose={() => setReporting(false)} />}
     </main>
   );
 }
