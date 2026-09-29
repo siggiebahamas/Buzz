@@ -28,4 +28,4 @@ All data access goes through `src/lib/store.js`, so moving to a real backend (e.
 
 ## Deploy
 
-`.github/workflows/deploy.yml` builds and publishes to GitHub Pages on every push to `main`. Enable it once under **Settings → Pages → Source: GitHub Actions**.
+`.github/workflows/deploy.yml` builds the site on every push to `main` and publishes it to the `gh-pages` branch, which GitHub Pages serves at https://siggiebahamas.github.io/buzz/.
