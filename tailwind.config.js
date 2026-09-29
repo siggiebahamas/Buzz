@@ -5,6 +5,7 @@ export default {
     extend: {
       fontFamily: {
         sans: ['"Plus Jakarta Sans"', 'system-ui', 'sans-serif'],
+        serif: ['Fraunces', 'Georgia', '"Times New Roman"', 'serif'],
       },
       colors: {
         canvas: '#F8F6F2',
@@ -12,6 +13,8 @@ export default {
         line: { DEFAULT: '#ECE8E1', strong: '#E0DAD0' },
         brand: { DEFAULT: '#F59E0B', dark: '#D97706', ink: '#B45309', soft: '#FEF3E2', softer: '#FFF8EE' },
         navy: '#1E2A4A',
+        paper: '#FBFAF7',
+        bronze: { DEFAULT: '#8C6A3F', soft: '#F1EADF' },
       },
       boxShadow: {
         card: '0 1px 2px rgba(28,25,23,0.04)',
