@@ -14,11 +14,12 @@ export const STREAMS = [
   },
   {
     id: 'plans', label: 'Plans: Brand Pro, Agency, Creator Pro', group: 'Subscriptions',
-    desc: 'Monthly plans with lower fees and more room. Also turns on the Free-plan limits (2 active listings).',
+    desc: 'Monthly plans. Brands get lower fees and unlimited listings. Creator Pro gets early access, profile viewers, peer comparison, instant alerts, read receipts, free instant withdrawals and the tax pack. Also turns on Free-plan limits.',
     settings: [
       ['proPrice', 'Brand Pro per month (₱)', 1499], ['proPct', 'Brand Pro service fee (%)', 3],
       ['agencyPrice', 'Agency per month (₱)', 4999], ['agencyPct', 'Agency service fee (%)', 2],
       ['creatorProPrice', 'Creator Pro per month (₱)', 199], ['freeListings', 'Free plan active listings', 2],
+      ['earlyHours', 'Creator Pro early access (hours)', 24], ['freeApplyCap', 'Free creator applications a month (0 = no limit)', 0],
     ],
   },
   { id: 'featuredListings', label: 'Featured listings', group: 'Visibility', desc: 'Brands pay to pin a listing at the top of Discover and Opportunities, marked "Featured".', settings: [['weekPrice', 'Price per week (₱)', 499]] },

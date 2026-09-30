@@ -10,6 +10,8 @@ import { ProductImage, OpportunityCard, FitChecks, ShareMenu } from '../componen
 import { Button, Card, Badge, Avatar, cx, useToast, useCopy } from '../components/ui';
 import { ApplyModal, ReportModal } from '../components/forms';
 import { useChat } from '../components/Shell';
+import { earlyLeft, inEarlyWindow, hoursLabel, applyAllowance, isCreatorPro } from '../lib/pro';
+import { Crown } from 'lucide-react';
 
 export default function OpportunityDetail() {
   const { id } = useParams();
@@ -37,6 +39,8 @@ export default function OpportunityDetail() {
   const similar = liveCampaigns(d).filter((x) => x.id !== c.id && x.category === c.category && x.status !== 'completed').slice(0, 3);
   const estEarn = c.compensation === 'commission' || c.compensation === 'hybrid' ? Math.round((c.aov || 0) * c.commissionRate / 100) : 0;
 
+  const early = !isOwner && earlyLeft(d, c, me);
+  const allowance = me?.creator && !isOwner ? applyAllowance(d, me) : null;
   const need = (fn) => (me ? fn() : nav('/login', { state: { from: `/opportunity/${c.id}` } }));
 
   return (
@@ -146,8 +150,18 @@ export default function OpportunityDetail() {
                 </div>
               ) : c.status === 'completed' ? (
                 <Button size="lg" className="w-full" disabled>Campaign completed</Button>
+              ) : early ? (
+                <div className="rounded-xl bg-brand-softer border border-[#F6DDB2] p-3 text-center">
+                  <p className="font-bold flex items-center justify-center gap-1.5"><Crown size={15} className="text-brand-dark" />Creator Pro early access</p>
+                  <p className="text-[13px] text-ink-soft mt-0.5">Opens to everyone in {hoursLabel(early)}. Pro creators can apply now.</p>
+                  <Button className="w-full mt-2" onClick={() => need(() => nav(me.creator ? '/workspace/pro' : '/pricing'))}>Get Creator Pro</Button>
+                </div>
               ) : (
-                <Button size="lg" className="w-full" onClick={() => need(() => (me.creator ? setApplying(true) : toast('Add a creator profile in My Profile to apply.', 'err')))}>Apply to collaborate</Button>
+                <>
+                  {inEarlyWindow(d, c) && isCreatorPro(d, me) && <p className="text-[12.5px] text-center text-brand-dark font-medium flex items-center justify-center gap-1"><Crown size={13} />Early access: you're seeing this before free creators</p>}
+                  <Button size="lg" className="w-full" disabled={allowance?.left === 0} onClick={() => need(() => (me.creator ? setApplying(true) : toast('Add a creator profile in My Profile to apply.', 'err')))}>Apply to collaborate</Button>
+                  {allowance && <p className="text-[12px] text-center text-ink-muted">{allowance.left > 0 ? `${allowance.left} of ${allowance.cap} free applications left this month.` : `You've used your ${allowance.cap} free applications this month.`} <Link to="/workspace/pro" className="text-brand-dark">Creator Pro has no limit</Link></p>}
+                </>
               )}
               <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-2">
                 <Button variant="outline" onClick={() => need(() => actions.toggleSave('campaign', c.id))}><Bookmark size={15} className={saved ? 'fill-brand text-brand' : ''} />{saved ? 'Saved' : 'Save'}</Button>

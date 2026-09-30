@@ -107,7 +107,7 @@ export function OrdersPanel() {
       <section>
         <div className="flex items-center justify-between mb-2"><p className="font-bold">Events</p><Button size="sm" variant="outline" onClick={() => setAdding(true)}><Plus size={14} />Add event</Button></div>
         <Card className="divide-y divide-line">
-          {d.events.map((e) => {
+          {d.meetups.map((e) => {
             const sold = d.eventTickets.filter((t) => t.eventId === e.id).reduce((a, t) => a + t.qty, 0);
             return <div key={e.id} className="p-4 flex flex-wrap items-center gap-3 text-[13.5px]"><span className="flex-1 min-w-[200px]"><b>{e.title}</b> <span className="text-ink-muted">· {new Date(e.date).toLocaleDateString('en-PH')} · {e.place}</span></span><span>{sold}/{e.seats} booked</span><span className="font-semibold">{peso(sold * e.price)}</span></div>;
           })}

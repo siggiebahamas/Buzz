@@ -5,8 +5,9 @@ import { buildSeed, hashPw, SERVICE_FEE, contractTerms } from './seed';
 import { brandFeeRate, creatorFeeRate, earn, isOn, setting } from './monetize';
 import { uid, DAY, peso } from './format';
 import { rankCreators } from './match';
+import { isCreatorPro, earlyLeft, hoursLabel, applyAllowance, searchMatches } from './pro';
 
-const KEY = 'buzz-db-v8';
+const KEY = 'buzz-db-v9';
 const listeners = new Set();
 
 function load() {
@@ -14,7 +15,7 @@ function load() {
     const raw = localStorage.getItem(KEY);
     if (raw) {
       const parsed = JSON.parse(raw);
-      if (parsed?.version === 8) return parsed;
+      if (parsed?.version === 9) return parsed;
     }
   } catch { /* storage blocked or corrupt: fall through to fresh seed */ }
   return buildSeed();
@@ -190,7 +191,7 @@ export const actions = {
   },
   recordProfileView(userId) {
     if (!userId || userId === db.session.userId) return;
-    commit((d) => { d.profileViews.push({ userId, ts: Date.now() }); });
+    commit((d) => { d.profileViews.push({ userId, viewerId: d.session.userId || null, ts: Date.now() }); });
   },
 
   // ---------- campaigns / opportunities ----------
@@ -214,7 +215,13 @@ export const actions = {
       d.campaigns.unshift(c);
       // Tell the creators who fit best, so good listings don't wait to be found.
       if (c.published) {
-        rankCreators(d, c).filter((x) => x.m.score >= 70).slice(0, 8).forEach(({ u, m }) => {
+        const told = new Set();
+        // Creator Pro instant alerts from saved searches come first; they're the most specific.
+        d.savedSearches.filter((s) => s.userId !== owner.id && !told.has(s.userId) && isCreatorPro(d, userById(d, s.userId)) && searchMatches(s, c)).forEach((s) => {
+          told.add(s.userId);
+          notify(d, s.userId, `Instant alert (${s.label}): ${c.productName}`, `/opportunity/${c.id}`);
+        });
+        rankCreators(d, c).filter((x) => x.m.score >= 70 && !told.has(x.u.id)).slice(0, 8).forEach(({ u, m }) => {
           notify(d, u.id, `New listing that fits you (${m.label}): ${c.productName}`, `/opportunity/${c.id}`);
         });
       }
@@ -252,6 +259,13 @@ export const actions = {
       d.deliverables = d.deliverables.filter((x) => x.campaignId !== cid);
     });
   },
+  // Brand opened its applications: creators with Creator Pro see a "Seen" mark.
+  markSeen(campaignIds) {
+    const ids = new Set(campaignIds);
+    const unseen = (d) => d.applications.filter((a) => ids.has(a.campaignId) && a.source === 'apply' && !a.seenAt && campaignById(d, a.campaignId)?.ownerId === d.session.userId);
+    if (!unseen(db).length) return;
+    commit((d) => { unseen(d).forEach((a) => { a.seenAt = Date.now(); }); });
+  },
   viewCampaign(cid) {
     commit((d) => { const c = campaignById(d, cid); if (c && c.ownerId !== d.session.userId) c.views += 1; });
   },
@@ -262,6 +276,10 @@ export const actions = {
       const me = d.session.userId;
       const c = campaignById(d, cid);
       if (d.applications.some((a) => a.campaignId === cid && a.creatorId === me && a.status !== 'withdrawn')) throw new Error('You already applied to this opportunity.');
+      const early = earlyLeft(d, c, currentUser(d));
+      if (early) throw new Error(`This listing is in Creator Pro early access. It opens to everyone in ${hoursLabel(early)}.`);
+      const allowance = applyAllowance(d, currentUser(d));
+      if (allowance && allowance.left <= 0) throw new Error(`You've used your ${allowance.cap} free applications this month. Creator Pro has no limit.`);
       d.applications.unshift({ id: uid('app'), campaignId: cid, creatorId: me, pitch, rate: Number(rate) || 0, status: 'pending', source: 'apply', createdAt: Date.now(), decidedAt: null });
       const t = threadFor(d, me, c.ownerId, cid);
       pushMessage(d, t, me, `Hi! I just applied to "${c.title}". ${pitch}`);
@@ -383,11 +401,12 @@ export const actions = {
       const me = d.session.userId;
       const { balance } = walletOf(d, me);
       const amt = Number(amount);
-      const fast = instant && isOn(d, 'instantPayout');
+      const pro = isCreatorPro(d, currentUser(d));
+      const fast = instant && (isOn(d, 'instantPayout') || pro);
       if (!(amt >= 100)) throw new Error('Minimum withdrawal is ₱100.');
       if (amt > balance) throw new Error(`You can withdraw up to ${peso(balance)}.`);
       if (!account.trim()) throw new Error('Add the account number to send to.');
-      const fee = fast ? setting(d, 'instantPayout', 'fee') : 0;
+      const fee = fast && !pro ? setting(d, 'instantPayout', 'fee') : 0;
       if (fast && amt <= fee) throw new Error('The amount must be more than the instant fee.');
       d.transactions.push({ id: uid('tx'), userId: me, type: 'payout', amount: -amt, ts: Date.now(), ref: null, note: `${fast ? 'Instant withdrawal' : 'Withdrawal'} to ${method} •••• ${account.trim().slice(-4)}${fee ? ` (${peso(fee)} fee)` : ''}` });
       if (fee) earn(d, { stream: 'instantPayout', amount: fee, payer: me, note: 'Instant withdrawal fee', charge: false, uid });

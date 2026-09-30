@@ -12,7 +12,7 @@ export default function Events() {
   const ask = useConfirm();
   const me = currentUser(d);
   if (!isOn(d, 'events')) return <Navigate to="/" replace />;
-  const upcoming = d.events.filter((e) => e.date > Date.now()).sort((a, b) => a.date - b.date);
+  const upcoming = d.meetups.filter((e) => e.date > Date.now()).sort((a, b) => a.date - b.date);
   const sold = (id) => d.eventTickets.filter((t) => t.eventId === id).reduce((a, t) => a + t.qty, 0);
   const mine = (id) => me && d.eventTickets.some((t) => t.eventId === id && t.userId === me.id);
   return (

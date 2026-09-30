@@ -1,6 +1,6 @@
 import { useState } from 'react';
 import { NavLink, Outlet } from 'react-router-dom';
-import { LayoutGrid, UserRound, Briefcase, Handshake, ListChecks, BarChart3, MessageSquare, Bookmark, Settings, HelpCircle, Wallet, FileSignature, Scale, BadgeCheck, Gift, Library } from 'lucide-react';
+import { LayoutGrid, UserRound, Briefcase, Handshake, ListChecks, BarChart3, MessageSquare, Bookmark, Settings, HelpCircle, Wallet, FileSignature, Scale, BadgeCheck, Gift, Library, Crown } from 'lucide-react';
 import { Link } from 'react-router-dom';
 import { useDB, currentUser, unreadCount, actions } from '../../lib/store';
 import { isOn } from '../../lib/monetize';
@@ -70,6 +70,7 @@ export default function WorkspaceLayout() {
       ['/workspace/payments', 'Payments', Wallet],
       hasDisputes && ['/workspace/disputes', 'Disputes', Scale, openDisputes],
       ['/workspace/referrals', 'Invite & earn', Gift],
+      mode === 'creator' && isOn(d, 'plans') && ['/workspace/pro', 'Creator Pro', Crown],
     ]],
     ['Account', [
       ['/workspace/profile', 'My Profile', UserRound],

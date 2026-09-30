@@ -4,6 +4,7 @@ import { useDB, currentUser, actions } from '../lib/store';
 import { isOn, setting } from '../lib/monetize';
 import { peso } from '../lib/format';
 import { Card, Button, Badge, useAct, useConfirm, cx } from '../components/ui';
+import { PRO_PERKS } from './workspace/CreatorPro';
 
 const Bullets = ({ items }) => (
   <ul className="mt-5 space-y-2 text-[14px]">
@@ -105,7 +106,12 @@ export default function Pricing() {
       <Card className="mt-6 p-6 flex flex-col sm:flex-row sm:items-center gap-4">
         <div className="flex-1">
           <p className="font-bold text-[18px]">Creator Pro · {peso(setting(d, 'plans', 'creatorProPrice'))}/month</p>
-          <p className="text-[13.5px] text-ink-muted mt-1">0% creator fee on every payment and a Pro badge on your profile.</p>
+          <p className="text-[13.5px] text-ink-muted mt-1">Land more deals and keep your paperwork clean.</p>
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-x-6 gap-y-1.5 mt-3">
+            {PRO_PERKS.map(([Icon, t, s]) => <p key={t} className="text-[13px] flex gap-2"><Icon size={15} className="text-brand-dark shrink-0 mt-0.5" /><span><b>{t}.</b> <span className="text-ink-soft">{s}</span></span></p>)}
+            {creatorPct > 0 && <p className="text-[13px] flex gap-2"><Check size={15} className="text-brand-dark shrink-0 mt-0.5" /><span><b>0% creator fee.</b> <span className="text-ink-soft">Free plan pays {creatorPct}%</span></span></p>}
+            {setting(d, 'plans', 'freeApplyCap') > 0 && <p className="text-[13px] flex gap-2"><Check size={15} className="text-brand-dark shrink-0 mt-0.5" /><span><b>Unlimited applications.</b> <span className="text-ink-soft">Free plan: {setting(d, 'plans', 'freeApplyCap')} a month</span></span></p>}
+          </div>
         </div>
         {me?.creatorPlan === 'pro'
           ? <Button variant="outline" onClick={() => act(() => actions.setPlan('free', 'creator'), 'Creator Pro cancelled')}>Cancel Creator Pro</Button>

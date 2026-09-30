@@ -4,6 +4,7 @@ import { actions, commit, notify, email, currentUser, userById, campaignById, di
 import { uid, peso, DAY } from './format';
 import { rankCreators } from './match';
 import { isOn, setting, earn, SERVICES } from './monetize';
+import { isCreatorPro, searchLabel } from './pro';
 
 const me = (d) => currentUser(d);
 const REFERRAL_CREDIT = 200;
@@ -334,7 +335,7 @@ Object.assign(actions, {
   buyEventTicket(eventId, qty = 1) {
     commit((d) => {
       if (!isOn(d, 'events')) throw new Error('Events aren\'t available yet.');
-      const e = d.events.find((x) => x.id === eventId);
+      const e = d.meetups.find((x) => x.id === eventId);
       const sold = d.eventTickets.filter((t) => t.eventId === eventId).reduce((a, t) => a + t.qty, 0);
       if (sold + qty > e.seats) throw new Error('Sorry, this event is full.');
       d.eventTickets.push({ id: uid('etk'), eventId, userId: d.session.userId, qty, ts: Date.now() });
@@ -342,12 +343,29 @@ Object.assign(actions, {
       email(d, d.session.userId, `You're in: ${e.title}`, `See you on ${new Date(e.date).toLocaleDateString('en-PH', { month: 'long', day: 'numeric' })} at ${e.place}.`, '/events');
     });
   },
-  addEvent(data) { commit((d) => { d.events.unshift({ id: uid('evt'), ...data, date: new Date(data.date).getTime(), price: Number(data.price), seats: Number(data.seats) }); }); },
+  addEvent(data) { commit((d) => { d.meetups.unshift({ id: uid('evt'), ...data, date: new Date(data.date).getTime(), price: Number(data.price), seats: Number(data.seats) }); }); },
   setStream(id, patch) {
     commit((d) => {
       d.flags.monetization ||= {};
       const cur = d.flags.monetization[id] || {};
       d.flags.monetization[id] = { ...cur, ...patch, settings: { ...(cur.settings || {}), ...(patch.settings || {}) } };
+    });
+  },
+  // ---------- Creator Pro ----------
+  saveSearch(filters) {
+    commit((d) => {
+      const u = me(d);
+      if (!isCreatorPro(d, u)) throw new Error('Instant alerts are part of Creator Pro.');
+      if (d.savedSearches.filter((s) => s.userId === u.id).length >= 10) throw new Error('You can keep up to 10 alerts. Delete one first.');
+      const f = { cat: filters.cat || 'all', q: (filters.q || '').trim(), minBudget: Number(filters.minBudget) || 0, platforms: filters.platforms || [], region: filters.region || 'all' };
+      d.savedSearches.unshift({ id: uid('srch'), userId: u.id, filters: f, label: searchLabel(f), createdAt: Date.now() });
+    });
+  },
+  deleteSearch(id) { commit((d) => { d.savedSearches = d.savedSearches.filter((s) => !(s.id === id && s.userId === d.session.userId)); }); },
+  setTaxInfo(info) {
+    commit((d) => {
+      const u = me(d);
+      u.taxInfo = { name: info.name?.trim() || '', tin: info.tin?.trim() || '', address: info.address?.trim() || '' };
     });
   },
   payReferralIfDue(userId) {

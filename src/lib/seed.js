@@ -388,6 +388,21 @@ export function buildSeed() {
     const count = Math.round(between(2, 14));
     for (let k = 0; k < count; k++) profileViews.push({ userId: ME, ts: now - d * DAY - r() * DAY });
   }
+  // Separate generator so adding these doesn't shift the rest of the sample data.
+  let s2 = 97;
+  const r2 = () => { s2 = (s2 * 16807) % 2147483647; return s2 / 2147483647; };
+  const brandIds = users.filter((u) => u.business && u.id !== ME).map((u) => u.id);
+  const pickBrand = () => brandIds[Math.floor(r2() * brandIds.length)];
+  profileViews.forEach((v) => { v.viewerId = r2() < 0.3 ? pickBrand() : null; });
+  users.filter((u) => u.creator && u.id !== ME).forEach((u) => {
+    const n = 3 + Math.floor(r2() * 10);
+    for (let k = 0; k < n; k++) profileViews.push({ userId: u.id, viewerId: r2() < 0.6 ? pickBrand() : null, ts: now - r2() * 30 * DAY });
+  });
+  applications.forEach((a) => {
+    if (a.source !== 'apply') return;
+    if (a.decidedAt) a.seenAt = a.createdAt + (a.decidedAt - a.createdAt) * 0.5;
+    else if (r2() < 0.5) a.seenAt = Math.min(now - 3600000, a.createdAt + (2 + r2() * 20) * 3600000);
+  });
 
   // Accounts: demo password, verification badges, one admin (you).
   const VERIFIED = new Set([ME, 'u_sili', 'u_protina', 'u_kalamansi', 'u_mangga', 'c_bianca', 'c_kaye', 'c_migo', 'c_aya', 'c_sam']);
@@ -470,13 +485,13 @@ export function buildSeed() {
   ];
 
   return {
-    version: 8,
+    version: 9,
     flags: { dailyPicks: 'auto', requireCreatorApproval: false, monetization: {} },
     session: { userId: ME, mode: 'business' },
     users, campaigns, applications, links, events, deliverables, reviews, posts, collabs, threads, notifications, saved, profileViews,
     transactions, reports, emails: [], resets: [],
     contracts, disputes, verifications, shipments, concierge, tickets, saleImports: [],
     revenue: transactions.filter((t) => t.type === 'fund').map((t) => ({ id: id('rev'), stream: 'transactionFee', amount: Math.round((-t.amount / (1 + SERVICE_FEE)) * SERVICE_FEE), payer: t.userId, note: 'Service fee', ref: t.ref, ts: t.ts })),
-    orders: [], events: sampleEvents(now), eventTickets: [],
+    orders: [], savedSearches: [], meetups: sampleEvents(now), eventTickets: [],
   };
 }

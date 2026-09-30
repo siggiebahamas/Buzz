@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useEffect, useState } from 'react';
 import { useParams, Link, Navigate, useNavigate } from 'react-router-dom';
 import { ArrowLeft, Users, Wallet, FileText, Zap, Pencil, ExternalLink, Check, X, MessageCircle, Copy, Star, Trash2, Send, TrendingUp, ShoppingBag } from 'lucide-react';
 import { useDB, campaignById, userById, currentUser, actions, creators, followersOf, reactionTotal } from '../../lib/store';
@@ -218,6 +218,7 @@ const COURIERS = ['J&T Express', 'LBC', 'Lalamove', 'Grab Express', 'Ninja Van',
 // Agreements, samples to ship and hand-picked creator requests for one campaign.
 function CampaignOps({ c, accepted }) {
   const d = useDB();
+  useEffect(() => { actions.markSeen([c.id]); }, [c.id]);
   const act = useAct();
   const [ship, setShip] = useState(null);
   const [handpick, setHandpick] = useState(false);

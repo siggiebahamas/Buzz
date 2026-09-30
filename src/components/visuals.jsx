@@ -9,6 +9,7 @@ import { earnLabel, deliverableSummary } from '../lib/pay';
 import { Avatar, Badge, Button, cx, useCopy } from './ui';
 import { appUrl } from '../lib/links';
 import { isOn } from '../lib/monetize';
+import { earlyLeft, inEarlyWindow, hoursLabel } from '../lib/pro';
 
 // Paid placements are always labelled so creators and brands know what's an ad.
 export const isFeatured = (d, c) => isOn(d, 'featuredListings') && c.featuredUntil > Date.now();
@@ -173,7 +174,7 @@ export function OpportunityCard({ campaign }) {
           className={cx('absolute top-3 right-3 h-8 w-8 rounded-full grid place-items-center shadow-sm transition', saved ? 'bg-brand text-white' : 'bg-white/90 text-ink-soft hover:text-ink')} aria-label="Save">
           <Bookmark size={15} className={saved ? 'fill-white' : ''} />
         </button>
-        <span className="absolute top-3 left-3 flex gap-1.5"><Badge className="bg-white/95 border-transparent text-ink">{campaign.type}</Badge>{isFeatured(d, campaign) && <Sponsored />}</span>
+        <span className="absolute top-3 left-3 flex gap-1.5"><Badge className="bg-white/95 border-transparent text-ink">{campaign.type}</Badge>{isFeatured(d, campaign) && <Sponsored />}{inEarlyWindow(d, campaign) && me?.id !== campaign.ownerId && (earlyLeft(d, campaign, me) ? <Badge className="bg-white/95 border-transparent text-ink">Pro early access · {hoursLabel(earlyLeft(d, campaign, me))}</Badge> : <Badge tone="brand">Early access</Badge>)}</span>
         <EarnTag campaign={campaign} className="absolute bottom-3 left-3" />
       </div>
       <div className="p-4 flex flex-col flex-1">

@@ -9,7 +9,10 @@ import { CategoryRow, OpportunityCard, OpportunityTile, CreatorCard, CreatorRow 
 import { TOGGLES, SHELVES, dailyPicksStatus, pickOfTheDay } from '../lib/discover';
 import { actions } from '../lib/store';
 import { cx } from '../components/ui';
-import { Segmented, PillMenu, Button, EmptyState, Select } from '../components/ui';
+import { Segmented, PillMenu, Button, EmptyState, Select, useAct } from '../components/ui';
+import { isOn } from '../lib/monetize';
+import { isCreatorPro } from '../lib/pro';
+import { BellRing } from 'lucide-react';
 import { CampaignForm } from '../components/forms';
 
 const inBudget = (bucket, lo, hi) => {
@@ -39,6 +42,12 @@ export default function Opportunities() {
   const filtered = q || budget !== 'any' || comp !== 'all' || platforms.length > 0 || region !== 'all' || toggles.length > 0;
   const reset = () => { setQ(''); setCat('all'); setBudget('any'); setComp('all'); setPlatforms([]); setRegion('all'); setToggles([]); };
   const ctx = { d, me };
+  const act = useAct();
+  const alertMe = () => {
+    if (!isCreatorPro(d, me)) return nav('/workspace/pro');
+    const b = BUDGET_BUCKETS.find((x) => x.id === budget);
+    act(() => actions.saveSearch({ cat, q, minBudget: b?.min || 0, platforms, region }), 'Alert saved. We\'ll notify you the moment a match is posted.');
+  };
   useEffect(() => { actions.recordVisit(); }, []);
 
   const listings = useMemo(() => {
@@ -97,6 +106,7 @@ export default function Opportunities() {
           <input value={q} onChange={(e) => setQ(e.target.value)} placeholder={isCreatorView ? 'Search product, brand or keyword…' : 'Search creators by name, niche…'}
             className="w-full h-11 pl-10 pr-4 rounded-xl border border-line-strong bg-white text-sm focus:outline-none focus:ring-2 focus:ring-brand/40 focus:border-brand" />
         </div>
+        {isCreatorView && me?.creator && isOn(d, 'plans') && (filtered || cat !== 'all') && <Button variant="outline" className="h-11" onClick={alertMe} title="Creator Pro: get notified when a new listing matches these filters"><BellRing size={15} />Alert me</Button>}
         {filtered && <Button variant="outline" className="h-11" onClick={reset}><RotateCcw size={15} />Clear filters</Button>}
       </div>
       <div className="mt-3 flex flex-wrap gap-2">

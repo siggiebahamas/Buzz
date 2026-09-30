@@ -4,6 +4,7 @@ import { ShieldCheck, Wallet, Lock, ArrowDownToLine, Receipt, CheckCircle2 } fro
 import { useDB, userById, campaignById, walletOf, actions, currentUser } from '../../lib/store';
 import { brandFeeRate, isOn, setting } from '../../lib/monetize';
 import { commissionOwed } from '../../lib/ops';
+import { isCreatorPro } from '../../lib/pro';
 import { peso, shortDate, timeAgo } from '../../lib/format';
 import { Card, Button, Badge, Avatar, Modal, Field, Input, Select, Checkbox, EmptyState, IconTile, useAct, cx } from '../../components/ui';
 import { useMode, ModeToggle, PageHead } from './Layout';
@@ -42,8 +43,9 @@ function WithdrawModal({ balance, onClose }) {
   const d = useDB();
   const act = useAct();
   const [f, setF] = useState({ amount: balance, method: 'GCash', account: '', instant: false });
-  const instantOn = isOn(d, 'instantPayout');
-  const instantFee = setting(d, 'instantPayout', 'fee');
+  const pro = isCreatorPro(d, currentUser(d));
+  const instantOn = isOn(d, 'instantPayout') || pro;
+  const instantFee = pro ? 0 : setting(d, 'instantPayout', 'fee');
   return (
     <Modal open onClose={onClose} title="Withdraw earnings" subtitle={`Available: ${peso(balance)}`}>
       <div className="space-y-4">
@@ -52,13 +54,13 @@ function WithdrawModal({ balance, onClose }) {
         <Field label={f.method === 'GCash' || f.method === 'Maya' ? 'Mobile number' : 'Account number'}><Input id="wd-account" value={f.account} onChange={(e) => setF({ ...f, account: e.target.value })} placeholder={f.method === 'GCash' || f.method === 'Maya' ? '0917 123 4567' : 'Account number'} /></Field>
         {instantOn && (
           <div className="grid grid-cols-2 gap-2">
-            {[[false, 'Standard', '1–2 banking days · free'], [true, 'Instant', `Within minutes · ${peso(instantFee)}`]].map(([v, t, sub]) => (
+            {[[false, 'Standard', '1–2 banking days · free'], [true, 'Instant', `Within minutes · ${instantFee ? peso(instantFee) : 'free with Creator Pro'}`]].map(([v, t, sub]) => (
               <button key={t} type="button" onClick={() => setF({ ...f, instant: v })} className={cx('rounded-xl border p-3 text-left', f.instant === v ? 'border-brand bg-brand-softer' : 'border-line')}><p className="font-semibold text-[14px]">{t}</p><p className="text-[12px] text-ink-muted">{sub}</p></button>
             ))}
           </div>
         )}
         <p className="text-[12px] text-ink-muted">Test mode: the withdrawal is recorded but no money moves.</p>
-        <Button size="lg" className="w-full" onClick={() => { if (act(() => actions.withdraw(f.amount, f.method, f.account, f.instant && instantOn), 'Withdrawal sent')) onClose(); }}><ArrowDownToLine size={16} />Withdraw{f.instant && instantOn ? ` now (${peso(instantFee)} fee)` : ''}</Button>
+        <Button size="lg" className="w-full" onClick={() => { if (act(() => actions.withdraw(f.amount, f.method, f.account, f.instant && instantOn), 'Withdrawal sent')) onClose(); }}><ArrowDownToLine size={16} />Withdraw{f.instant && instantOn ? (instantFee ? ` now (${peso(instantFee)} fee)` : ' now') : ''}</Button>
       </div>
     </Modal>
   );

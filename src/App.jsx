@@ -19,6 +19,7 @@ import Disputes from './pages/workspace/Disputes';
 import Verification from './pages/workspace/Verification';
 import Referrals from './pages/workspace/Referrals';
 import Library from './pages/workspace/Library';
+import CreatorPro from './pages/workspace/CreatorPro';
 import Help from './pages/Help';
 import Pricing from './pages/Pricing';
 import Services from './pages/Services';
@@ -87,6 +88,7 @@ export default function App() {
             <Route path="deliverables" element={<Deliverables />} />
             <Route path="analytics" element={<Analytics />} />
             <Route path="payments" element={<Payments />} />
+            <Route path="pro" element={<CreatorPro />} />
             <Route path="contracts" element={<Contracts />} />
             <Route path="disputes" element={<Disputes />} />
             <Route path="verification" element={<Verification />} />

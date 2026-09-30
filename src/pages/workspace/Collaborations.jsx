@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useEffect, useState } from 'react';
 import { Link } from 'react-router-dom';
 import { Check, X, MessageCircle, Handshake } from 'lucide-react';
 import { useDB, userById, campaignById, displayName, brandName, actions } from '../../lib/store';
@@ -9,7 +9,9 @@ import { Card, Button, Badge, Avatar, EmptyState, cx, useAct } from '../../compo
 import { useChat } from '../../components/Shell';
 import { useMode, ModeToggle, PageHead } from './Layout';
 import { OpenDisputeModal } from './Disputes';
-import { Truck, FileSignature, Flag } from 'lucide-react';
+import { Truck, FileSignature, Flag, CheckCheck, Lock } from 'lucide-react';
+import { isOn } from '../../lib/monetize';
+import { isCreatorPro } from '../../lib/pro';
 
 const STATUS = {
   pending: ['Pending', 'soft'], invited: ['Invited', 'violet'], accepted: ['Active partner', 'green'], declined: ['Declined', 'neutral'], withdrawn: ['Withdrawn', 'neutral'],
@@ -36,6 +38,10 @@ export default function Collaborations() {
     ['closed', 'Closed', (a) => ['declined', 'withdrawn'].includes(a.status)],
   ];
   const [tab, setTab] = useState(groups[0][0]);
+  const myCampaignIds = biz ? d.campaigns.filter((c) => c.ownerId === me.id).map((c) => c.id).join() : '';
+  useEffect(() => { if (biz && tab === 'review') actions.markSeen(myCampaignIds.split(',')); }, [biz, tab, myCampaignIds]);
+  const receipts = !biz && isOn(d, 'plans');
+  const pro = isCreatorPro(d, me);
   const [dispute, setDispute] = useState(null);
   const current = groups.find((g) => g[0] === tab) || groups[0];
   // Brands review the strongest fits first; everything else is newest first.
@@ -79,7 +85,11 @@ export default function Collaborations() {
                     <Avatar user={other} size={22} />{biz ? other.name : brandName(other)}{biz && <span className="text-ink-muted">@{creator.creator.handle}</span>}
                   </Link>
                   {a.pitch && <p className="text-[13.5px] text-ink-soft mt-2">"{a.pitch}"</p>}
-                  <p className="text-[12px] text-ink-muted mt-1.5">{a.source === 'invite' ? 'Invited' : 'Applied'} {timeAgo(a.createdAt)}{a.rate ? ` · Rate ${peso(a.rate)}` : ''}</p>
+                  <p className="text-[12px] text-ink-muted mt-1.5 flex flex-wrap items-center gap-x-1.5">{a.source === 'invite' ? 'Invited' : 'Applied'} {timeAgo(a.createdAt)}{a.rate ? ` · Rate ${peso(a.rate)}` : ''}
+                    {receipts && a.source === 'apply' && a.status === 'pending' && (pro
+                      ? <span className={cx('inline-flex items-center gap-1', a.seenAt ? 'text-sky-700 font-medium' : '')}>· <CheckCheck size={13} />{a.seenAt ? `Seen ${timeAgo(a.seenAt)}` : 'Not opened yet'}</span>
+                      : <Link to="/workspace/pro" className="inline-flex items-center gap-1 text-brand-dark">· <Lock size={11} />Seen by the brand? See with Pro</Link>)}
+                  </p>
                   {a.status === 'accepted' && (() => {
                     const k = d.contracts.find((x) => x.applicationId === a.id);
                     const sh = d.shipments.find((x) => x.campaignId === c.id && x.creatorId === a.creatorId);
