@@ -1,5 +1,5 @@
 import { useState } from 'react';
-import { Link } from 'react-router-dom';
+import { Link, useNavigate } from 'react-router-dom';
 import { ImagePlus, ChevronLeft, ChevronRight, Bookmark, Star, MapPin, Users, BadgeCheck, Check, Minus, Share2, ChevronRight as Chev } from 'lucide-react';
 import { CATEGORIES, categoryById, PLATFORMS } from '../lib/constants';
 import { budgetLabel, compact } from '../lib/format';
@@ -162,6 +162,7 @@ export function OpportunityTile({ campaign }) {
 
 export function OpportunityCard({ campaign }) {
   const d = useDB();
+  const nav = useNavigate();
   const me = userById(d, d.session.userId);
   const owner = userById(d, campaign.ownerId);
   const m = me?.creator && me.id !== campaign.ownerId ? matchScore(me, campaign, { d }) : { score: null };
@@ -170,7 +171,7 @@ export function OpportunityCard({ campaign }) {
     <Link to={`/opportunity/${campaign.id}`} className="group bg-white border border-line rounded-2xl overflow-hidden shadow-card hover:shadow-lift hover:-translate-y-0.5 transition-all flex flex-col">
       <div className="relative">
         <ProductImage campaign={campaign} className="aspect-[4/3]" showNav />
-        <button onClick={(e) => { e.preventDefault(); if (d.session.userId) actions.toggleSave('campaign', campaign.id); }}
+        <button onClick={(e) => { e.preventDefault(); if (d.session.userId) actions.toggleSave('campaign', campaign.id); else nav('/login', { state: { from: `/opportunity/${campaign.id}` } }); }}
           className={cx('absolute top-3 right-3 h-8 w-8 rounded-full grid place-items-center shadow-sm transition', saved ? 'bg-brand text-white' : 'bg-white/90 text-ink-soft hover:text-ink')} aria-label="Save">
           <Bookmark size={15} className={saved ? 'fill-white' : ''} />
         </button>
