@@ -13,6 +13,9 @@ import { useChat } from '../components/Shell';
 import { earlyLeft, inEarlyWindow, hoursLabel, applyAllowance, isCreatorPro } from '../lib/pro';
 import { Crown } from 'lucide-react';
 
+// Community reactions on posts about this listing.
+const reactionTotalFor = (d, cid) => d.posts.filter((p) => p.campaignId === cid).reduce((a, p) => a + (p.likes?.length || 0) + (p.claps?.length || 0) + (p.ideas?.length || 0), 0);
+
 export default function OpportunityDetail() {
   const { id } = useParams();
   const d = useDB();
@@ -124,6 +127,19 @@ export default function OpportunityDetail() {
                 </div>
               )}
             </div>
+            {c.compensation === 'gifted' && (() => {
+              const buzz = d.launches.filter((l) => l.campaignId === c.id).reduce((acc, l) => acc + l.votes.length, 0) + reactionTotalFor(d, c.id);
+              const done = d.reviews.filter((r) => r.toId === c.ownerId).length;
+              return (
+                <div className="mt-3 rounded-xl bg-brand-softer border border-[#F6DDB2] p-3 text-[13px] space-y-1">
+                  <p className="font-semibold">Why creators say yes</p>
+                  {c.giftValue > 0 && <p>· You keep {giftLabel(c).toLowerCase().replace('free ', '')} worth <b>{peso(c.giftValue)}</b></p>}
+                  {m && <p>· It's a <b>{m.label.toLowerCase()}</b> for your content</p>}
+                  {buzz > 0 && <p>· <b>{buzz}</b> people on Buzz voted for or reacted to it</p>}
+                  <p>· Finishing it adds a review to your profile{done ? `; this brand has ${done} creator review${done > 1 ? 's' : ''}` : ''}</p>
+                </div>
+              );
+            })()}
             <p className="text-[11.5px] text-ink-muted mt-1.5">{payBreakdown(c).cash ? 'Suggested split of the brand\'s budget per creator. Final fee is agreed when you apply.' : c.compensation === 'gifted' ? 'No cash fee. You keep what you receive.' : `Based on an average order of ${peso(c.aov)}.`}</p>
             <div className="grid grid-cols-3 gap-2 mt-4 text-center">
               <Mini icon={Users} value={`${members.length}/${c.slots}`} label="Spots filled" />

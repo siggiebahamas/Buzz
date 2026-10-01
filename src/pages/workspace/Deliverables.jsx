@@ -169,6 +169,8 @@ export default function Deliverables() {
                         {!biz && ['todo', 'revision'].includes(status) && (!c.requireDraft || x.draft?.status === 'approved') && <Button size="sm" className="h-7 text-[12px]" onClick={() => setModal({ kind: 'submit', x })}><Upload size={12} />Submit post</Button>}
                         {biz && x.draft?.status === 'pending' && <Button size="sm" className="h-7 text-[12px]" onClick={() => setModal({ kind: 'reviewDraft', x })}><FileImage size={12} />Review draft</Button>}
                         {!biz && ['submitted', 'approved'].includes(status) && <Button size="sm" variant="outline" className="h-7 text-[12px]" onClick={() => setModal({ kind: 'submit', x })}><BarChart2 size={12} />Update stats</Button>}
+                        {!biz && ['submitted', 'approved'].includes(status) && !x.boostCode && (x.boostRequested || campaignById(d, x.campaignId)?.wantsBoostCode) && <Button size="sm" className="h-7 text-[12px]" onClick={() => setModal({ kind: 'submit', x })}>Add ad-boost code</Button>}
+                        {x.boostCode && <Badge tone="green">Ad code sent</Badge>}
                         {biz && status === 'submitted' && (
                           <>
                             <Button size="sm" className="h-7 text-[12px]" onClick={() => act(() => actions.reviewDeliverable(x.id, true), 'Approved')}><Check size={12} />Approve</Button>

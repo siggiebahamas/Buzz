@@ -295,6 +295,7 @@ export default function Community() {
                 <p className="text-[13.5px] text-ink-muted">Team up to cut costs and reach more people: bundles, joint giveaways, shared shoots, bazaar booths and creator squads.</p>
               </div>
               <Button onClick={() => need(() => setModal({ kind: 'collab' }))}>Start a collab</Button>
+              <p className="w-full text-[12.5px] text-ink-muted">Ready to split a creator's fee for real? <Link to="/workspace/group-deals" className="text-ink underline decoration-bronze/50">Start a group deal</Link> with escrow, or <Link to="/workspace/swaps" className="text-ink underline decoration-bronze/50">swap shout-outs</Link> with a matched brand.</p>
             </Card>
             <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">{d.collabs.map((c) => <CollabCard key={c.id} c={c} />)}</div>
           </>

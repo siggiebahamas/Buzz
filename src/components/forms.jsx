@@ -110,7 +110,11 @@ function BriefHelpers({ f }) {
 
 export function CampaignForm({ open, onClose, initial, onSaved }) {
   const act = useAct();
-  const [f, setF] = useState(() => ({ ...blankCampaign(), ...(initial || {}) }));
+  const db = useDB();
+  const owner = currentUser(db);
+  // New brands start with product-for-content: no cash needed for a first campaign.
+  const firstTime = !initial?.id && !db.campaigns.some((c) => c.ownerId === owner?.id);
+  const [f, setF] = useState(() => ({ ...blankCampaign(), ...(firstTime ? { compensation: 'gifted' } : {}), ...(initial || {}) }));
   const [err, setErr] = useState('');
   const set = (k, v) => setF((x) => ({ ...x, [k]: v }));
   const setDel = (i, k, v) => set('deliverables', f.deliverables.map((d, j) => (j === i ? { ...d, [k]: v } : d)));
@@ -127,7 +131,7 @@ export function CampaignForm({ open, onClose, initial, onSaved }) {
     const data = {
       ...f,
       budgetMin: needsFee ? Number(f.budgetMin) : 0, budgetMax: needsFee ? Number(f.budgetMax) : 0,
-      commissionRate: needsCom ? Number(f.commissionRate) : 0, slots: Number(f.slots) || 1, aov: Number(f.aov) || 0,
+      commissionRate: needsCom ? Number(f.commissionRate) : 0, slots: Number(f.slots) || 1, aov: Number(f.aov) || 0, giftValue: Number(f.giftValue) || 0,
       platforms: [...new Set(f.deliverables.map((d) => d.platform))],
       summary: f.description.split('. ')[0],
     };
@@ -153,6 +157,7 @@ export function CampaignForm({ open, onClose, initial, onSaved }) {
         </div>
 
         <div className="rounded-2xl bg-canvas/70 border border-line p-4 space-y-4">
+          {f.compensation === 'gifted' && <p className="text-[13px] rounded-xl bg-brand-softer border border-[#F6DDB2] p-3"><b>No marketing budget? This is the way in.</b> You send the product, the creator keeps it and posts. Creators see their fit score and what the product is worth, so pick creators who'd genuinely use it.</p>}
           <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
             <Field label="How you'll pay creators"><Select value={f.compensation} onChange={(e) => set('compensation', e.target.value)}>{Object.entries(COMP_TYPES).map(([k, v]) => <option key={k} value={k}>{v}</option>)}</Select></Field>
             <Field label="Creators needed"><Input type="number" min="1" value={f.slots} onChange={(e) => set('slots', e.target.value)} /></Field>
@@ -165,6 +170,7 @@ export function CampaignForm({ open, onClose, initial, onSaved }) {
           )}
           <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
             {needsCom && <Field label="Commission on each sale (%)"><Input type="number" min="1" max="60" value={f.commissionRate} onChange={(e) => set('commissionRate', e.target.value)} /></Field>}
+            {f.compensation === 'gifted' && <Field label="Value of what you'll send (₱)" hint="Retail price of the product or service the creator keeps."><Input type="number" min="0" value={f.giftValue || ''} onChange={(e) => set('giftValue', e.target.value)} /></Field>}
             <Field label="Average order value (₱)" hint="Used to estimate creator earnings."><Input type="number" min="0" value={f.aov} onChange={(e) => set('aov', e.target.value)} /></Field>
           </div>
         </div>
@@ -185,7 +191,7 @@ export function CampaignForm({ open, onClose, initial, onSaved }) {
         <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
           <Field label="Apply by"><Input type="date" value={new Date(f.deadline).toISOString().slice(0, 10)} onChange={(e) => set('deadline', new Date(e.target.value).getTime())} /></Field>
           <Field label="Content rights"><Select value={f.contentRights} onChange={(e) => set('contentRights', e.target.value)}>{['30 days', '60 days', '90 days', '1 year', 'None'].map((x) => <option key={x}>{x}</option>)}</Select></Field>
-          <Field label="Shop link"><Input value={f.shopUrl} onChange={(e) => set('shopUrl', e.target.value)} placeholder="Shopee / Lazada / site" /></Field>
+          <Field label="Shop link"><Input value={f.shopUrl} onChange={(e) => set('shopUrl', e.target.value)} placeholder="TikTok Shop / Shopee / Lazada / site" /></Field>
         </div>
         <div>
           <p className="text-[12px] font-semibold uppercase tracking-wide text-ink-muted mb-2">Helps creators find you</p>
@@ -196,6 +202,7 @@ export function CampaignForm({ open, onClose, initial, onSaved }) {
             })}
           </div>
         </div>
+        <Checkbox checked={!!f.wantsBoostCode} onChange={(v) => set('wantsBoostCode', v)} label="Ask for permission to boost posts as ads" hint="Creators send a TikTok Spark Ads code (or Instagram partnership-ad access) with their post, so you can put budget behind a post that's working." />
         <Checkbox checked={!!f.requireDraft} onChange={(v) => set('requireDraft', v)} label="Approve drafts before creators post" hint="Creators send you a draft first. Recommended for your first campaigns." />
         <Checkbox checked={f.published} onChange={(v) => set('published', v)} label="List on Opportunities" hint="Uncheck to keep it private and invite creators directly." />
         <BriefHelpers f={f} />
@@ -332,21 +339,37 @@ export function SubmitDeliverableModal({ open, onClose, deliverable }) {
   const [url, setUrl] = useState(deliverable.contentUrl || '');
   const s0 = deliverable.stats || { reach: '', likes: '', comments: '', shares: '', saves: '' };
   const [s, setS] = useState(s0);
+  const d = useDB();
+  const c = campaignById(d, deliverable.campaignId);
+  const tiktok = deliverable.platform === 'tiktok';
+  const askCode = (c?.wantsBoostCode || deliverable.boostRequested) && !deliverable.boostCode;
+  const [code, setCode] = useState('');
+  const [days, setDays] = useState(30);
   const submit = (e) => {
     e.preventDefault();
     const stats = Object.fromEntries(Object.entries(s).map(([k, v]) => [k, Number(v) || 0]));
     const fn = deliverable.status === 'todo' || deliverable.status === 'revision'
-      ? () => actions.submitDeliverable(deliverable.id, { contentUrl: url.trim(), stats })
-      : () => actions.updateStats(deliverable.id, stats);
+      ? () => { actions.submitDeliverable(deliverable.id, { contentUrl: url.trim(), stats }); if (code.trim()) actions.setBoostCode(deliverable.id, code, days); }
+      : () => { actions.updateStats(deliverable.id, stats); if (code.trim()) actions.setBoostCode(deliverable.id, code, days); };
     if (act(fn, 'Saved')) onClose();
   };
   const editingStats = !['todo', 'revision'].includes(deliverable.status);
   return (
     <Modal open={open} onClose={onClose} title={editingStats ? 'Update post stats' : 'Submit content'} subtitle={deliverable.title}>
       <form onSubmit={submit} className="space-y-4">
-        {!editingStats && <Field label="Link to your post"><Input required value={url} onChange={(e) => setUrl(e.target.value)} placeholder="https://www.instagram.com/reel/…" /></Field>}
+        {!editingStats && <Field label="Link to your post"><Input required value={url} onChange={(e) => setUrl(e.target.value)} placeholder={tiktok ? 'https://www.tiktok.com/@you/video/…' : 'https://www.instagram.com/reel/…'} /></Field>}
+        {askCode && (
+          <div className="rounded-xl bg-brand-softer border border-[#F6DDB2] p-3">
+            <p className="text-[13px] font-semibold">The brand asked for ad-boost permission</p>
+            <p className="text-[12px] text-ink-muted mt-0.5">{tiktok ? 'On TikTok: open the video → ⋯ → Ad settings → turn on Ad authorization → Generate code.' : 'On Instagram: allow the brand as a partner for partnership ads, then paste "approved" or the reference here.'} Your post stays on your account.</p>
+            <div className="grid grid-cols-[1fr_120px] gap-2 mt-2">
+              <Input value={code} onChange={(e) => setCode(e.target.value)} placeholder={tiktok ? '#Spark code' : 'Approval reference'} />
+              <Select value={days} onChange={(e) => setDays(Number(e.target.value))}>{[7, 30, 60, 365].map((n) => <option key={n} value={n}>{n === 365 ? '1 year' : `${n} days`}</option>)}</Select>
+            </div>
+          </div>
+        )}
         <div>
-          <p className="text-[12px] font-semibold uppercase tracking-wide text-ink-muted mb-1.5">Post stats (from your insights)</p>
+          <p className="text-[12px] font-semibold uppercase tracking-wide text-ink-muted mb-1.5">Post stats {tiktok ? '(TikTok: video → Analytics; use video views for reach)' : '(from your insights)'}</p>
           <div className="grid grid-cols-3 sm:grid-cols-5 gap-2">
             {['reach', 'likes', 'comments', 'shares', 'saves'].map((k) => (
               <label key={k} className="block">

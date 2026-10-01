@@ -123,6 +123,19 @@ export default function MyProfile() {
               <Field label="What you sell"><Input value={biz.type} onChange={(e) => setBiz({ ...biz, type: e.target.value })} /></Field>
               <Field label="Main category"><Select value={biz.category} onChange={(e) => setBiz({ ...biz, category: e.target.value })}>{CATEGORIES.slice(1).map((c) => <option key={c.id} value={c.id}>{c.label}</option>)}</Select></Field>
               <Field label="Shop link (Shopee, Lazada, site)"><Input value={biz.shopUrl} onChange={(e) => setBiz({ ...biz, shopUrl: e.target.value })} /></Field>
+              <div className="sm:col-span-2 rounded-xl bg-canvas p-4 grid grid-cols-1 sm:grid-cols-2 gap-3">
+                <div className="sm:col-span-2 flex flex-wrap items-center justify-between gap-2">
+                  <p className="text-[13px] font-semibold">Your free shop page: one link for your TikTok bio</p>
+                  <Link to={`/shop/${me.id}`} className="text-[13px] text-brand-dark inline-flex items-center gap-1">View shop page <ExternalLink size={12} /></Link>
+                </div>
+                <Field label="One-line description" className="sm:col-span-2"><Input value={biz.tagline || ''} onChange={(e) => setBiz({ ...biz, tagline: e.target.value })} placeholder="Small-batch hot sauce from Pampanga siling labuyo." /></Field>
+                <Field label="TikTok handle"><Input value={biz.tiktok || ''} onChange={(e) => setBiz({ ...biz, tiktok: e.target.value })} placeholder="@yourbrand" /></Field>
+                <Field label="Instagram handle"><Input value={biz.instagram || ''} onChange={(e) => setBiz({ ...biz, instagram: e.target.value })} placeholder="@yourbrand" /></Field>
+                <Field label="TikTok Shop link"><Input value={biz.tiktokShopUrl || ''} onChange={(e) => setBiz({ ...biz, tiktokShopUrl: e.target.value })} placeholder="https://…" /></Field>
+                <Field label="Lazada link"><Input value={biz.lazadaUrl || ''} onChange={(e) => setBiz({ ...biz, lazadaUrl: e.target.value })} placeholder="https://…" /></Field>
+                <Field label="Website"><Input value={biz.website || ''} onChange={(e) => setBiz({ ...biz, website: e.target.value })} placeholder="https://…" /></Field>
+                <Field label="Facebook page (for orders)"><Input value={biz.facebookUrl || ''} onChange={(e) => setBiz({ ...biz, facebookUrl: e.target.value })} placeholder="https://facebook.com/…" /></Field>
+              </div>
             </div>
           )}
         </Card>

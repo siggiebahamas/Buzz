@@ -1,6 +1,7 @@
 // Sample data so every screen has something real to click through.
 // Everything is generated relative to "now" so dates always look current.
 import { DAY } from './format';
+import { weekStart } from './grow';
 
 export const SERVICE_FEE = 0.05;
 
@@ -398,6 +399,49 @@ export function buildSeed() {
     const n = 3 + Math.floor(r2() * 10);
     for (let k = 0; k < n; k++) profileViews.push({ userId: u.id, viewerId: r2() < 0.6 ? pickBrand() : null, ts: now - r2() * 30 * DAY });
   });
+  // ---------- grow for free: swaps, Launch Pad, customer creators, group deals ----------
+  const biz = (uid2) => users.find((u) => u.id === uid2).business;
+  Object.assign(biz(ME), { tiktok: 'tytrading.ph', instagram: 'tytrading.ph', tiktokShopUrl: 'https://shop.tiktok.com/', facebookUrl: 'https://facebook.com/', tagline: 'Local products, done right. Made in the Philippines.' });
+  Object.assign(biz('u_sili'), { tiktok: 'silirepublic', instagram: 'silirepublic', tiktokShopUrl: 'https://shop.tiktok.com/', tagline: 'Small-batch hot sauce from Pampanga siling labuyo.' });
+  Object.assign(biz('u_mangga'), { tiktok: 'manggacebu', tagline: 'Dried mango and pasalubong, straight from Cebu.' });
+  Object.assign(biz('u_kalamansi'), { tiktok: 'kalamansiglow', instagram: 'kalamansiglow', lazadaUrl: 'https://lazada.com.ph/' });
+  const thisWeek = weekStart(now);
+  const lastWeek = thisWeek - 7 * DAY;
+  const creatorIds = users.filter((u) => u.creator && u.id !== ME).map((u) => u.id);
+  const voters = (n) => creatorIds.filter(() => r2() < n / creatorIds.length).concat(r2() < 0.5 ? ['u_hurno'] : []);
+  const launches = [
+    ['u_sili', thisWeek, 'cmp_sili', 'Sili Republic Ghost Pepper Edition', 'Our hottest batch yet: labuyo + ghost pepper, 150ml.', 320, 9],
+    ['u_hurno', thisWeek, 'cmp_hurno', 'Ube cheese pandesal box', 'Freshly baked, delivered in QC and Manila by 9am.', 280, 7],
+    ['u_kalamansi', thisWeek, 'cmp_kalamansi', 'Kalamansi Glow Night Serum', 'Vitamin C serum for oily skin, made in Mindoro.', 549, 6],
+    ['u_carvers', thisWeek, 'cmp_bulul', 'Mini bulul desk guardians', 'Hand-carved 4-inch bulul, each one signed by the carver.', 650, 4],
+    ['u_sadie', thisWeek, 'cmp_sadie', 'Corgi raincoat, rainy season drop', 'Waterproof, reflective, sized for short legs.', 690, 3],
+    ['u_barako', thisWeek, 'cmp_barako', 'Barako cold brew concentrate', 'Batangas barako, 1L makes 8 glasses.', 420, 2],
+    ['u_mangga', lastWeek, 'cmp_mangga', 'Mango-tamarind bars', 'Chewy, sour-sweet, no preservatives.', 180, 11],
+    ['u_ben', lastWeek, 'cmp_marikina', 'Marikina loafers, black', 'Hand-lasted leather loafers, resoleable.', 3200, 8],
+    ['u_kahoy', lastWeek, 'cmp_kahoy', 'Reclaimed narra side table', 'Small-space table from old Cebu houses.', 4500, 5],
+  ].map(([brandId, week, campaignId, title, pitch, price, v], i) => ({
+    id: id('lch'), brandId, week, campaignId, title, pitch, price, category: users.find((u) => u.id === brandId).business.category, photo: '', shopUrl: '',
+    votes: voters(v), interested: i < 3 ? creatorIds.filter(() => r2() < 0.12) : [], createdAt: week + (0.2 + r2()) * DAY,
+  }));
+  const swaps = [
+    { id: id('swp'), fromId: 'u_kalamansi', toId: ME, give: 'Instagram story shout-out', ask: 'Instagram story shout-out', note: 'Our buyers are women 22–35 in Metro Manila who shop local, same as yours I think!', status: 'proposed', fromUrl: '', toUrl: '', createdAt: now - 5 * 3600000 },
+    { id: id('swp'), fromId: ME, toId: 'u_carvers', give: 'Feed post or reel', ask: 'Product in each other\'s orders (flyer or sample)', note: '', status: 'active', fromUrl: 'https://www.instagram.com/p/sample1', toUrl: '', createdAt: now - 4 * DAY, decidedAt: now - 3.5 * DAY },
+    { id: id('swp'), fromId: 'u_sili', toId: 'u_barako', give: 'TikTok video', ask: 'TikTok video', note: '', status: 'done', fromUrl: 'https://www.tiktok.com/@silirepublic/video/1', toUrl: 'https://www.tiktok.com/@barako/video/2', createdAt: now - 20 * DAY, doneAt: now - 12 * DAY },
+  ];
+  const ugcPrograms = [
+    { id: id('ugp'), brandId: ME, code: 'tytrading01', credit: 150, ask: 'Post a photo or video wearing or using any Ty Trading product. Tag @tytrading.ph.', minFollowers: 0, active: true, createdAt: now - 30 * DAY },
+    { id: id('ugp'), brandId: 'u_sili', code: 'silirepublic7', credit: 100, ask: 'Show your Sili Republic on your favorite ulam. Tag @silirepublic.', minFollowers: 0, active: true, createdAt: now - 45 * DAY },
+  ];
+  const ugcPosts = [
+    { id: id('ugc'), programId: ugcPrograms[0].id, brandId: ME, userId: 'c_leah', url: 'https://www.instagram.com/p/leah-ugc', platform: 'instagram', status: 'pending', voucher: '', createdAt: now - 20 * 3600000 },
+    { id: id('ugc'), programId: ugcPrograms[0].id, brandId: ME, userId: 'u_hurno', url: 'https://www.tiktok.com/@hurno/video/3', platform: 'tiktok', status: 'pending', voucher: '', createdAt: now - 6 * 3600000 },
+    { id: id('ugc'), programId: ugcPrograms[0].id, brandId: ME, userId: 'c_camille', url: 'https://www.instagram.com/p/camille-ugc', platform: 'instagram', status: 'approved', voucher: 'TYTRAD-K7Q2', credit: 150, createdAt: now - 9 * DAY, reviewedAt: now - 8 * DAY },
+  ];
+  const groupDeals = [
+    { id: id('grp'), leadId: 'u_mangga', title: 'Taste of Cebu pasalubong box', brief: 'One TikTok unboxing of a 3-brand pasalubong box for balikbayans. Each brand gets a clear mention and a link in the caption.', category: 'food', platform: 'tiktok', creatorId: 'c_trish', fee: 6000, slots: 3, members: [{ brandId: 'u_mangga', product: 'Dried mango bars', share: 2000, fee: 100, paidAt: now - 2 * DAY }, { brandId: 'u_barako', product: 'Barako coffee', share: 2000, fee: 100, paidAt: now - DAY }], status: 'forming', postUrl: '', confirmed: [], createdAt: now - 2 * DAY },
+    { id: id('grp'), leadId: 'u_kalamansi', title: 'Self-care Sunday bundle', brief: 'A calm Sunday routine reel featuring a serum, a candle and a pilates mat flow.', category: 'beauty', platform: 'instagram', creatorId: 'c_lia', fee: 4500, slots: 3, members: [{ brandId: 'u_kalamansi', product: 'Night serum', share: 1500, fee: 75, paidAt: now - 3 * DAY }, { brandId: 'u_candle', product: 'Soy candle', share: 1500, fee: 75, paidAt: now - 3 * DAY }, { brandId: 'u_pilates', product: 'Intro class pass', share: 1500, fee: 75, paidAt: now - 2 * DAY }], status: 'invited', postUrl: '', confirmed: [], createdAt: now - 3 * DAY },
+  ];
+
   applications.forEach((a) => {
     if (a.source !== 'apply') return;
     if (a.decidedAt) a.seenAt = a.createdAt + (a.decidedAt - a.createdAt) * 0.5;
@@ -492,6 +536,6 @@ export function buildSeed() {
     transactions, reports, emails: [], resets: [],
     contracts, disputes, verifications, shipments, concierge, tickets, saleImports: [],
     revenue: transactions.filter((t) => t.type === 'fund').map((t) => ({ id: id('rev'), stream: 'transactionFee', amount: Math.round((-t.amount / (1 + SERVICE_FEE)) * SERVICE_FEE), payer: t.userId, note: 'Service fee', ref: t.ref, ts: t.ts })),
-    orders: [], savedSearches: [], meetups: sampleEvents(now), eventTickets: [],
+    orders: [], savedSearches: [], meetups: sampleEvents(now), launches, swaps, ugcPrograms, ugcPosts, groupDeals, eventTickets: [],
   };
 }

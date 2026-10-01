@@ -1,6 +1,6 @@
 import { createContext, useContext, useEffect, useRef, useState } from 'react';
 import { NavLink, Link, useNavigate, useLocation } from 'react-router-dom';
-import { Bell, MessageCircle, X, Send, ArrowLeft, LogOut, RotateCcw, UserRound, Repeat, Search, ShieldAlert, Smartphone, LifeBuoy, Sparkles as SparklesIcon, Compass, Sparkles, Users, LayoutGrid, Wand2, CalendarDays } from 'lucide-react';
+import { Bell, MessageCircle, X, Send, ArrowLeft, LogOut, RotateCcw, UserRound, Repeat, Search, ShieldAlert, Smartphone, LifeBuoy, Sparkles as SparklesIcon, Compass, Sparkles, Users, LayoutGrid, Wand2, CalendarDays, Rocket } from 'lucide-react';
 import { isOn } from '../lib/monetize';
 import { useDB, currentUser, userById, actions, unreadCount, displayName, campaignById } from '../lib/store';
 import { timeAgo } from '../lib/format';
@@ -130,14 +130,14 @@ export function Header() {
   const d = useDB();
   const me = currentUser(d);
   const loc = useLocation();
-  const tabs = [['/', 'Discover', Compass], ['/opportunities', 'Opportunities', Sparkles], ['/community', 'Community', Users], ['/workspace', 'My Workspace', LayoutGrid]];
+  const tabs = [['/', 'Discover', Compass], ['/opportunities', 'Opportunities', Sparkles], ['/launchpad', 'Launch Pad', Rocket], ['/community', 'Community', Users], ['/workspace', 'My Workspace', LayoutGrid]];
   const isActive = (to) => (to === '/' ? loc.pathname === '/' : loc.pathname.startsWith(to) || (to === '/opportunities' && (loc.pathname.startsWith('/opportunity') || loc.pathname.startsWith('/profile'))));
   return (
     <>
     <header className="sticky top-0 z-30 bg-white/95 backdrop-blur border-b border-line">
       <div className="max-w-[1320px] mx-auto h-16 px-4 sm:px-6 flex items-center">
         <div className="flex-1"><Logo /></div>
-        <nav className="hidden md:flex items-center gap-8">
+        <nav className="hidden md:flex items-center gap-6 lg:gap-8">
           {tabs.map(([to, label]) => {
             const active = isActive(to);
             return (
@@ -158,7 +158,7 @@ export function Header() {
         </div>
       </div>
     </header>
-    <nav className="md:hidden fixed bottom-0 inset-x-0 z-30 bg-white border-t border-line grid grid-cols-4" style={{ paddingBottom: 'env(safe-area-inset-bottom, 0px)' }}>
+    <nav className="md:hidden fixed bottom-0 inset-x-0 z-30 bg-white border-t border-line grid grid-cols-5" style={{ paddingBottom: 'env(safe-area-inset-bottom, 0px)' }}>
       {tabs.map(([to, label, Icon]) => (
         <NavLink key={to} to={to} className={cx('flex flex-col items-center gap-0.5 py-2 text-[11px]', isActive(to) ? 'text-brand-dark font-semibold' : 'text-ink-muted')}>
           <Icon size={20} strokeWidth={1.8} />{label.replace('My ', '')}

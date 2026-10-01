@@ -15,10 +15,16 @@ function load() {
     const raw = localStorage.getItem(KEY);
     if (raw) {
       const parsed = JSON.parse(raw);
-      if (parsed?.version === 9) return parsed;
+      if (parsed?.version === 9) return migrate(parsed);
     }
   } catch { /* storage blocked or corrupt: fall through to fresh seed */ }
   return buildSeed();
+}
+
+// Add collections introduced after a browser first saved its data.
+function migrate(d) {
+  ['swaps', 'launches', 'ugcPrograms', 'ugcPosts', 'groupDeals'].forEach((k) => { d[k] ||= []; });
+  return d;
 }
 
 let db = load();
@@ -453,7 +459,9 @@ export const actions = {
     const link = db.links.find((l) => l.code.toLowerCase() === code.toLowerCase());
     if (!link) return null;
     commit((d) => { d.events.push({ t: 'click', linkId: link.id, ts: Date.now(), n: 1 }); });
-    return campaignById(db, link.campaignId);
+    const c = campaignById(db, link.campaignId);
+    // A creator's TikTok Shop (or other) affiliate link wins over the brand's shop link.
+    return c && { ...c, shopUrl: link.affiliateUrl || c.shopUrl || userById(db, c.ownerId)?.business?.shopUrl };
   },
   logSale(linkId, amount, source = 'code') {
     commit((d) => {

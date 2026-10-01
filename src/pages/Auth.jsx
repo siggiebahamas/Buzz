@@ -103,6 +103,7 @@ export function Reset() {
 
 export function Signup() {
   const nav = useNavigate();
+  const loc = useLocation();
   const [params] = useSearchParams();
   const act = useAct();
   const [role, setRole] = useState(null);
@@ -114,7 +115,7 @@ export function Signup() {
     e.preventDefault();
     if (f.password.length < 8) return setErr('Use a password with at least 8 characters.');
     if (!agree) return setErr('Please agree to the Terms and Privacy Policy to continue.');
-    if (act(() => actions.signup({ ...f, role }), 'Account created. Welcome to Buzz!')) nav('/workspace/profile');
+    if (act(() => actions.signup({ ...f, role }), 'Account created. Welcome to Buzz!')) nav(loc.state?.from || '/workspace/profile');
   };
   return (
     <Shell title="Join Buzz" sub="Free for founders and creators. You can add the other role later.">

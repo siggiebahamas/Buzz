@@ -5,7 +5,7 @@ import { useDB, userById, campaignById, displayName, brandName, actions } from '
 import { peso, timeAgo } from '../../lib/format';
 import { matchScore } from '../../lib/match';
 import { ProductImage, MatchPill } from '../../components/visuals';
-import { Card, Button, Badge, Avatar, EmptyState, cx, useAct } from '../../components/ui';
+import { Card, Button, Badge, Avatar, EmptyState, Input, cx, useAct } from '../../components/ui';
 import { useChat } from '../../components/Shell';
 import { useMode, ModeToggle, PageHead } from './Layout';
 import { OpenDisputeModal } from './Disputes';
@@ -95,11 +95,14 @@ export default function Collaborations() {
                     const sh = d.shipments.find((x) => x.campaignId === c.id && x.creatorId === a.creatorId);
                     const mineToSign = k && (biz ? !k.brandSignedAt : !k.creatorSignedAt);
                     return (
+                      <>
                       <div className="flex flex-wrap gap-2 mt-2">
                         {k && <Link to="/workspace/contracts"><Badge tone={k.brandSignedAt && k.creatorSignedAt ? 'green' : mineToSign ? 'red' : 'soft'}><FileSignature size={11} />{k.brandSignedAt && k.creatorSignedAt ? 'Agreement signed' : mineToSign ? 'Sign the agreement' : 'Waiting for signature'}</Badge></Link>}
                         {sh && <Badge tone={sh.status === 'delivered' ? 'green' : sh.status === 'shipped' ? 'blue' : 'neutral'}><Truck size={11} />{sh.status === 'delivered' ? 'Sample received' : sh.status === 'shipped' ? `Shipped: ${sh.courier} ${sh.tracking}` : 'Sample not shipped yet'}</Badge>}
                         {sh?.status === 'shipped' && !biz && <button onClick={() => actions.updateShipment(sh.id, { status: 'delivered' })} className="text-[12px] font-medium text-brand-dark">I got it</button>}
                       </div>
+                      {!biz && <AffiliateLink link={d.links.find((l) => l.campaignId === c.id && l.creatorId === a.creatorId)} />}
+                      </>
                     );
                   })()}
                 </div>
@@ -131,5 +134,26 @@ export default function Collaborations() {
       )}
       {dispute && <OpenDisputeModal {...dispute} onClose={() => setDispute(null)} />}
     </>
+  );
+}
+
+// Creators who sell through TikTok Shop's affiliate program can point their Buzz link there.
+function AffiliateLink({ link }) {
+  const act = useAct();
+  const [open, setOpen] = useState(false);
+  const [url, setUrl] = useState(link?.affiliateUrl || '');
+  if (!link) return null;
+  if (!open) {
+    return (
+      <p className="text-[12px] text-ink-muted mt-2">
+        Your link: <span className="font-mono text-ink">buzz/go/{link.code}</span>{link.affiliateUrl ? ' → your TikTok Shop affiliate link' : ''} · <button onClick={() => setOpen(true)} className="text-brand-dark font-medium">{link.affiliateUrl ? 'Change' : 'Use my TikTok Shop affiliate link'}</button>
+      </p>
+    );
+  }
+  return (
+    <div className="mt-2 flex gap-2">
+      <Input value={url} onChange={(e) => setUrl(e.target.value)} placeholder="Your TikTok Shop affiliate product link" className="!h-8 !text-[12.5px]" />
+      <Button size="sm" onClick={() => { if (act(() => actions.setAffiliateUrl(link.id, url), url ? 'Saved. Your Buzz link now sends buyers to your affiliate link.' : 'Removed')) setOpen(false); }}>Save</Button>
+    </div>
   );
 }

@@ -4,6 +4,7 @@ import { Header, ChatProvider } from './components/Shell';
 import { ToastProvider, ConfirmProvider } from './components/ui';
 import { useDB, actions } from './lib/store';
 import './lib/ops';
+import './lib/growops';
 import Discover from './pages/Discover';
 import Opportunities from './pages/Opportunities';
 import OpportunityDetail from './pages/OpportunityDetail';
@@ -23,6 +24,13 @@ import CreatorPro from './pages/workspace/CreatorPro';
 import Help from './pages/Help';
 import Pricing from './pages/Pricing';
 import Services from './pages/Services';
+import LaunchPad from './pages/LaunchPad';
+import Shop from './pages/Shop';
+import Join from './pages/Join';
+import Grow from './pages/workspace/Grow';
+import Swaps from './pages/workspace/Swaps';
+import Customers from './pages/workspace/Customers';
+import GroupDeals from './pages/workspace/GroupDeals';
 import Events from './pages/Events';
 import Go from './pages/Go';
 import WorkspaceLayout from './pages/workspace/Layout';
@@ -75,6 +83,9 @@ export default function App() {
           <Route path="/help" element={<Help />} />
           <Route path="/pricing" element={<Pricing />} />
           <Route path="/services" element={<Services />} />
+          <Route path="/launchpad" element={<LaunchPad />} />
+          <Route path="/shop/:id" element={<Shop />} />
+          <Route path="/join/:code" element={<Join />} />
           <Route path="/events" element={<Events />} />
           <Route path="/privacy" element={<Privacy />} />
           <Route path="/admin" element={<RequireAuth><Admin /></RequireAuth>} />
@@ -89,6 +100,10 @@ export default function App() {
             <Route path="analytics" element={<Analytics />} />
             <Route path="payments" element={<Payments />} />
             <Route path="pro" element={<CreatorPro />} />
+            <Route path="grow" element={<Grow />} />
+            <Route path="swaps" element={<Swaps />} />
+            <Route path="customers" element={<Customers />} />
+            <Route path="group-deals" element={<GroupDeals />} />
             <Route path="contracts" element={<Contracts />} />
             <Route path="disputes" element={<Disputes />} />
             <Route path="verification" element={<Verification />} />

@@ -4,7 +4,7 @@ import { useDB, userById, campaignById, actions } from '../../lib/store';
 import { isOn, setting } from '../../lib/monetize';
 import { PLATFORMS } from '../../lib/constants';
 import { compact, shortDate, DAY, peso } from '../../lib/format';
-import { Card, Badge, Avatar, EmptyState, Select, Button, Modal, Field, Input, useAct } from '../../components/ui';
+import { Card, Badge, Avatar, EmptyState, Select, Button, Modal, Field, Input, useAct, useCopy } from '../../components/ui';
 import { ProductImage } from '../../components/visuals';
 import { useMode, PageHead } from './Layout';
 
@@ -51,6 +51,7 @@ export default function Library() {
                     <a href={x.contentUrl} target="_blank" rel="noreferrer" className="text-[12.5px] text-brand-dark inline-flex items-center gap-1">Open <ExternalLink size={12} /></a>
                   </div>
                   {licensing && <Button size="sm" variant="outline" className="mt-3" onClick={() => setExtend(x)}>{active ? 'Extend reuse rights' : 'Buy reuse rights'}</Button>}
+                  <BoostCode x={x} />
                 </div>
               </Card>
             );
@@ -85,4 +86,20 @@ function ExtendModal({ x, onClose }) {
       <Button size="lg" className="w-full mt-4" onClick={() => { if (act(() => actions.extendRights(x.id, months, price), 'Rights extended. The creator was paid.')) onClose(); }}>Pay {peso((Number(price) || 0) + cut)}</Button>
     </Modal>
   );
+}
+
+// Ad-boost permission: the code a creator generates so the brand can run their post as an ad.
+function BoostCode({ x }) {
+  const act = useAct();
+  const copy = useCopy();
+  if (x.boostCode) {
+    const live = x.boostUntil > Date.now();
+    return (
+      <div className="mt-3 rounded-xl bg-canvas p-2.5 text-[12.5px]">
+        <p className="font-semibold">Ad-boost code {live ? <span className="text-emerald-700">· valid until {shortDate(x.boostUntil)}</span> : <span className="text-rose-700">· expired</span>}</p>
+        <button onClick={() => copy(x.boostCode, 'Code copied. Paste it in TikTok Ads Manager.')} className="font-mono text-[12px] mt-1 break-all text-left hover:text-brand-dark">{x.boostCode}</button>
+      </div>
+    );
+  }
+  return <Button size="sm" variant="ghost" className="mt-2 !px-0 text-brand-dark" disabled={!!x.boostRequested} onClick={() => act(() => actions.requestBoostCode(x.id), 'Asked. You\'ll get the code in Messages and here.')}>{x.boostRequested ? 'Ad code requested' : 'Ask for an ad-boost code'}</Button>;
 }

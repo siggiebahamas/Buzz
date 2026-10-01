@@ -1,10 +1,13 @@
 import { Link, useNavigate } from 'react-router-dom';
 import { Search, Handshake, BarChart3, Trophy, ArrowRight, ChevronRight, Flame, Sparkles, Star, Heart, MessageCircle } from 'lucide-react';
 import { rankCreators, rankCampaigns, profileCampaign } from '../lib/match';
-import { useDB, currentUser, applicantsCount, userById, displayName, creators, actions, liveCampaigns, reactionTotal } from '../lib/store';
+import { useDB, currentUser, applicantsCount, userById, displayName, creators, actions, liveCampaigns, reactionTotal, brandName } from '../lib/store';
 import { OpportunityCard, CreatorCard, isFeatured } from '../components/visuals';
 import { Button, Avatar, SectionHead } from '../components/ui';
 import { timeAgo } from '../lib/format';
+import { launchesFor, weekStart } from '../lib/grow';
+import { LaunchImage } from './LaunchPad';
+import { Rocket } from 'lucide-react';
 
 const STEPS = [
   { icon: Search, title: 'Find Your Match', body: 'Creators browse products by photo. Founders browse creators by audience and results.' },
@@ -19,6 +22,7 @@ export default function Discover() {
   const listed = liveCampaigns(d).filter((c) => c.status !== 'completed');
   const boost = (c) => (isFeatured(d, c) ? 1e7 : 0) + (c.featured ? 1e6 : 0) + applicantsCount(d, c.id) * 50 + c.views;
   const trending = [...listed].sort((a, b) => boost(b) - boost(a)).slice(0, 6);
+  const launchTop = launchesFor(d, weekStart()).slice(0, 3);
   const wins = d.posts.filter((p) => p.topic === 'wins').slice(0, 3);
   const me = currentUser(d);
   // Logged-in people see matches; visitors see the most engaging creators.
@@ -79,6 +83,20 @@ export default function Discover() {
           <SectionHead title="Picked for you" icon={Sparkles} sub="Listings that fit your content, rates and audience"
             action={<Link to="/opportunities?as=creator" className="text-[13.5px] font-medium text-brand-dark inline-flex items-center gap-1">See all matches <ChevronRight size={15} /></Link>} />
           <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-5">{picked.map((c) => <OpportunityCard key={c.id} campaign={c} />)}</div>
+        </section>
+      )}
+      {launchTop.length > 0 && (
+        <section className="max-w-6xl mx-auto px-4 sm:px-6 pt-16">
+          <SectionHead title="This week on the Launch Pad" icon={Rocket} sub="New local products, voted by the community. Free for every brand."
+            action={<Link to="/launchpad" className="text-[13.5px] font-medium text-brand-dark inline-flex items-center gap-1">See the board <ChevronRight size={15} /></Link>} />
+          <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
+            {launchTop.map((l, i) => (
+              <Link key={l.id} to="/launchpad" className="bg-white border border-line rounded-2xl overflow-hidden hover:shadow-lift transition-shadow">
+                <div className="relative"><LaunchImage d={d} l={l} className="aspect-[4/3]" /><span className="absolute top-2 left-2 h-7 w-7 rounded-full bg-ink text-white text-[13px] font-bold grid place-items-center">{i + 1}</span></div>
+                <div className="p-3"><p className="font-bold text-[14px] truncate">{l.title}</p><p className="text-[12px] text-ink-muted">{brandName(userById(d, l.brandId))} · {l.votes.length} votes</p></div>
+              </Link>
+            ))}
+          </div>
         </section>
       )}
       <section className="max-w-6xl mx-auto px-4 sm:px-6 py-16">

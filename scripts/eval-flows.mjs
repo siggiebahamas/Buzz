@@ -179,5 +179,71 @@ check('Peer comparison gives rows and a tip', pc.rows.length === 4 && pc.count >
 actions.setStream('plans', { on: false });
 check('Turning plans off switches Creator Pro off', !pro.isCreatorPro(db(), db().users.find((u) => u.id === 'c_joy')));
 
+// Grow for free + TikTok.
+const grow = await import('../src/lib/grow.js');
+await import('../src/lib/growops.js');
+actions.login('u_me');
+const meU = () => db().users.find((u) => u.id === 'u_me');
+const sm = grow.swapMatches(db(), meU());
+check('Swap matches never include competitors', sm.length > 0 && sm.every((x) => x.u.business.category !== meU().business.category));
+const pal = sm.find((x) => !db().swaps.some((s) => [s.fromId, s.toId].includes(x.u.id)));
+actions.proposeSwap({ toId: pal.u.id, give: 'Instagram story shout-out', ask: 'TikTok video' });
+check('Duplicate swap with the same brand is refused', throws(() => actions.proposeSwap({ toId: pal.u.id, give: 'a', ask: 'b' })));
+const sw = db().swaps.find((s) => s.fromId === 'u_me' && s.toId === pal.u.id);
+actions.login(pal.u.id);
+actions.respondSwap(sw.id, true);
+actions.postSwap(sw.id, 'https://www.tiktok.com/@x/video/1');
+actions.login('u_me');
+actions.postSwap(sw.id, 'https://www.instagram.com/p/y');
+check('Swap completes when both sides post', db().swaps.find((s) => s.id === sw.id).status === 'done');
+
+const myLaunch = actions.submitLaunch({ title: 'Test Barong Mini', pitch: 'Tiny barong for your car mirror' });
+check('One Launch Pad entry per brand per week', throws(() => actions.submitLaunch({ title: 'Again', pitch: 'x' })));
+check('Brands cannot vote for themselves', throws(() => actions.voteLaunch(myLaunch)));
+actions.login('c_trish');
+actions.voteLaunch(myLaunch);
+actions.wantToPost(myLaunch, 'I would love to post this');
+const L = db().launches.find((l) => l.id === myLaunch);
+check('Votes and creator offers are recorded', L.votes.includes('c_trish') && L.interested.includes('c_trish'));
+check('Creator offer lands in the brand\'s messages', db().threads.some((t) => t.participants.includes('u_me') && t.participants.includes('c_trish') && t.messages.some((m) => m.body === 'I would love to post this')));
+actions.voteLaunch(myLaunch);
+check('Voting again removes the vote', !db().launches.find((l) => l.id === myLaunch).votes.includes('c_trish'));
+
+const prog = db().ugcPrograms.find((p) => p.brandId === 'u_me');
+actions.submitUgc(prog.code, { url: 'https://www.tiktok.com/@trish/video/9', platform: 'tiktok' });
+check('One customer reward per month', throws(() => actions.submitUgc(prog.code, { url: 'https://www.tiktok.com/@trish/video/10', platform: 'tiktok' })));
+actions.login('u_me');
+const ugc = db().ugcPosts.find((x) => x.userId === 'c_trish' && x.brandId === 'u_me');
+actions.reviewUgc(ugc.id, true);
+const ugc2 = db().ugcPosts.find((x) => x.id === ugc.id);
+check('Approving a customer post sends a voucher', ugc2.status === 'approved' && /^[A-Z]+-[A-Z0-9]{4}$/.test(ugc2.voucher) && db().emails.some((e) => e.userId === 'c_trish' && e.body.includes(ugc2.voucher)));
+
+const gid = actions.createGroupDeal({ title: 'Test bundle', brief: 'One reel', category: 'fashion', platform: 'instagram', fee: 3000, slots: 2, product: 'Barong', creatorId: 'c_aya' });
+actions.login('u_ligaya');
+actions.joinGroupDeal(gid, 'Filipiniana');
+check('Full group deal invites the creator', db().groupDeals.find((g) => g.id === gid).status === 'invited');
+actions.login('c_aya');
+const ayaBefore = walletOf(db(), 'c_aya').balance;
+actions.respondGroupDeal(gid, true);
+actions.postGroupDeal(gid, 'https://www.instagram.com/p/bundle');
+actions.login('u_me'); actions.confirmGroupDeal(gid);
+check('Creator not paid until every brand confirms', db().groupDeals.find((g) => g.id === gid).status === 'posted');
+actions.login('u_ligaya'); actions.confirmGroupDeal(gid);
+check('Group deal pays the creator the full fee', db().groupDeals.find((g) => g.id === gid).status === 'done' && walletOf(db(), 'c_aya').balance - ayaBefore === 3000);
+actions.login('u_me');
+const gid2 = actions.createGroupDeal({ title: 'Cancel me', category: 'fashion', fee: 2000, slots: 2, creatorId: 'c_aya' });
+const meBal = walletOf(db(), 'u_me').balance;
+actions.leaveGroupDeal(gid2);
+check('Cancelling a group deal refunds the share', db().groupDeals.find((g) => g.id === gid2).status === 'cancelled' && walletOf(db(), 'u_me').balance > meBal);
+
+const appr = db().deliverables.find((x) => x.status === 'approved' && db().campaigns.find((c) => c.id === x.campaignId)?.ownerId === 'u_me');
+actions.requestBoostCode(appr.id);
+actions.login(appr.creatorId);
+actions.setBoostCode(appr.id, '#SparkCODE123', 30);
+check('Ad-boost code reaches the brand', db().deliverables.find((x) => x.id === appr.id).boostCode === '#SparkCODE123' && db().notifications.some((n) => n.userId === 'u_me' && n.text.includes('ad-boost code')));
+const lk = db().links.find((l) => l.creatorId === appr.creatorId);
+actions.setAffiliateUrl(lk.id, 'https://affiliate.tiktok.com/x');
+check('Tracking link forwards to the creator\'s TikTok Shop affiliate link', actions.recordClick(lk.code).shopUrl === 'https://affiliate.tiktok.com/x');
+
 console.log(`\n${pass} passed, ${fail} failed`);
 process.exit(fail ? 1 : 0);

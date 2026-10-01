@@ -1,6 +1,6 @@
 import { useState } from 'react';
 import { NavLink, Outlet } from 'react-router-dom';
-import { LayoutGrid, UserRound, Briefcase, Handshake, ListChecks, BarChart3, MessageSquare, Bookmark, Settings, HelpCircle, Wallet, FileSignature, Scale, BadgeCheck, Gift, Library, Crown } from 'lucide-react';
+import { LayoutGrid, UserRound, Briefcase, Handshake, ListChecks, BarChart3, MessageSquare, Bookmark, Settings, HelpCircle, Wallet, FileSignature, Scale, BadgeCheck, Gift, Library, Crown, Sprout, Repeat, Users, Megaphone } from 'lucide-react';
 import { Link } from 'react-router-dom';
 import { useDB, currentUser, unreadCount, actions } from '../../lib/store';
 import { isOn } from '../../lib/monetize';
@@ -64,6 +64,14 @@ export default function WorkspaceLayout() {
       ['/workspace/contracts', 'Agreements', FileSignature, toSign],
       ['/workspace/messages', 'Messages', MessageSquare, unreadCount(d)],
       mode === 'business' && ['/workspace/library', 'Content library', Library],
+    ]],
+    ['Grow for free', mode === 'business' ? [
+      ['/workspace/grow', 'Grow hub', Sprout, 0, true],
+      ['/workspace/swaps', 'Brand swaps', Repeat, d.swaps.filter((s) => s.toId === me.id && s.status === 'proposed').length],
+      ['/workspace/customers', 'Customer creators', Megaphone, d.ugcPosts.filter((x) => x.brandId === me.id && x.status === 'pending').length],
+      ['/workspace/group-deals', 'Group deals', Users, d.groupDeals.filter((g) => g.status === 'posted' && g.members.some((m) => m.brandId === me.id) && !g.confirmed.includes(me.id)).length],
+    ] : [
+      ['/workspace/group-deals', 'Group deals', Users, d.groupDeals.filter((g) => g.creatorId === me.id && g.status === 'invited').length],
     ]],
     ['Money & results', [
       ['/workspace/analytics', 'Analytics', BarChart3],
