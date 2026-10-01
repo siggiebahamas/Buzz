@@ -113,18 +113,18 @@ export default function Collaborations() {
                     {biz && a.status === 'pending' && (
                       <>
                         <Button size="sm" variant="outline" onClick={() => act(() => actions.decide(a.id, 'declined'), 'Declined')}><X size={14} />Decline</Button>
-                        <Button size="sm" onClick={() => act(() => actions.decide(a.id, 'accepted'), `${creator.name} is on board. Deliverables and promo code created.`)}><Check size={14} />Accept</Button>
+                        <Button size="sm" onClick={() => act(() => actions.decide(a.id, 'accepted'), `${creator.name} is on board. Their posts and promo code are ready.`)}><Check size={14} />Accept</Button>
                       </>
                     )}
                     {!biz && a.status === 'invited' && (
                       <>
                         <Button size="sm" variant="outline" onClick={() => act(() => actions.decide(a.id, 'declined'), 'Invite declined')}><X size={14} />Decline</Button>
-                        <Button size="sm" onClick={() => act(() => actions.decide(a.id, 'accepted'), "You're in! Check Deliverables for your tasks.")}><Check size={14} />Accept</Button>
+                        <Button size="sm" onClick={() => act(() => actions.decide(a.id, 'accepted'), "You're in! Your posts are in My collabs.")}><Check size={14} />Accept</Button>
                       </>
                     )}
                     {!biz && a.status === 'pending' && <Button size="sm" variant="outline" onClick={() => act(() => actions.decide(a.id, 'withdrawn'), 'Application withdrawn')}>Withdraw</Button>}
                     {a.status === 'accepted' && <Button size="sm" variant="ghost" title="Report a problem" onClick={() => setDispute({ campaignId: c.id, againstId: biz ? a.creatorId : c.ownerId })}><Flag size={14} /></Button>}
-                    {a.status === 'accepted' && <Link to={biz ? `/workspace/campaigns/${c.id}` : '/workspace/deliverables'}><Button size="sm" variant="soft">{biz ? 'Manage' : 'My tasks'}</Button></Link>}
+                    {a.status === 'accepted' && <Link to={biz ? `/workspace/campaigns/${c.id}` : '/workspace/collabs'}><Button size="sm" variant="soft">{biz ? 'Manage' : 'My tasks'}</Button></Link>}
                   </div>
                 </div>
               </Card>
@@ -138,7 +138,7 @@ export default function Collaborations() {
 }
 
 // Creators who sell through TikTok Shop's affiliate program can point their Buzz link there.
-function AffiliateLink({ link }) {
+export function AffiliateLink({ link }) {
   const act = useAct();
   const [open, setOpen] = useState(false);
   const [url, setUrl] = useState(link?.affiliateUrl || '');

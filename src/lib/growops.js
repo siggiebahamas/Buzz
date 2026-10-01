@@ -246,7 +246,7 @@ Object.assign(actions, {
       x.boostRequested = Date.now();
       const t = threadFor(d, c.ownerId, x.creatorId, c.id);
       pushMessage(d, t, c.ownerId, `Your "${x.title}" is doing great! Could you send an ad-boost code so we can put some budget behind it? (TikTok: post settings → Ad settings → Generate code.)`);
-      notify(d, x.creatorId, `${brandName(me(d))} asked to boost your post as an ad`, '/workspace/deliverables');
+      notify(d, x.creatorId, `${brandName(me(d))} asked to boost your post as an ad`, '/workspace/collabs');
     });
   },
   setAffiliateUrl(linkId, url) {

@@ -21,7 +21,7 @@ export default function Referrals() {
         <Card className="p-6 bg-ink text-white border-ink">
           <Gift size={24} className="text-brand" />
           <p className="text-[22px] font-bold mt-3">Give {peso(REFERRAL_CREDIT)}, get {peso(REFERRAL_CREDIT)}</p>
-          <p className="text-white/70 text-[14px] mt-1">Credit comes off your Buzz service fees. It lands when the person you invite funds their first escrow (brands) or gets their first payment (creators).</p>
+          <p className="text-white/70 text-[14px] mt-1">Credit comes off your Buzz service fees. It lands when the person you invite makes their first protected payment (brands) or gets their first payment (creators).</p>
           <div className="mt-5 rounded-xl bg-white/10 p-3 flex items-center gap-3">
             <span className="flex-1 text-[13px] break-all">{link}</span>
             <Button size="sm" onClick={() => copy(link, 'Invite link copied')}><Copy size={14} />Copy</Button>

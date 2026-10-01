@@ -8,14 +8,14 @@ import { Card, Button, Badge, Field, Input, Select, Textarea, EmptyState, useAct
 
 const faq = (fee, plans) => [
   ['Getting started', [
-    ['Is Buzz free?', `Yes. Signing up, posting listings and applying are free. When a brand pays a creator through escrow, the brand pays a ${fee}% service fee${plans ? ' (less on paid plans)' : ''}. Creators receive their full fee.`],
+    ['Is Buzz free?', `Yes. Signing up, posting listings and applying are free. When a brand pays a creator through Buzz Protected Payment, the brand pays a ${fee}% service fee${plans ? ' (less on paid plans)' : ''}. Creators receive their full fee.`],
     ['What should I put in my first listing?', 'A clear product photo, what makes it special, who you want to reach, and a fair budget. The budget helper in the form shows how many creators your budget can afford.'],
     ['How does Buzz pick matches?', 'We compare the listing with each creator: how close their content is to your product, whether their usual rate fits your budget, their audience, platforms, engagement for their size, their sales record on Buzz, and location. Hover any fit label to see the reasons.'],
   ]],
-  ['Payments & escrow', [
-    ['How does escrow protect me?', 'Brands pay creator fees into escrow before the work. Buzz holds the money. It is released to the creator when the brand approves the content, or automatically 7 days after it is submitted if the brand doesn\'t respond.'],
+  ['Payments & protected payment', [
+    ['How does Protected Payment protect me?', 'Brands pay creator fees into Buzz Protected Payment before the work. Buzz holds the money. It is released to the creator when the brand approves the content, or automatically 7 days after it is submitted if the brand doesn\'t respond.'],
     ['How do creators get paid?', 'Released payments go to your Buzz wallet. Withdraw anytime to GCash, Maya or a Philippine bank account. Minimum ₱100, no fee for creators.'],
-    ['What if something goes wrong?', 'Use Report a problem on the deliverable. Escrowed money is frozen, the other side has 3 days to respond, and Buzz decides based on the signed agreement, messages and tracking data.'],
+    ['What if something goes wrong?', 'Use Report a problem on the collab. Held money is frozen, the other side has 3 days to respond, and Buzz decides based on the signed agreement, messages and tracking data.'],
   ]],
   ['Trust & safety', [
     ['What does the verified badge mean?', 'For brands: we checked a DTI, SEC, BIR or business permit. For creators: we checked follower counts and engagement against their platform insights.'],

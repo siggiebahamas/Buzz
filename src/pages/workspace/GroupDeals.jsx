@@ -2,7 +2,8 @@ import { useState } from 'react';
 import { Link } from 'react-router-dom';
 import { Users, Plus, Check, X, ExternalLink, Link2, ShieldCheck } from 'lucide-react';
 import { useDB, userById, brandName, actions, followersOf } from '../../lib/store';
-import { shareOf, groupStatusLabel } from '../../lib/grow';
+import { shareOf, groupStatusLabel, growUnlocked } from '../../lib/grow';
+import { GrowLocked } from './Swaps';
 import { brandFeeRate } from '../../lib/monetize';
 import { rankCreators, profileCampaign } from '../../lib/match';
 import { CATEGORIES, PLATFORMS } from '../../lib/constants';
@@ -24,6 +25,7 @@ export default function GroupDeals() {
   const [joining, setJoining] = useState(null);
   const [repick, setRepick] = useState(null);
   if (mode === 'creator') return <CreatorSide />;
+  if (me.business && !growUnlocked(d, me)) return <GrowLocked />;
   if (!me.business) return <><PageHead title="Group deals" /><Card><EmptyState icon={Users} title="For business owners" body="Add a business profile in My Profile to use this." /></Card></>;
   const mine = d.groupDeals.filter((g) => g.members.some((m) => m.brandId === me.id) && g.status !== 'cancelled');
   const open = d.groupDeals.filter((g) => g.status === 'forming' && !g.members.some((m) => m.brandId === me.id) && g.members.length < g.slots);
@@ -43,7 +45,7 @@ export default function GroupDeals() {
           <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">{mine.map((g) => <DealCard key={g.id} g={g} me={me} act={act} onRepick={() => setRepick(g)} />)}</div>
         )}
       </section>
-      <p className="text-[12.5px] text-ink-muted mt-6 flex gap-1.5"><ShieldCheck size={15} className="text-emerald-600 shrink-0" />Each brand's share is held in Buzz escrow. The creator is paid only after every brand confirms the post went up. If the deal never fills, everyone is refunded.</p>
+      <p className="text-[12.5px] text-ink-muted mt-6 flex gap-1.5"><ShieldCheck size={15} className="text-emerald-600 shrink-0" />Each brand's share is held safely by Buzz. The creator is paid only after every brand confirms the post went up. If the deal never fills, everyone is refunded.</p>
       {creating && <CreateModal onClose={() => setCreating(false)} />}
       {joining && <JoinModal g={joining} onClose={() => setJoining(null)} />}
       {repick && <PickCreatorModal g={repick} onClose={() => setRepick(null)} />}
@@ -111,7 +113,7 @@ function CreateModal({ onClose }) {
   const share = Math.round(Number(f.fee || 0) / Number(f.slots || 1));
   const rate = brandFeeRate(d, me);
   return (
-    <Modal open onClose={onClose} title="Start a group deal" subtitle="You pay your share now; it's held in escrow until the post is up." width="max-w-2xl">
+    <Modal open onClose={onClose} title="Start a group deal" subtitle="You pay your share now; it's held safely by Buzz until the post is up." width="max-w-2xl">
       <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
         <Field label="Name" className="sm:col-span-2"><Input value={f.title} onChange={(e) => set('title', e.target.value)} placeholder="e.g. Taste of Cebu pasalubong box" /></Field>
         <Field label="What the creator will post" className="sm:col-span-2"><Textarea value={f.brief} onChange={(e) => set('brief', e.target.value)} className="!min-h-[70px]" placeholder="One TikTok unboxing featuring every brand, with each brand tagged in the caption." /></Field>
@@ -140,7 +142,7 @@ function JoinModal({ g, onClose }) {
     <Modal open onClose={onClose} title={`Join "${g.title}"`} subtitle={`${g.members.length} of ${g.slots} brands in`}>
       <Field label="Your product in the post"><Input value={product} onChange={(e) => setProduct(e.target.value)} placeholder={me.business.name} /></Field>
       <div className="rounded-xl bg-canvas p-3 mt-4 text-[13.5px] flex justify-between"><span>Your share{rate ? ` + ${Math.round(rate * 100)}% service fee` : ''}</span><b>{peso(shareOf(g) * (1 + rate))}</b></div>
-      <p className="text-[12px] text-ink-muted mt-1">Held in escrow. Refunded if the deal is cancelled. Test mode: no card is charged.</p>
+      <p className="text-[12px] text-ink-muted mt-1">Held safely by Buzz. Refunded if the deal is cancelled. Test mode: no card is charged.</p>
       <Button size="lg" className="w-full mt-3" onClick={() => { if (act(() => actions.joinGroupDeal(g.id, product), 'You\'re in!')) onClose(); }}>Join & pay my share</Button>
     </Modal>
   );
@@ -166,13 +168,13 @@ function CreatorSide() {
   const mine = d.groupDeals.filter((g) => g.creatorId === me.id && g.status !== 'cancelled');
   return (
     <>
-      <PageHead title="Group deals" sub="Several brands, one post, one fee. The full fee is in escrow before you start." action={<ModeToggle />} />
+      <PageHead title="Group deals" sub="Several brands, one post, one fee. The full fee is held by Buzz before you start." action={<ModeToggle />} />
       {mine.length === 0 ? <Card><EmptyState icon={Users} title="No group deal invites yet" body="When a few brands team up to hire you, it shows up here." /></Card> : (
         <div className="space-y-4">
           {mine.map((g) => (
             <Card key={g.id} className="p-4">
               <div className="flex flex-wrap items-start justify-between gap-2">
-                <div><p className="font-bold">{g.title}</p><p className="text-[12.5px] text-ink-muted">{g.members.length} brands · {PLATFORMS[g.platform]?.label} · {peso(g.fee)} total, held in escrow</p></div>
+                <div><p className="font-bold">{g.title}</p><p className="text-[12.5px] text-ink-muted">{g.members.length} brands · {PLATFORMS[g.platform]?.label} · {peso(g.fee)} total, held safely by Buzz</p></div>
                 <Badge tone={TONE[g.status]}>{g.status === 'invited' ? 'Invited you' : groupStatusLabel[g.status]}</Badge>
               </div>
               {g.brief && <p className="text-[13.5px] text-ink-soft mt-2">{g.brief}</p>}

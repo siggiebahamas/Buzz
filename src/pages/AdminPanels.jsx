@@ -37,7 +37,7 @@ export function HealthPanel() {
     [Activity, old.length ? `${Math.round((liquid / old.length) * 100)}%` : '—', 'Listings with 3+ applicants in 72h', 'The #1 marketplace health number. Aim for 60%+.'],
     [Timer, median(firstApp) != null ? `${median(firstApp).toFixed(0)}h` : '—', 'Median time to first applicant', 'Under 24h keeps brands coming back.'],
     [Timer, median(firstCollab) != null ? `${median(firstCollab).toFixed(1)}d` : '—', 'Median time to first collaboration', 'From posting to an accepted creator.'],
-    [Wallet, peso(gmv30, { compact: true }), 'Paid into escrow, last 30 days', `${peso(gmv, { compact: true })} all time`],
+    [Wallet, peso(gmv30, { compact: true }), 'Paid in, held by Buzz, last 30 days', `${peso(gmv, { compact: true })} all time`],
     [Repeat, `${Math.round(repeat * 100)}%`, 'Brands with 2+ campaigns', 'Repeat use means Buzz is working for them.'],
     [Target, accScores.length && decScores.length ? `${Math.round(avg(accScores))} vs ${Math.round(avg(decScores))}` : '—', 'Avg fit: accepted vs declined', 'If accepted pairs score higher, matching predicts success.'],
   ];

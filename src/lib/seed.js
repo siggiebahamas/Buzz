@@ -370,10 +370,10 @@ export function buildSeed() {
   ];
 
   const notifications = [
-    ['Aya Lim submitted a Reel for Abaca Barong', '/workspace/deliverables', 3, false],
-    ['Bianca Reyes applied to Local Artisan Food Box', '/workspace/collaborations', 20, false],
-    ['Sili Republic added a new deliverable for you', '/workspace/deliverables', 2, false],
-    ['Paolo Lacson applied to Local Artisan Food Box', '/workspace/collaborations', 28, true],
+    ['Aya Lim submitted a Reel for Abaca Barong', '/workspace/collabs', 3, false],
+    ['Bianca Reyes applied to Local Artisan Food Box', '/workspace/collabs', 20, false],
+    ['Sili Republic added a new post for you', '/workspace/collabs', 2, false],
+    ['Paolo Lacson applied to Local Artisan Food Box', '/workspace/collabs', 28, true],
     ['New sale via code SILI-SIGMU (₱420)', '/workspace/analytics', 36, true],
     ['Payment of ₱1,000 received from Batangas Barako Roasters', '/workspace/analytics', 72, true],
     ['Ligaya Santos commented on your update', '/community', 5, false],

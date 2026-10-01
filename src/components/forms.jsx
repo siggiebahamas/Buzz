@@ -71,7 +71,7 @@ function BriefHelpers({ f }) {
     [f.photos?.length >= 3, '3 or more photos', 'Show the product, a detail, and it in use.'],
     [(f.description || '').length >= 120, 'A brief of 2–3 sentences', 'Say what it is, why it\'s special, and the content you want.'],
     [(f.audience || '').length >= 6, 'Target audience', 'e.g. "Women 22–35, Metro Manila". Used for matching.'],
-    [(f.deliverables || []).length > 0, 'Clear deliverables', 'Creators want to know exactly what to make.'],
+    [(f.deliverables || []).length > 0, 'Clear posts to make', 'Creators want to know exactly what to make.'],
     [!!f.aov, 'Average order value', 'Lets us estimate sales and creator earnings.'],
     [f.compensation !== 'flat' || Number(f.budgetMax) >= 800, 'A realistic budget', 'Below ₱800 per creator gets very few applicants.'],
   ];
@@ -95,7 +95,7 @@ function BriefHelpers({ f }) {
       </div>
       <div className="rounded-2xl border border-line p-4 bg-emerald-50/40">
         <p className="text-[13px] font-semibold flex items-center gap-1.5"><Calculator size={15} className="text-emerald-700" />What your budget gets you</p>
-        {!ranked.length ? <p className="text-[12.5px] text-ink-muted mt-2">Pick a category and deliverables to see matching creators.</p> : (
+        {!ranked.length ? <p className="text-[12.5px] text-ink-muted mt-2">Pick a category and posts to see matching creators.</p> : (
           <>
             <p className="text-[24px] font-extrabold mt-1">{affordable.length} <span className="text-[13px] font-medium text-ink-muted">{f.category ? 'creators in this category' : 'creators'} {cash ? 'fit your budget' : 'match'}</span></p>
             {affordable.length > 0 && <p className="text-[12.5px] text-ink-soft">Hiring the top {Math.min(Number(f.slots) || 1, affordable.length)} reaches about <b>{compactFmt(reach)}</b> followers.</p>}
@@ -127,7 +127,7 @@ export function CampaignForm({ open, onClose, initial, onSaved }) {
     if (!f.photos.length && !initial?.id) return setErr('Add at least one photo. Creators decide from the photo first.');
     if (needsFee && (!(Number(f.budgetMin) > 0) || Number(f.budgetMax) < Number(f.budgetMin))) return setErr('Set a budget per creator (max must be at least min).');
     if (needsCom && !(Number(f.commissionRate) > 0)) return setErr('Set a commission rate.');
-    if (!f.deliverables.length) return setErr('Add at least one deliverable.');
+    if (!f.deliverables.length) return setErr('Add at least one post.');
     const data = {
       ...f,
       budgetMin: needsFee ? Number(f.budgetMin) : 0, budgetMax: needsFee ? Number(f.budgetMax) : 0,
@@ -140,7 +140,7 @@ export function CampaignForm({ open, onClose, initial, onSaved }) {
   };
 
   return (
-    <Modal open={open} onClose={onClose} title={initial?.id ? 'Edit opportunity' : 'Post an Opportunity'} subtitle="This becomes a campaign in your workspace and a listing creators can apply to." width="max-w-2xl">
+    <Modal open={open} onClose={onClose} title={initial?.id ? 'Edit opportunity' : 'Post an Opportunity'} subtitle="Creators see this listing and can apply or be invited." width="max-w-2xl">
       <form onSubmit={submit} className="space-y-5">
         <Field label="Product photos (first one is the cover)" hint="Clear product shots win. Up to 5 photos.">
           <PhotoPicker photos={f.photos} onChange={(p) => set('photos', p)} />
@@ -175,7 +175,7 @@ export function CampaignForm({ open, onClose, initial, onSaved }) {
           </div>
         </div>
 
-        <Field label="Deliverables per creator">
+        <Field label="Posts per creator">
           <div className="space-y-2">
             {f.deliverables.map((d, i) => (
               <div key={i} className="flex gap-2 items-center">
@@ -185,7 +185,7 @@ export function CampaignForm({ open, onClose, initial, onSaved }) {
                 <button type="button" onClick={() => set('deliverables', f.deliverables.filter((_, j) => j !== i))} className="p-2 text-ink-muted hover:text-rose-600"><Trash2 size={16} /></button>
               </div>
             ))}
-            <Button type="button" variant="outline" size="sm" onClick={() => set('deliverables', [...f.deliverables, { type: 'Story set', qty: 1, platform: 'instagram' }])}><Plus size={14} />Add deliverable</Button>
+            <Button type="button" variant="outline" size="sm" onClick={() => set('deliverables', [...f.deliverables, { type: 'Story set', qty: 1, platform: 'instagram' }])}><Plus size={14} />Add a post</Button>
           </div>
         </Field>
         <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
@@ -237,7 +237,7 @@ export function ApplyModal({ open, onClose, campaign }) {
           </Field>
         )}
         <div className="rounded-xl bg-canvas p-3 text-[12.5px] text-ink-soft">
-          If accepted you'll get your own tracking link and promo code, and these deliverables: {campaign.deliverables.map((x) => `${x.qty}× ${x.type}`).join(', ')}.
+          If accepted you'll get your own tracking link and promo code, and these posts: {campaign.deliverables.map((x) => `${x.qty}× ${x.type}`).join(', ')}.
         </div>
         <Button type="submit" size="lg" className="w-full" disabled={pitch.trim().length < 15}>Send application</Button>
       </form>

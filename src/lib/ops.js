@@ -83,7 +83,7 @@ Object.assign(actions, {
       x.outcome = { type, share, note, amount: held.reduce((a, y) => a + y.fee, 0) };
       [x.openedBy, x.againstId].forEach((p) => {
         notify(d, p, `Dispute resolved for ${c.productName}: ${type === 'release' ? 'paid to the creator' : type === 'refund' ? 'refunded to the brand' : `split ${Math.round(share * 100)}/${100 - Math.round(share * 100)}`}`, '/workspace/disputes');
-        email(d, p, `Dispute decision: ${c.productName}`, `${note || 'Buzz reviewed the messages, deliverables and tracking data.'}\n\nOutcome: ${type}.`, '/workspace/disputes');
+        email(d, p, `Dispute decision: ${c.productName}`, `${note || 'Buzz reviewed the messages, posts and tracking data.'}\n\nOutcome: ${type}.`, '/workspace/disputes');
       });
     });
   },
@@ -127,7 +127,7 @@ Object.assign(actions, {
       const x = d.deliverables.find((y) => y.id === id);
       if (!file && !link?.trim()) throw new Error('Upload a draft or paste a link to it.');
       x.draft = { file: file || null, link: link?.trim() || '', note: note?.trim() || '', at: Date.now(), status: 'pending', feedback: '' };
-      notify(d, campaignById(d, x.campaignId).ownerId, `${me(d).name} sent a draft for "${x.title}"`, '/workspace/deliverables');
+      notify(d, campaignById(d, x.campaignId).ownerId, `${me(d).name} sent a draft for "${x.title}"`, '/workspace/collabs');
     });
   },
   reviewDraft(id, ok, feedback = '') {
@@ -135,7 +135,7 @@ Object.assign(actions, {
       const x = d.deliverables.find((y) => y.id === id);
       x.draft.status = ok ? 'approved' : 'changes';
       x.draft.feedback = feedback;
-      notify(d, x.creatorId, ok ? `Draft approved for "${x.title}". You can post it now.` : `Changes requested on your draft for "${x.title}"`, '/workspace/deliverables');
+      notify(d, x.creatorId, ok ? `Draft approved for "${x.title}". You can post it now.` : `Changes requested on your draft for "${x.title}"`, '/workspace/collabs');
     });
   },
 
@@ -145,7 +145,7 @@ Object.assign(actions, {
       const s = d.shipments.find((x) => x.id === id);
       Object.assign(s, patch);
       const c = campaignById(d, s.campaignId);
-      if (patch.status === 'shipped') { s.shippedAt = Date.now(); notify(d, s.creatorId, `${displayName(userById(d, c.ownerId))} shipped your ${c.productName} (${s.courier} ${s.tracking})`, '/workspace/collaborations'); }
+      if (patch.status === 'shipped') { s.shippedAt = Date.now(); notify(d, s.creatorId, `${displayName(userById(d, c.ownerId))} shipped your ${c.productName} (${s.courier} ${s.tracking})`, '/workspace/collabs'); }
       if (patch.status === 'delivered') { s.deliveredAt = Date.now(); notify(d, c.ownerId, `${userById(d, s.creatorId).name} received the ${c.productName}`, `/workspace/campaigns/${c.id}`); }
     });
   },
@@ -195,7 +195,7 @@ Object.assign(actions, {
         d.applications.unshift({ id: uid('app'), campaignId: c.id, creatorId: cid, pitch: message, rate: cr.creator?.rates?.reel || 0, status: 'invited', source: 'invite', createdAt: Date.now(), decidedAt: null });
         const t = threadFor(d, c.ownerId, cid, c.id);
         pushMessage(d, t, c.ownerId, `Hi ${cr.name.split(' ')[0]}! The Buzz team picked you for ${c.productName}. ${message}`);
-        notify(d, cid, `Buzz hand-picked you for ${c.productName}`, '/workspace/collaborations');
+        notify(d, cid, `Buzz hand-picked you for ${c.productName}`, '/workspace/collabs');
       });
       x.status = 'done';
       x.picks = creatorIds;
@@ -329,7 +329,7 @@ Object.assign(actions, {
       s.status = 'shipped';
       s.shippedAt = Date.now();
       earn(d, { stream: 'shippingService', amount: price, payer: d.session.userId, note: `Pickup booked for sample`, ref: s.id, uid });
-      notify(d, s.creatorId, `Your sample is on the way (Buzz Pickup ${s.tracking})`, '/workspace/collaborations');
+      notify(d, s.creatorId, `Your sample is on the way (Buzz Pickup ${s.tracking})`, '/workspace/collabs');
     });
   },
   buyEventTicket(eventId, qty = 1) {

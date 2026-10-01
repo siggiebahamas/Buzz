@@ -140,7 +140,7 @@ export default function Analytics() {
                 <div className="rounded-xl bg-canvas p-3"><p className="text-[12px] text-ink-muted">Commission accrued</p><p className="text-[20px] font-bold">{peso(m.cur.commission)}</p></div>
                 <div className="rounded-xl bg-canvas p-3"><p className="text-[12px] text-ink-muted">Content awaiting approval</p><p className="text-[20px] font-bold">{m.toReview}</p></div>
               </div>
-              <Link to="/workspace/deliverables" className="text-[13px] text-brand-dark mt-3 inline-block">Approve and pay in Deliverables →</Link>
+              <Link to="/workspace/collabs" className="text-[13px] text-brand-dark mt-3 inline-block">Approve and pay in Creators →</Link>
             </Card>
           </div>
         </>

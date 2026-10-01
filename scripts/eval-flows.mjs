@@ -245,5 +245,17 @@ const lk = db().links.find((l) => l.creatorId === appr.creatorId);
 actions.setAffiliateUrl(lk.id, 'https://affiliate.tiktok.com/x');
 check('Tracking link forwards to the creator\'s TikTok Shop affiliate link', actions.recordClick(lk.code).shopUrl === 'https://affiliate.tiktok.com/x');
 
+// Simpler workspace: auto-signed agreements, extras unlock after the first finished collab.
+check('Agreements are signed by both sides on accept', db().contracts.filter((k) => k.autoSigned).every((k) => k.brandSignedAt && k.creatorSignedAt) && db().contracts.some((k) => k.autoSigned));
+actions.logout();
+actions.signup({ password: 'password123', name: 'Nena Cruz', email: 'nena@test.ph', role: 'business', businessName: 'Nena Kakanin', businessType: 'Kakanin', category: 'food', region: 'Metro Manila' });
+const nena = () => db().users.find((u) => u.email === 'nena@test.ph');
+check('Extra growth tools are hidden for a brand-new seller', !grow.growUnlocked(db(), nena()));
+actions.setFlag('growTools', 'on');
+check('Admin can switch the extra tools on for everyone', grow.growUnlocked(db(), nena()));
+actions.setFlag('growTools', 'auto');
+check('Brands that finished a collab see the extra tools', grow.growUnlocked(db(), db().users.find((u) => u.id === 'u_me')));
+check('Collab Board is hidden by default', !grow.collabBoardOn(db()));
+
 console.log(`\n${pass} passed, ${fail} failed`);
 process.exit(fail ? 1 : 0);

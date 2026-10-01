@@ -30,7 +30,7 @@ export default function Admin() {
     [ShieldAlert, open.length, 'Open reports', 'rose'],
     [Users, d.users.length, `Users · ${d.users.filter((u) => u.verified).length} verified`, 'brand'],
     [Store, d.campaigns.filter((c) => !c.removed).length, 'Live listings', 'blue'],
-    [Wallet, peso(escrowHeld, { compact: true }), 'Held in escrow', 'green'],
+    [Wallet, peso(escrowHeld, { compact: true }), 'Held safely by Buzz', 'green'],
     [Wallet, peso(fees, { compact: true }), 'Service fees earned', 'violet'],
   ];
   const needle = q.toLowerCase();
@@ -163,7 +163,20 @@ export default function Admin() {
       {tab === 'features' && (() => {
         const s = dailyPicksStatus(d);
         return (
+          <div className="space-y-4">
           <Card className="mt-6 p-5 max-w-2xl">
+            <p className="font-bold text-[16px]">Extra growth tools</p>
+            <p className="text-[13px] text-ink-muted mt-0.5">Brand swaps, customer creators and group deals. On "Automatic" each brand sees them only after finishing its first collab, so new sellers aren't overwhelmed.</p>
+            <div className="mt-4"><Segmented size="sm" value={d.flags.growTools || 'auto'} onChange={(v) => act(() => actions.setFlag('growTools', v), 'Saved')}
+              options={[{ id: 'auto', label: 'Automatic' }, { id: 'on', label: 'Everyone' }, { id: 'off', label: 'Off' }]} /></div>
+          </Card>
+          <Card className="p-5 max-w-2xl">
+            <p className="font-bold text-[16px]">Community Collab Board</p>
+            <p className="text-[13px] text-ink-muted mt-0.5">The open board for bundles, shared shoots and bazaar booths. Hidden by default.</p>
+            <div className="mt-4"><Segmented size="sm" value={d.flags.collabBoard || 'off'} onChange={(v) => act(() => actions.setFlag('collabBoard', v), 'Saved')}
+              options={[{ id: 'off', label: 'Hidden' }, { id: 'on', label: 'Showing' }]} /></div>
+          </Card>
+          <Card className="p-5 max-w-2xl">
             <div className="flex flex-wrap items-start justify-between gap-4">
               <div>
                 <p className="font-bold text-[16px]">Daily picks + Surprise me</p>
@@ -183,6 +196,7 @@ export default function Admin() {
             <div className="mt-4"><Segmented size="sm" value={s.mode} onChange={(v) => act(() => actions.setFlag('dailyPicks', v), v === 'auto' ? 'Back to automatic' : v === 'on' ? 'Daily picks turned on' : 'Daily picks turned off')}
               options={[{ id: 'auto', label: 'Automatic' }, { id: 'on', label: 'Always on' }, { id: 'off', label: 'Off' }]} /></div>
           </Card>
+          </div>
         );
       })()}
 

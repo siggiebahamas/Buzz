@@ -98,3 +98,15 @@ export function socialLinks(u) {
     b.instagram && ['Instagram', `https://www.instagram.com/${handle(b.instagram)}`, `@${handle(b.instagram)}`],
   ].filter(Boolean);
 }
+
+// ---------- keeping it simple ----------
+// The extra growth tools (swaps, customer creators, group deals) stay hidden until a
+// brand finishes its first collaboration, unless the admin switches them on or off.
+export function growUnlocked(d, u) {
+  const mode = d.flags?.growTools || 'auto';
+  if (mode === 'on') return true;
+  if (mode === 'off' || !u) return false;
+  const mine = new Set(d.campaigns.filter((c) => c.ownerId === u.id).map((c) => c.id));
+  return d.deliverables.some((x) => x.status === 'approved' && (mine.has(x.campaignId) || x.creatorId === u.id));
+}
+export const collabBoardOn = (d) => d.flags?.collabBoard === 'on';

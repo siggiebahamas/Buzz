@@ -1,5 +1,6 @@
 import { useRef, useState } from 'react';
 import { Link, useNavigate, useSearchParams } from 'react-router-dom';
+import { collabBoardOn } from '../lib/grow';
 import { Image as ImageIcon, Trophy, LifeBuoy, Handshake, MessageCircle, Bookmark, Share2, MoreHorizontal, Flag, BadgeCheck, CalendarDays, Users, LayoutGrid, Newspaper, Send, Flame } from 'lucide-react';
 import { useDB, userById, displayName, actions, isSaved, campaignById, currentUser, REACTIONS, reactionTotal, myReaction } from '../lib/store';
 import { COMMUNITY_TOPICS, topicById, COLLAB_KINDS, categoryById } from '../lib/constants';
@@ -208,7 +209,7 @@ export default function Community() {
   const nav = useNavigate();
   const me = currentUser(d);
   const [params, setParams] = useSearchParams();
-  const tab = params.get('tab') || 'feed';
+  const tab = params.get('tab') === 'collabs' && !collabBoardOn(d) ? 'feed' : params.get('tab') || 'feed';
   const [topic, setTopic] = useState(params.get('topic') || 'all');
   const [sort, setSort] = useState('foryou');
   const [modal, setModal] = useState(null);
@@ -222,6 +223,7 @@ export default function Community() {
     hyped: (a, b) => heat(b) - heat(a),
   }[sort]);
   const trending = [...d.posts].sort((a, b) => heat(b) - heat(a)).slice(0, 4);
+  const boardOn = collabBoardOn(d);
   const openCollabs = d.collabs.filter((c) => c.members.length < c.slots).slice(0, 3);
   const quick = [
     [ImageIcon, 'Photo', 'build', 'text-emerald-600'],
@@ -246,7 +248,7 @@ export default function Community() {
           </Link>
         )}
         <SideItem icon={Newspaper} active={tab === 'feed' && topic === 'all'} onClick={() => { setParams({}); setTopic('all'); }}>Feed</SideItem>
-        <SideItem icon={Users} active={tab === 'collabs'} onClick={() => setParams({ tab: 'collabs' })}>Collab Board <span className="ml-auto text-[11px] text-ink-muted">{d.collabs.length}</span></SideItem>
+        {boardOn && <SideItem icon={Users} active={tab === 'collabs'} onClick={() => setParams({ tab: 'collabs' })}>Collab Board <span className="ml-auto text-[11px] text-ink-muted">{d.collabs.length}</span></SideItem>}
         <SideItem icon={Bookmark} onClick={() => nav('/workspace/saved')}>Saved posts</SideItem>
         <p className="text-[10.5px] font-semibold uppercase tracking-[0.16em] text-bronze px-3 pt-5 pb-1">Sections</p>
         {COMMUNITY_TOPICS.map((t) => (
@@ -259,7 +261,7 @@ export default function Community() {
           {[['all', 'All', LayoutGrid], ...COMMUNITY_TOPICS.map((t) => [t.id, t.label, t.icon])].map(([id, label, Icon]) => (
             <button key={id} onClick={() => { setParams({}); setTopic(id); }} className={cx('h-9 px-3.5 rounded-full border text-[13px] inline-flex items-center gap-1.5 whitespace-nowrap', tab === 'feed' && topic === id ? 'bg-ink text-white border-ink' : 'bg-white border-line-strong text-ink-soft')}><Icon size={14} />{label}</button>
           ))}
-          <button onClick={() => setParams({ tab: 'collabs' })} className={cx('h-9 px-3.5 rounded-full border text-[13px] whitespace-nowrap', tab === 'collabs' ? 'bg-ink text-white border-ink' : 'bg-white border-line-strong text-ink-soft')}>Collab Board</button>
+          {boardOn && <button onClick={() => setParams({ tab: 'collabs' })} className={cx('h-9 px-3.5 rounded-full border text-[13px] whitespace-nowrap', tab === 'collabs' ? 'bg-ink text-white border-ink' : 'bg-white border-line-strong text-ink-soft')}>Collab Board</button>}
         </div>
 
         {tab === 'feed' ? (
@@ -295,7 +297,7 @@ export default function Community() {
                 <p className="text-[13.5px] text-ink-muted">Team up to cut costs and reach more people: bundles, joint giveaways, shared shoots, bazaar booths and creator squads.</p>
               </div>
               <Button onClick={() => need(() => setModal({ kind: 'collab' }))}>Start a collab</Button>
-              <p className="w-full text-[12.5px] text-ink-muted">Ready to split a creator's fee for real? <Link to="/workspace/group-deals" className="text-ink underline decoration-bronze/50">Start a group deal</Link> with escrow, or <Link to="/workspace/swaps" className="text-ink underline decoration-bronze/50">swap shout-outs</Link> with a matched brand.</p>
+              <p className="w-full text-[12.5px] text-ink-muted">Ready to split a creator's fee for real? <Link to="/workspace/group-deals" className="text-ink underline decoration-bronze/50">Start a group deal</Link> with protected payment, or <Link to="/workspace/swaps" className="text-ink underline decoration-bronze/50">swap shout-outs</Link> with a matched brand.</p>
             </Card>
             <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">{d.collabs.map((c) => <CollabCard key={c.id} c={c} />)}</div>
           </>
@@ -315,13 +317,13 @@ export default function Community() {
             </Link>
           ))}
         </div>
-        <div className="border-t-2 border-ink pt-3">
+        {boardOn && <div className="border-t-2 border-ink pt-3">
           <div className="flex items-center justify-between">
             <p className="text-[10.5px] font-semibold uppercase tracking-[0.16em] text-bronze">Open collabs</p>
             <button onClick={() => setParams({ tab: 'collabs' })} className="text-[12px] font-semibold text-ink underline decoration-bronze/50 underline-offset-2">See all</button>
           </div>
           {openCollabs.map((c) => <CollabCard key={c.id} c={c} compact />)}
-        </div>
+        </div>}
       </aside>
 
       {modal?.kind === 'post' && <PostModal open onClose={() => setModal(null)} defaultTopic={modal.topic} onPosted={() => { setSort('latest'); setTopic('all'); }} />}

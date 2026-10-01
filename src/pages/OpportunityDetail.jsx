@@ -97,7 +97,7 @@ export default function OpportunityDetail() {
 
           {members.length > 0 && (
             <Card className="mt-4 p-6">
-              <h2 className="font-bold text-ink mb-3">Creators on this campaign</h2>
+              <h2 className="font-bold text-ink mb-3">Creators on this product</h2>
               <div className="flex flex-wrap gap-3">
                 {members.map((u) => (
                   <Link key={u.id} to={`/profile/${u.id}`} className="flex items-center gap-2 rounded-full border border-line pl-1 pr-3 py-1 hover:bg-canvas">
@@ -157,7 +157,7 @@ export default function OpportunityDetail() {
 
             <div className="mt-4 space-y-2">
               {isOwner ? (
-                <Link to={`/workspace/campaigns/${c.id}`}><Button size="lg" className="w-full">Manage campaign</Button></Link>
+                <Link to={`/workspace/campaigns/${c.id}`}><Button size="lg" className="w-full">Manage listing</Button></Link>
               ) : mine ? (
                 <div className="rounded-xl bg-canvas p-3 text-center">
                   <p className="text-[13px] text-ink-muted">Your application</p>
@@ -165,7 +165,7 @@ export default function OpportunityDetail() {
                   <Link to="/workspace/collaborations" className="text-[12.5px] text-brand-dark">View in workspace</Link>
                 </div>
               ) : c.status === 'completed' ? (
-                <Button size="lg" className="w-full" disabled>Campaign completed</Button>
+                <Button size="lg" className="w-full" disabled>Listing closed</Button>
               ) : early ? (
                 <div className="rounded-xl bg-brand-softer border border-[#F6DDB2] p-3 text-center">
                   <p className="font-bold flex items-center justify-center gap-1.5"><Crown size={15} className="text-brand-dark" />Creator Pro early access</p>
@@ -185,7 +185,7 @@ export default function OpportunityDetail() {
                 <ShareMenu path={`/opportunity/${c.id}`} text={`${c.title} on Buzz: ${earnLabel(c)}.`} />
               </div>
               <p className="text-[12px] text-ink-muted text-center flex items-center justify-center gap-1"><Clock size={12} />Posted {shortDate(c.createdAt)}{!isOwner && <> · <button onClick={() => need(() => setReporting(true))} className="inline-flex items-center gap-1 hover:text-ink"><Flag size={12} />Report</button></>}</p>
-              {['flat', 'hybrid'].includes(c.compensation) && <p className="text-[12px] text-emerald-700 bg-emerald-50 rounded-lg p-2 flex gap-1.5"><ShieldCheck size={14} className="shrink-0 mt-px" />Fees are paid through Buzz escrow and released when your content is approved.</p>}
+              {['flat', 'hybrid'].includes(c.compensation) && <p className="text-[12px] text-emerald-700 bg-emerald-50 rounded-lg p-2 flex gap-1.5"><ShieldCheck size={14} className="shrink-0 mt-px" />Fees are paid through Buzz Protected Payment and released when your content is approved.</p>}
             </div>
           </Card>
 

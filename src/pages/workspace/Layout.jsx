@@ -1,9 +1,11 @@
 import { useState } from 'react';
 import { NavLink, Outlet } from 'react-router-dom';
-import { LayoutGrid, UserRound, Briefcase, Handshake, ListChecks, BarChart3, MessageSquare, Bookmark, Settings, HelpCircle, Wallet, FileSignature, Scale, BadgeCheck, Gift, Library, Crown, Sprout, Repeat, Users, Megaphone } from 'lucide-react';
+import { LayoutGrid, UserRound, Briefcase, Handshake, ListChecks, BarChart3, MessageSquare, Bookmark, Settings, HelpCircle, Wallet, FileSignature, Scale, BadgeCheck, Gift, Library, Crown, Sprout, Repeat, Users, Megaphone, Store } from 'lucide-react';
 import { Link } from 'react-router-dom';
 import { useDB, currentUser, unreadCount, actions } from '../../lib/store';
 import { isOn } from '../../lib/monetize';
+import { growUnlocked } from '../../lib/grow';
+import { needsYouCount } from '../../lib/collabs';
 import { Avatar, Segmented, Modal, cx } from '../../components/ui';
 
 export function useMode() {
@@ -33,12 +35,12 @@ export function PageHead({ title, sub, action }) {
 }
 
 const FAQ = [
-  ['How do tracking links work?', 'Every accepted creator gets a link like buzz/go/CODE. Each visit counts as a click, then forwards to the brand\'s shop. Sales come from the link or from the matching promo code, which the brand logs in Analytics.'],
-  ['How is Match % calculated?', 'Niche fit (40), platforms (20), rate vs. budget (20), location (10) and engagement (10). Hover any match % to see the breakdown.'],
-  ['What is ROAS?', 'Return on ad spend: attributed revenue ÷ what you spent on creators. 3.0× means every ₱1 spent brought back ₱3 in sales.'],
-  ['How do payments work?', 'Brands pay each creator fee into Buzz escrow (plus a small service fee). The money is released to the creator\'s wallet the moment the brand approves the content, or automatically after 7 days without a response. Creators withdraw to GCash, Maya or a bank.'],
-  ['Something looks fake. What do I do?', 'Use Report on the listing, profile or post. Our team reviews every report within 24 hours.'],
-  ['Can I be both a creator and a business owner?', 'Yes. Add both profiles in My Profile, then switch views with the toggle at the top of your workspace.'],
+  ['How does Buzz work?', 'Add your product, send it to creators who fit, and they post about it. Your shop page collects every post, and Results shows the clicks and sales they brought in.'],
+  ['Do I need a budget?', 'No. Most brands start by sending the product for free in exchange for a post. You can pay creators a fee later, once you know what works.'],
+  ['How do creators get paid safely?', 'When there is a fee, the brand pays it into Buzz Protected Payment first. Buzz releases it to the creator when the brand approves the post, or automatically after 7 days.'],
+  ['What is the fit label?', 'How well a creator matches your product: content, budget, audience, platforms and past results. Hover it to see the reasons.'],
+  ['Something went wrong with a collab.', 'Open the collab and tap Report a problem. Any payment is put on hold and our team reviews it within 24 hours.'],
+  ['Can I be both a creator and a seller?', 'Yes. Add both in Settings → Profile, then switch with the toggle at the top of your workspace.'],
 ];
 
 export default function WorkspaceLayout() {
@@ -51,40 +53,26 @@ export default function WorkspaceLayout() {
   const dels = mode === 'business'
     ? d.deliverables.filter((x) => x.status === 'submitted' && d.campaigns.find((c) => c.id === x.campaignId)?.ownerId === me.id).length
     : d.deliverables.filter((x) => x.creatorId === me.id && ['todo', 'revision'].includes(x.status) && x.dueAt < Date.now() + 7 * 86400000).length;
-  const toSign = d.contracts.filter((k) => (k.brandId === me.id && !k.brandSignedAt) || (k.creatorId === me.id && !k.creatorSignedAt)).length;
-  const openDisputes = d.disputes.filter((x) => (x.openedBy === me.id || x.againstId === me.id) && x.status !== 'resolved').length;
-  const hasDisputes = d.disputes.some((x) => x.openedBy === me.id || x.againstId === me.id);
-  const verified = mode === 'business' ? me.business?.verified : me.creator?.statsVerified;
+  // Six places for a brand, five for a creator. Extra tools appear once they're useful.
+  const growBadge = d.swaps.filter((s) => s.toId === me.id && s.status === 'proposed').length + d.ugcPosts.filter((x) => x.brandId === me.id && x.status === 'pending').length;
+  const myGroupDeals = d.groupDeals.filter((g) => g.creatorId === me.id && g.status !== 'cancelled');
   const groups = [
-    ['Work', [
-      ['/workspace', 'Overview', LayoutGrid, 0, true],
-      ['/workspace/campaigns', 'Campaigns', Briefcase],
-      ['/workspace/collaborations', 'Collaborations', Handshake, pendingApps],
-      ['/workspace/deliverables', 'Deliverables', ListChecks, dels],
-      ['/workspace/contracts', 'Agreements', FileSignature, toSign],
+    ['', mode === 'business' ? [
+      ['/workspace', 'Home', LayoutGrid, 0, true],
+      ['/workspace/shop', 'My Shop', Store],
+      ['/workspace/collabs', 'Creators', Handshake, needsYouCount(d, me, true)],
       ['/workspace/messages', 'Messages', MessageSquare, unreadCount(d)],
-      mode === 'business' && ['/workspace/library', 'Content library', Library],
-    ]],
-    ['Grow for free', mode === 'business' ? [
-      ['/workspace/grow', 'Grow hub', Sprout, 0, true],
-      ['/workspace/swaps', 'Brand swaps', Repeat, d.swaps.filter((s) => s.toId === me.id && s.status === 'proposed').length],
-      ['/workspace/customers', 'Customer creators', Megaphone, d.ugcPosts.filter((x) => x.brandId === me.id && x.status === 'pending').length],
-      ['/workspace/group-deals', 'Group deals', Users, d.groupDeals.filter((g) => g.status === 'posted' && g.members.some((m) => m.brandId === me.id) && !g.confirmed.includes(me.id)).length],
-    ] : [
-      ['/workspace/group-deals', 'Group deals', Users, d.groupDeals.filter((g) => g.creatorId === me.id && g.status === 'invited').length],
-    ]],
-    ['Money & results', [
-      ['/workspace/analytics', 'Analytics', BarChart3],
-      ['/workspace/payments', 'Payments', Wallet],
-      hasDisputes && ['/workspace/disputes', 'Disputes', Scale, openDisputes],
-      ['/workspace/referrals', 'Invite & earn', Gift],
-      mode === 'creator' && isOn(d, 'plans') && ['/workspace/pro', 'Creator Pro', Crown],
-    ]],
-    ['Account', [
-      ['/workspace/profile', 'My Profile', UserRound],
-      ['/workspace/verification', verified ? 'Verified' : 'Get verified', BadgeCheck, verified ? 0 : 0],
-      ['/workspace/saved', 'Saved', Bookmark],
+      ['/workspace/results', 'Results', BarChart3],
       ['/workspace/settings', 'Settings', Settings],
+      growUnlocked(d, me) && ['/workspace/grow', 'Grow more', Sprout, growBadge],
+    ] : [
+      ['/workspace', 'Home', LayoutGrid, 0, true],
+      ['/workspace/collabs', 'My collabs', Handshake, needsYouCount(d, me, false)],
+      ['/workspace/messages', 'Messages', MessageSquare, unreadCount(d)],
+      ['/workspace/results', 'Earnings', Wallet],
+      ['/workspace/settings', 'Settings', Settings],
+      myGroupDeals.length > 0 && ['/workspace/group-deals', 'Group deals', Users, myGroupDeals.filter((g) => g.status === 'invited').length],
+      isOn(d, 'plans') && ['/workspace/pro', 'Creator Pro', Crown],
     ]],
   ].map(([g, list]) => [g, list.filter(Boolean)]);
   const items = groups.flatMap(([, list]) => list);
@@ -105,7 +93,7 @@ export default function WorkspaceLayout() {
         <nav className="p-3 flex-1 overflow-y-auto">
           {groups.map(([g, list]) => (
             <div key={g} className="mb-3">
-              <p className="px-3.5 pt-2 pb-1 text-[10.5px] font-semibold uppercase tracking-[0.12em] text-ink-faint">{g}</p>
+              {g && <p className="px-3.5 pt-2 pb-1 text-[10.5px] font-semibold uppercase tracking-[0.12em] text-ink-faint">{g}</p>}
               {list.map(([to, label, Icon, badge, end]) => (
                 <NavLink key={to} to={to} end={end} className={({ isActive }) => cx('flex items-center gap-3 px-3.5 h-10 rounded-xl text-[14.5px] transition-colors', isActive ? 'bg-brand-soft text-ink font-medium' : 'text-ink-soft hover:bg-canvas')}>
                   <Icon size={17} strokeWidth={1.7} />{label}

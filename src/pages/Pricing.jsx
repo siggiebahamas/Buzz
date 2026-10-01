@@ -34,15 +34,15 @@ export default function Pricing() {
           <Card className="p-6 border-2 border-brand flex flex-col">
             <p className="font-bold text-[18px]">For brands</p>
             <p className="mt-2 text-[40px] font-extrabold">{brandPct}%</p>
-            <p className="text-[13.5px] text-ink-muted">service fee on top of what you pay creators through escrow</p>
-            <div className="flex-1"><Bullets items={['Unlimited listings and applications', 'Matching with fit reasons for every creator', 'Escrow, agreements and dispute protection', 'Sales tracking and full analytics']} /></div>
+            <p className="text-[13.5px] text-ink-muted">service fee on top of what you pay creators through Buzz Protected Payment</p>
+            <div className="flex-1"><Bullets items={['Unlimited listings and applications', 'Matching with fit reasons for every creator', 'Protected payments, agreements and help if something goes wrong', 'Sales tracking and full analytics']} /></div>
             <Button className="w-full mt-6" onClick={() => nav(me ? '/workspace/campaigns' : '/signup')}>{me ? 'Post a listing' : 'Start free'}</Button>
           </Card>
           <Card className="p-6 flex flex-col">
             <p className="font-bold text-[18px]">For creators</p>
             <p className="mt-2 text-[40px] font-extrabold">{creatorPct}%</p>
             <p className="text-[13.5px] text-ink-muted">{creatorPct ? 'fee on payments you receive' : 'you keep 100% of every agreed fee'}</p>
-            <div className="flex-1"><Bullets items={['Free to join and apply', 'Guaranteed payment through escrow', 'Free withdrawals to GCash, Maya or bank', 'Commissions tracked for you']} /></div>
+            <div className="flex-1"><Bullets items={['Free to join and apply', 'Guaranteed payment, held safely by Buzz', 'Free withdrawals to GCash, Maya or bank', 'Commissions tracked for you']} /></div>
             <Button variant="outline" className="w-full mt-6" onClick={() => nav(me ? '/opportunities' : '/signup')}>{me ? 'Find opportunities' : 'Join as a creator'}</Button>
           </Card>
         </div>
@@ -71,7 +71,7 @@ export default function Pricing() {
   const rows = [
     ['Active listings', `Up to ${setting(d, 'plans', 'freeListings')}`, 'Unlimited', 'Unlimited'],
     ['Matching and fit reasons', true, true, true],
-    ['Escrow, agreements and disputes', true, true, true],
+    ['Protected payments and agreements', true, true, true],
     ['Service fee on creator payments', `${brandPct}%`, `${proPct}%`, `${agencyPct}%`],
     ['Hand-picked creators by the Buzz team', isOn(d, 'paidHandpick') ? 'Paid' : '1 request', 'Included', 'Included'],
     ['Priority support', false, true, true],

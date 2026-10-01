@@ -14,12 +14,12 @@ export function ContractDoc({ k }) {
   const clauses = [
     ['The work', `${t.creatorName} (@${t.creatorHandle}) will create and publish the following for ${t.product}: ${t.deliverables.map((x) => `${x.qty} × ${x.type} on ${PLATFORMS[x.platform]?.label}`).join('; ')}.${t.requireDraft ? ' A draft of each piece is shared with the brand for approval before posting.' : ''}`],
     ['Payment', t.fee
-      ? `${t.brandName} pays ${peso(t.fee)} for the work above, paid into Buzz escrow before or during the campaign. Buzz releases each part when the brand approves the content, or automatically 7 days after it is submitted if the brand does not respond.${t.commissionRate ? ` The creator also earns ${t.commissionRate}% of sales made with their Buzz link or promo code.` : ''}`
+      ? `${t.brandName} pays ${peso(t.fee)} for the work above, paid into Buzz Protected Payment before or during the campaign. Buzz releases each part when the brand approves the content, or automatically 7 days after it is submitted if the brand does not respond.${t.commissionRate ? ` The creator also earns ${t.commissionRate}% of sales made with their Buzz link or promo code.` : ''}`
       : t.compensation === 'commission' ? `The creator earns ${t.commissionRate}% of every sale made with their Buzz link or promo code. The brand records promo-code sales on Buzz within 7 days of each sale.`
         : `No cash fee. The creator receives the product or experience described in the listing and keeps it.`],
     ['Honest disclosure', 'The creator labels every paid or gifted post clearly (for example #ad, #sponsored or "Paid partnership"), as required by the Ad Standards Council code and the Consumer Act. The brand will not ask the creator to hide the partnership.'],
     ['Content rights', t.contentRights === 'None' ? 'The creator keeps all rights. The brand may share links to the posts but may not repost the content.' : `The creator owns the content. The brand may repost it on its own pages and ads for ${t.contentRights} from the posting date, with credit to the creator. Longer use needs a new agreement.`],
-    ['Changes and problems', 'Either side can request a change or open a dispute on Buzz. While a dispute is open, money in escrow for this collaboration stays frozen until Buzz reviews the messages, deliverables and tracking data and decides.'],
+    ['Changes and problems', 'Either side can request a change or open a dispute on Buzz. While a dispute is open, money held by Buzz for this collaboration stays frozen until Buzz reviews the messages, deliverables and tracking data and decides.'],
     ['Cancelling', 'Either side may cancel before any content is posted. Fees for content that was never approved are refunded to the brand; fees for approved content are paid to the creator.'],
   ];
   return (
@@ -106,7 +106,7 @@ export default function Contracts() {
           })}
         </Card>
       )}
-      <p className="text-[12.5px] text-ink-muted mt-4 flex items-center gap-1.5"><ShieldCheck size={14} />Agreements protect both sides. If something goes wrong, open a dispute from Deliverables and the agreement is what Buzz uses to decide.</p>
+      <p className="text-[12.5px] text-ink-muted mt-4 flex items-center gap-1.5"><ShieldCheck size={14} />Agreements protect both sides. If something goes wrong, use Report a problem on the collab and the agreement is what Buzz uses to decide.</p>
       {open && <Modal open onClose={() => setOpen(null)} title="Agreement" width="max-w-2xl"><ContractDoc k={open} /></Modal>}
       {sign && <SignModal k={sign} onClose={() => setSign(null)} />}
     </>

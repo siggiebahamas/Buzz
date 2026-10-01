@@ -250,7 +250,7 @@ export const actions = {
         x.status = 'approved';
         x.approvedAt = Date.now();
         x.note = 'Approved automatically after 7 days without a response.';
-        notify(d, campaignById(d, x.campaignId).ownerId, `"${x.title}" was approved automatically after 7 days`, '/workspace/deliverables');
+        notify(d, campaignById(d, x.campaignId).ownerId, `"${x.title}" was approved automatically after 7 days`, '/workspace/collabs');
         if (x.escrow === 'held' && !x.frozen) release(d, x);
       });
     });
@@ -289,7 +289,7 @@ export const actions = {
       d.applications.unshift({ id: uid('app'), campaignId: cid, creatorId: me, pitch, rate: Number(rate) || 0, status: 'pending', source: 'apply', createdAt: Date.now(), decidedAt: null });
       const t = threadFor(d, me, c.ownerId, cid);
       pushMessage(d, t, me, `Hi! I just applied to "${c.title}". ${pitch}`);
-      notify(d, c.ownerId, `${currentUser(d).name} applied to ${c.productName}`, '/workspace/collaborations');
+      notify(d, c.ownerId, `${currentUser(d).name} applied to ${c.productName}`, '/workspace/collabs');
     });
   },
   invite(cid, creatorId, note) {
@@ -301,7 +301,7 @@ export const actions = {
       d.applications.unshift({ id: uid('app'), campaignId: cid, creatorId, pitch: note || '', rate: creator.creator?.rates?.reel || 0, status: 'invited', source: 'invite', createdAt: Date.now(), decidedAt: null });
       const t = threadFor(d, c.ownerId, creatorId, cid);
       pushMessage(d, t, c.ownerId, note || `Hi ${creator.name.split(' ')[0]}! We'd love to have you on "${c.productName}".`);
-      notify(d, creatorId, `${displayName(currentUser(d))} invited you to ${c.productName}`, '/workspace/collaborations');
+      notify(d, creatorId, `${displayName(currentUser(d))} invited you to ${c.productName}`, '/workspace/collabs');
     });
   },
   decide(appId, decision) {
@@ -333,9 +333,12 @@ export const actions = {
         if (c.status === 'recruiting') c.status = 'active';
         // Every collaboration gets a written agreement both sides sign.
         if (!d.contracts.some((k) => k.applicationId === a.id)) {
-          d.contracts.unshift({ id: uid('ctr'), applicationId: a.id, campaignId: c.id, brandId: c.ownerId, creatorId: a.creatorId, createdAt: Date.now(), terms: contractTerms(c, a, userById(d, c.ownerId), creator), brandSignedAt: null, brandSignName: '', creatorSignedAt: null, creatorSignName: '' });
-          notify(d, c.ownerId, `Sign the agreement with ${creator.name} for ${c.productName}`, '/workspace/contracts');
-          notify(d, a.creatorId, `Sign your agreement with ${displayName(userById(d, c.ownerId))} for ${c.productName}`, '/workspace/contracts');
+          // Applying or inviting, then accepting, is the agreement: both sides sign on accept,
+          // and both get a copy of the written terms by email.
+          const brand = userById(d, c.ownerId);
+          const k = { id: uid('ctr'), applicationId: a.id, campaignId: c.id, brandId: c.ownerId, creatorId: a.creatorId, createdAt: Date.now(), terms: contractTerms(c, a, brand, creator), brandSignedAt: Date.now(), brandSignName: brand.name, creatorSignedAt: Date.now(), creatorSignName: creator.name, autoSigned: true };
+          d.contracts.unshift(k);
+          [c.ownerId, a.creatorId].forEach((p) => email(d, p, `Your agreement: ${c.productName}`, `${brand.name} and ${creator.name} are working together on ${c.productName}. The terms (posts, dates, payment and content rights) are saved in Buzz under the collaboration. Keep this email for your records.`, '/workspace/collabs'));
         }
         if (c.needsShipping && !d.shipments.some((x) => x.campaignId === c.id && x.creatorId === a.creatorId)) {
           d.shipments.unshift({ id: uid('shp'), campaignId: c.id, creatorId: a.creatorId, courier: '', tracking: '', status: 'to_ship', shippedAt: null, deliveredAt: null });
@@ -345,7 +348,7 @@ export const actions = {
       const other = actor === a.creatorId ? c.ownerId : a.creatorId;
       const who = actor === a.creatorId ? currentUser(d).name : displayName(userById(d, c.ownerId));
       const verb = { accepted: 'accepted', declined: 'declined', withdrawn: 'withdrew' }[decision];
-      notify(d, other, `${who} ${verb} ${actor === a.creatorId ? 'the invite to' : 'your application for'} ${c.productName}`, '/workspace/collaborations');
+      notify(d, other, `${who} ${verb} ${actor === a.creatorId ? 'the invite to' : 'your application for'} ${c.productName}`, '/workspace/collabs');
     });
   },
 
@@ -353,7 +356,7 @@ export const actions = {
   addDeliverable(data) {
     commit((d) => {
       d.deliverables.push({ id: uid('del'), status: 'todo', submittedAt: null, approvedAt: null, paidAt: null, contentUrl: '', stats: null, note: '', escrow: Number(data.fee) ? 'unfunded' : 'none', ...data });
-      notify(d, data.creatorId, `New deliverable: ${data.title}`, '/workspace/deliverables');
+      notify(d, data.creatorId, `New post to make: ${data.title}`, '/workspace/collabs');
     });
   },
   submitDeliverable(id, { contentUrl, stats }) {
@@ -361,7 +364,7 @@ export const actions = {
       const x = d.deliverables.find((y) => y.id === id);
       Object.assign(x, { status: 'submitted', contentUrl, stats, submittedAt: Date.now() });
       const c = campaignById(d, x.campaignId);
-      notify(d, c.ownerId, `${currentUser(d).name} submitted "${x.title}"`, '/workspace/deliverables');
+      notify(d, c.ownerId, `${currentUser(d).name} submitted "${x.title}"`, '/workspace/collabs');
     });
   },
   updateStats(id, stats) {
@@ -373,7 +376,7 @@ export const actions = {
       x.status = approve ? 'approved' : 'revision';
       x.note = note;
       if (approve) x.approvedAt = Date.now();
-      notify(d, x.creatorId, approve ? `"${x.title}" was approved` : `Revision requested on "${x.title}"`, '/workspace/deliverables');
+      notify(d, x.creatorId, approve ? `"${x.title}" was approved` : `Changes requested on "${x.title}"`, '/workspace/collabs');
       if (approve && x.escrow === 'held' && !x.frozen) release(d, x);
     });
   },

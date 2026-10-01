@@ -14,12 +14,6 @@ import PostDetail from './pages/PostDetail';
 import { Login, Signup, Reset } from './pages/Auth';
 import { Terms, Privacy, Footer } from './pages/Legal';
 import Admin from './pages/Admin';
-import Payments from './pages/workspace/Payments';
-import Contracts from './pages/workspace/Contracts';
-import Disputes from './pages/workspace/Disputes';
-import Verification from './pages/workspace/Verification';
-import Referrals from './pages/workspace/Referrals';
-import Library from './pages/workspace/Library';
 import CreatorPro from './pages/workspace/CreatorPro';
 import Help from './pages/Help';
 import Pricing from './pages/Pricing';
@@ -34,16 +28,12 @@ import GroupDeals from './pages/workspace/GroupDeals';
 import Events from './pages/Events';
 import Go from './pages/Go';
 import WorkspaceLayout from './pages/workspace/Layout';
+import MyShop from './pages/workspace/MyShop';
+import Collabs from './pages/workspace/Collabs';
+import { Results, SettingsHub } from './pages/workspace/Hubs';
 import Overview from './pages/workspace/Overview';
-import MyProfile from './pages/workspace/MyProfile';
-import Campaigns from './pages/workspace/Campaigns';
 import CampaignManage from './pages/workspace/CampaignManage';
-import Collaborations from './pages/workspace/Collaborations';
-import Deliverables from './pages/workspace/Deliverables';
-import Analytics from './pages/workspace/Analytics';
 import Messages from './pages/workspace/Messages';
-import Saved from './pages/workspace/Saved';
-import Settings from './pages/workspace/Settings';
 
 function RequireAuth({ children }) {
   const d = useDB();
@@ -92,26 +82,21 @@ export default function App() {
           <Route path="/go/:code" element={<Go />} />
           <Route path="/workspace" element={<RequireAuth><WorkspaceLayout /></RequireAuth>}>
             <Route index element={<Overview />} />
-            <Route path="profile" element={<MyProfile />} />
-            <Route path="campaigns" element={<Campaigns />} />
+            <Route path="shop" element={<MyShop />} />
+            <Route path="collabs" element={<Collabs />} />
+            <Route path="results" element={<Results />} />
+            <Route path="settings" element={<SettingsHub />} />
+            <Route path="messages" element={<Messages />} />
             <Route path="campaigns/:id" element={<CampaignManage />} />
-            <Route path="collaborations" element={<Collaborations />} />
-            <Route path="deliverables" element={<Deliverables />} />
-            <Route path="analytics" element={<Analytics />} />
-            <Route path="payments" element={<Payments />} />
             <Route path="pro" element={<CreatorPro />} />
             <Route path="grow" element={<Grow />} />
             <Route path="swaps" element={<Swaps />} />
             <Route path="customers" element={<Customers />} />
             <Route path="group-deals" element={<GroupDeals />} />
-            <Route path="contracts" element={<Contracts />} />
-            <Route path="disputes" element={<Disputes />} />
-            <Route path="verification" element={<Verification />} />
-            <Route path="referrals" element={<Referrals />} />
-            <Route path="library" element={<Library />} />
-            <Route path="messages" element={<Messages />} />
-            <Route path="saved" element={<Saved />} />
-            <Route path="settings" element={<Settings />} />
+            {/* Older addresses, kept so links in notifications and emails still work. */}
+            {[['campaigns', 'shop'], ['collaborations', 'collabs'], ['deliverables', 'collabs'], ['analytics', 'results'], ['payments', 'results?tab=money'], ['library', 'results?tab=library'],
+              ['contracts', 'results?tab=agreements'], ['disputes', 'results?tab=problems'], ['profile', 'settings'], ['verification', 'settings?tab=verify'], ['referrals', 'settings?tab=invite'], ['saved', 'settings?tab=saved']]
+              .map(([from, to]) => <Route key={from} path={from} element={<Navigate to={`/workspace/${to}`} replace />} />)}
           </Route>
           <Route path="*" element={<Navigate to="/" replace />} />
         </Routes>

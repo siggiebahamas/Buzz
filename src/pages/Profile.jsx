@@ -62,7 +62,7 @@ export default function Profile() {
               <>
                 <Button onClick={() => need(() => chat.open(u.id))}><MessageCircle size={16} />Message</Button>
                 {u.business && <Link to={`/shop/${u.id}`}><Button variant="outline"><Store size={16} />Shop page</Button></Link>}
-                {u.creator && <Button variant="outline" onClick={() => need(() => setInviting(true))}><Send size={15} />Invite to campaign</Button>}
+                {u.creator && <Button variant="outline" onClick={() => need(() => setInviting(true))}><Send size={15} />Invite to a product</Button>}
                 {u.creator && <Button variant="ghost" onClick={() => need(() => actions.toggleSave('creator', u.id))}><Bookmark size={15} className={saved ? 'fill-brand text-brand' : ''} />{saved ? 'Saved' : 'Save'}</Button>}
                 <Button variant="ghost" size="sm" onClick={() => need(() => setReporting(true))}><Flag size={14} />Report</Button>
               </>

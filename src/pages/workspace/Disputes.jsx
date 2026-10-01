@@ -18,7 +18,7 @@ export function OpenDisputeModal({ campaignId, deliverableId, againstId, onClose
   const other = userById(d, againstId);
   return (
     <Modal open onClose={onClose} title="Report a problem" subtitle={`${c?.productName} · with ${displayName(other)}`}>
-      <div className="rounded-xl bg-canvas p-3 text-[13px] text-ink-soft flex gap-2 mb-4"><Lock size={15} className="shrink-0 mt-0.5 text-brand-dark" />Money in escrow for this collaboration is frozen while Buzz reviews. {displayName(other)} has 3 days to respond.</div>
+      <div className="rounded-xl bg-canvas p-3 text-[13px] text-ink-soft flex gap-2 mb-4"><Lock size={15} className="shrink-0 mt-0.5 text-brand-dark" />Money held by Buzz for this collaboration is frozen while Buzz reviews. {displayName(other)} has 3 days to respond.</div>
       <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
         {DISPUTE_REASONS.map((r) => <button key={r} type="button" onClick={() => setReason(r)} className={cx('text-left px-3 py-2.5 rounded-xl border text-[13.5px]', reason === r ? 'border-brand bg-brand-softer font-medium' : 'border-line hover:bg-canvas')}>{r}</button>)}
       </div>
@@ -45,7 +45,7 @@ export function DisputeThread({ x, admin = false }) {
     <div className="space-y-4">
       <div className="flex flex-wrap items-center gap-2">
         <Badge tone={STATUS[x.status][1]}>{STATUS[x.status][0]}</Badge>
-        <span className="text-[12.5px] text-ink-muted">{c?.productName} · opened {timeAgo(x.createdAt)} · {peso(held)} frozen in escrow</span>
+        <span className="text-[12.5px] text-ink-muted">{c?.productName} · opened {timeAgo(x.createdAt)} · {peso(held)} put on hold</span>
       </div>
       <div className="rounded-xl border border-line p-4">
         <p className="font-semibold">{x.reason}</p>
@@ -99,9 +99,9 @@ export default function Disputes() {
   const mine = d.disputes.filter((x) => x.openedBy === me || x.againstId === me);
   return (
     <>
-      <PageHead title="Disputes" sub="When something goes wrong, Buzz reviews the agreement, messages and tracking data and decides where escrowed money goes" />
+      <PageHead title="Disputes" sub="When something goes wrong, Buzz reviews the agreement, messages and tracking data and decides where held money goes" />
       {mine.length === 0 ? (
-        <Card><EmptyState icon={Scale} title="No disputes" body="Hopefully it stays that way. If a collaboration goes wrong, use Report a problem on the deliverable." /></Card>
+        <Card><EmptyState icon={Scale} title="No disputes" body="Hopefully it stays that way. If a collaboration goes wrong, use Report a problem on the collab." /></Card>
       ) : (
         <Card className="divide-y divide-line">
           {mine.map((x) => (

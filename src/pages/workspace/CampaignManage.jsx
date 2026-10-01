@@ -48,7 +48,7 @@ export default function CampaignManage() {
 
   return (
     <>
-      <Link to="/workspace/campaigns" className="inline-flex items-center gap-1.5 text-[13.5px] text-ink-muted hover:text-ink mb-5"><ArrowLeft size={16} />Back to Campaigns</Link>
+      <Link to="/workspace/campaigns" className="inline-flex items-center gap-1.5 text-[13.5px] text-ink-muted hover:text-ink mb-5"><ArrowLeft size={16} />Back to My Shop</Link>
       <Card className="p-5 flex flex-col md:flex-row gap-5">
         <ProductImage campaign={c} className="h-40 md:h-36 w-full md:w-48 shrink-0" rounded="rounded-xl" />
         <div className="flex-1 min-w-0">
@@ -61,11 +61,11 @@ export default function CampaignManage() {
             <div className="flex gap-2 shrink-0">
               <Button variant="outline" size="sm" onClick={() => setEditing(true)}><Pencil size={14} />Edit</Button>
               <Link to={`/opportunity/${c.id}`}><Button variant="outline" size="sm"><ExternalLink size={14} />View listing</Button></Link>
-              <Button variant="ghost" size="sm" onClick={async () => { if (await ask({ title: 'Delete this campaign?', body: 'Its listing, applications and deliverables are removed. Money held in escrow is refunded to you.', confirm: 'Delete', danger: true })) { actions.deleteCampaign(c.id); nav('/workspace/campaigns'); } }}><Trash2 size={14} /></Button>
+              <Button variant="ghost" size="sm" onClick={async () => { if (await ask({ title: 'Delete this campaign?', body: 'Its listing, applications and posts are removed. Money held safely by Buzz is refunded to you.', confirm: 'Delete', danger: true })) { actions.deleteCampaign(c.id); nav('/workspace/campaigns'); } }}><Trash2 size={14} /></Button>
             </div>
           </div>
           <div className="mt-4">
-            <p className="text-[12px] font-semibold uppercase tracking-wide text-ink-muted mb-2">Campaign status</p>
+            <p className="text-[12px] font-semibold uppercase tracking-wide text-ink-muted mb-2">Status</p>
             <div className="flex flex-wrap items-center gap-2">
               {CAMPAIGN_STAGES.map((s, i) => (
                 <button key={s.id} onClick={() => act(() => actions.setCampaignStatus(c.id, s.id), `Moved to ${s.label}`)}
@@ -88,13 +88,13 @@ export default function CampaignManage() {
 
       <Card className="mt-4 p-5">
         <div className="flex items-center justify-between mb-3">
-          <h2 className="font-bold text-[17px]">Creators on this campaign</h2>
+          <h2 className="font-bold text-[17px]">Creators on this product</h2>
           <span className="text-[12.5px] text-ink-muted">Each creator has their own promo code and tracking link</span>
         </div>
         {accepted.length === 0 ? <EmptyState title="No creators yet" body="Accept applications below or invite creators from the suggestions." /> : (
           <div className="overflow-x-auto"><table className="w-full text-[13.5px] min-w-[640px]">
             <thead><tr className="text-left text-[12px] text-ink-muted border-b border-line">
-              <th className="py-2 font-medium">Creator</th><th className="font-medium">Code / link</th><th className="font-medium text-right">Deliverables</th><th className="font-medium text-right">Clicks</th><th className="font-medium text-right">Orders</th><th className="font-medium text-right">Sales</th><th className="font-medium text-right">Cost</th><th />
+              <th className="py-2 font-medium">Creator</th><th className="font-medium">Code / link</th><th className="font-medium text-right">Posts</th><th className="font-medium text-right">Clicks</th><th className="font-medium text-right">Orders</th><th className="font-medium text-right">Sales</th><th className="font-medium text-right">Cost</th><th />
             </tr></thead>
             <tbody>
               {accepted.map((a) => {
@@ -124,7 +124,7 @@ export default function CampaignManage() {
             </tbody>
           </table></div>
         )}
-        <p className="text-[12px] text-ink-muted mt-3">Manage content and payments in <Link to="/workspace/deliverables" className="text-brand-dark">Deliverables</Link>. Log promo-code sales in <Link to="/workspace/analytics" className="text-brand-dark">Analytics</Link>.</p>
+        <p className="text-[12px] text-ink-muted mt-3">Manage content and payments in <Link to="/workspace/collabs" className="text-brand-dark">Creators</Link>. Log promo-code sales in <Link to="/workspace/results" className="text-brand-dark">Results</Link>.</p>
       </Card>
 
       <CampaignOps c={c} accepted={accepted} />
@@ -152,7 +152,7 @@ export default function CampaignManage() {
                     <span className="text-[13px]">{a.rate ? <>Asks <b>{peso(a.rate)}</b></> : 'No fee requested'}</span>
                     <div className="flex gap-2">
                       <Button size="sm" variant="outline" onClick={() => act(() => actions.decide(a.id, 'declined'), 'Application declined')}><X size={14} />Decline</Button>
-                      <Button size="sm" onClick={() => act(() => actions.decide(a.id, 'accepted'), `${u.name} added. Deliverables and promo code created.`)}><Check size={14} />Accept</Button>
+                      <Button size="sm" onClick={() => act(() => actions.decide(a.id, 'accepted'), `${u.name} added. Their posts and promo code are ready.`)}><Check size={14} />Accept</Button>
                     </div>
                   </div>
                 </div>
@@ -192,11 +192,11 @@ export default function CampaignManage() {
       </div>
 
       <Card className="mt-4 p-5">
-        <h2 className="font-bold text-[17px] mb-2">Campaign brief</h2>
+        <h2 className="font-bold text-[17px] mb-2">Brief</h2>
         <p className="text-[14px] text-ink-soft whitespace-pre-line">{c.description}</p>
         <div className="grid grid-cols-2 lg:grid-cols-4 gap-4 mt-4 text-[13px]">
           <div><p className="text-ink-muted text-[12px]">Target audience</p><p>{c.audience || '—'}</p></div>
-          <div><p className="text-ink-muted text-[12px]">Deliverables per creator</p><p>{c.deliverables.map((x) => `${x.qty}× ${x.type}`).join(', ')}</p></div>
+          <div><p className="text-ink-muted text-[12px]">Posts per creator</p><p>{c.deliverables.map((x) => `${x.qty}× ${x.type}`).join(', ')}</p></div>
           <div><p className="text-ink-muted text-[12px]">Content rights</p><p>{c.contentRights}</p></div>
           <div><p className="text-ink-muted text-[12px]">Community validation</p><p>{d.posts.filter((p) => p.campaignId === c.id).reduce((a, p) => a + reactionTotal(p) + p.interested.length, 0)} reactions on {d.posts.filter((p) => p.campaignId === c.id).length} posts</p></div>
         </div>
@@ -279,7 +279,7 @@ function CampaignOps({ c, accepted }) {
   );
 }
 
-function ShipModal({ x, onClose }) {
+export function ShipModal({ x, onClose }) {
   const d = useDB();
   const act = useAct();
   const u = userById(d, x.creatorId);
@@ -337,7 +337,7 @@ function PromoteCard({ c }) {
       {managed && (
         <Modal open onClose={() => setManaged(false)} title="Managed campaign" subtitle={`${c.productName} · ${peso(managedFee)}`}>
           <Field label="Goals and must-haves"><Textarea value={notes} onChange={(e) => setNotes(e.target.value)} placeholder="e.g. 200 sales in a month, Cebu-based creators only." /></Field>
-          <p className="text-[12px] text-ink-muted mt-2">Fee is {setting(d, 'managedCampaigns', 'pct')}% of the creator budget, minimum {peso(setting(d, 'managedCampaigns', 'minFee'))}. Creator fees are paid separately through escrow. Test mode: no card is charged.</p>
+          <p className="text-[12px] text-ink-muted mt-2">Fee is {setting(d, 'managedCampaigns', 'pct')}% of the creator budget, minimum {peso(setting(d, 'managedCampaigns', 'minFee'))}. Creator fees are paid separately through Buzz Protected Payment. Test mode: no card is charged.</p>
           <Button size="lg" className="w-full mt-4" onClick={() => { if (act(() => actions.orderService('managed', { campaignId: c.id, amount: budget, notes }), 'Request sent. Our team will reach out.')) setManaged(false); }}>Request · {peso(managedFee)}</Button>
         </Modal>
       )}

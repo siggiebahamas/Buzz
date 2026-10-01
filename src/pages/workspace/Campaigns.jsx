@@ -70,8 +70,8 @@ export default function Campaigns() {
   const m = businessMetrics(d, me.id, allTime);
   return (
     <>
-      <PageHead title="My Campaigns" sub="Manage your campaigns and the creators on them" action={<><ModeToggle /><Button onClick={() => setCreating(true)}><Plus size={16} />Create Campaign</Button></>} />
-      {m.perCampaign.length === 0 ? <Card><EmptyState icon={Briefcase} title="No campaigns yet" body="Post your first product with photos. It becomes a listing creators can apply to." action={<Button onClick={() => setCreating(true)}>Create Campaign</Button>} /></Card> : (
+      <PageHead title="My Campaigns" sub="Manage your campaigns and the creators on them" action={<><ModeToggle /><Button onClick={() => setCreating(true)}><Plus size={16} />Add a product</Button></>} />
+      {m.perCampaign.length === 0 ? <Card><EmptyState icon={Briefcase} title="No campaigns yet" body="Post your first product with photos. It becomes a listing creators can apply to." action={<Button onClick={() => setCreating(true)}>Add a product</Button>} /></Card> : (
         <div className="space-y-3">
           {m.perCampaign.map((row) => {
             const c = row.campaign;

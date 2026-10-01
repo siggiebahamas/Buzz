@@ -1,8 +1,8 @@
 import { useState } from 'react';
 import { Link } from 'react-router-dom';
-import { Repeat, Check, X, ExternalLink, Link2, Sparkles } from 'lucide-react';
+import { Repeat, Check, X, ExternalLink, Link2, Sparkles, Sprout } from 'lucide-react';
 import { useDB, userById, brandName, actions } from '../../lib/store';
-import { swapMatches, SWAP_OFFERS } from '../../lib/grow';
+import { swapMatches, SWAP_OFFERS, growUnlocked } from '../../lib/grow';
 import { categoryById } from '../../lib/constants';
 import { timeAgo } from '../../lib/format';
 import { Card, Button, Badge, Avatar, Modal, Field, Input, Select, Textarea, EmptyState, useAct, cx } from '../../components/ui';
@@ -24,6 +24,7 @@ export default function Swaps() {
   const [tab, setTab] = useState('matches');
   const [propose, setPropose] = useState(null);
   if (!me.business) return <NeedsBusiness title="Brand swaps" />;
+  if (!growUnlocked(d, me)) return <GrowLocked />;
   const mineAll = d.swaps.filter((s) => s.fromId === me.id || s.toId === me.id);
   const incoming = mineAll.filter((s) => s.status === 'proposed' && s.toId === me.id);
   const groups = [
@@ -140,3 +141,16 @@ function ProposeModal({ to, onClose }) {
   );
 }
 
+export function GrowLocked() {
+  return (
+    <>
+      <PageHead title="More ways to grow" />
+      <Card className="p-8 text-center max-w-xl mx-auto">
+        <Sprout size={28} className="mx-auto text-brand-dark" />
+        <p className="font-bold text-[18px] mt-3">Unlocks after your first finished collab</p>
+        <p className="text-[14px] text-ink-soft mt-1">Get one creator to post about your product first. Then brand swaps, customer creators and group deals open up here.</p>
+        <Link to="/workspace/collabs?view=find" className="inline-block mt-4"><Button>Find a creator</Button></Link>
+      </Card>
+    </>
+  );
+}

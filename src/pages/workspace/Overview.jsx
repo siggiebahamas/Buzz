@@ -8,6 +8,7 @@ import { PLATFORMS } from '../../lib/constants';
 import { Card, IconTile, Avatar, cx } from '../../components/ui';
 import { useMode, ModeToggle, PageHead } from './Layout';
 import { PeriodPicker, Kpi, defaultCustom } from './shared';
+import { SetupWizard, NextSteps } from './Setup';
 
 export default function Overview() {
   const d = useDB();
@@ -18,17 +19,13 @@ export default function Overview() {
   const biz = mode === 'business';
   const m = biz ? businessMetrics(d, me.id, range) : creatorMetrics(d, me.id, range);
 
-  const journey = biz ? [
-    [Search, 'Find Influencers', 'Discover creators who match your brand and target audience.', 'Find Influencers', '/opportunities?as=business'],
-    [Handshake, 'Review & Connect', 'Evaluate creator proposals and agree on fees and deliverables.', 'View Proposals', '/workspace/collaborations'],
-    [BarChart3, 'Manage Campaigns', 'Launch campaigns, approve content and keep payments on track.', 'Go to Campaigns', '/workspace/campaigns'],
-    [Rocket, 'Measure Results', 'Track sales, return on spend and cost per order by creator.', 'View Analytics', '/workspace/analytics'],
-  ] : [
-    [Search, 'Find Business Owners', 'Discover local products that fit your content and audience.', 'Find Opportunities', '/opportunities?as=creator'],
-    [Handshake, 'Review & Connect', 'Track your applications and answer brand invites.', 'View Proposals', '/workspace/collaborations'],
-    [BarChart3, 'Manage Campaigns', 'Deliver content on time with clear tasks and due dates.', 'Go to Deliverables', '/workspace/deliverables'],
-    [Rocket, 'Measure Results', 'See the clicks, sales and earnings your content drives.', 'View Analytics', '/workspace/analytics'],
+  const journey = [
+    [Search, 'Find products', 'Local products that fit your content and audience.', 'Find opportunities', '/opportunities?as=creator'],
+    [Handshake, 'Apply or say yes', 'Answer brand invites and follow your applications.', 'My collabs', '/workspace/collabs'],
+    [BarChart3, 'Post on time', 'Every post, due date and payment in one place.', 'My collabs', '/workspace/collabs'],
+    [Rocket, 'Get paid', 'See your earnings and the sales your posts drove.', 'Earnings', '/workspace/results?tab=money'],
   ];
+  const [wizard, setWizard] = useState(() => biz && !me.setupDone && !d.campaigns.some((c) => c.ownerId === me.id));
 
   const myCamps = new Set(d.campaigns.filter((c) => c.ownerId === me.id).map((c) => c.id));
   const toSign = d.contracts.filter((k) => (biz ? k.brandId === me.id && !k.brandSignedAt : k.creatorId === me.id && !k.creatorSignedAt)).length;
@@ -36,20 +33,19 @@ export default function Overview() {
   const toShip = d.shipments.filter((x) => myCamps.has(x.campaignId) && x.status === 'to_ship').length;
   const inTransit = d.shipments.filter((x) => x.creatorId === me.id && x.status === 'shipped').length;
   const attention = (biz ? [
-    [toSign, 'agreements to sign', '/workspace/contracts'],
-    [m.pendingApps, 'applications to review', '/workspace/collaborations'],
-    [drafts, 'drafts to review', '/workspace/deliverables'],
-    [m.toReview, 'posts to approve', '/workspace/deliverables'],
-    [toShip, 'samples to ship', '/workspace/campaigns'],
-    [m.owed ? peso(m.owed) : 0, 'owed for approved work', '/workspace/payments'],
+    [m.pendingApps, 'creators want to work with you', '/workspace/collabs'],
+    [drafts, 'drafts to check', '/workspace/collabs'],
+    [m.toReview, 'posts to approve', '/workspace/collabs'],
+    [toShip, 'products to send', '/workspace/collabs'],
+    [m.owed ? peso(m.owed) : 0, 'to pay for approved posts', '/workspace/collabs'],
   ] : [
-    [toSign, 'agreements to sign', '/workspace/contracts'],
-    [m.invites, 'brand invites to answer', '/workspace/collaborations'],
-    [drafts, 'drafts with changes requested', '/workspace/deliverables'],
-    [m.overdue, 'overdue deliverables', '/workspace/deliverables'],
-    [inTransit, 'samples on the way', '/workspace/collaborations'],
-    [m.pendingPayout ? peso(m.pendingPayout) : 0, 'approved, waiting for payment', '/workspace/payments'],
+    [m.invites, 'brands invited you', '/workspace/collabs'],
+    [drafts, 'drafts need changes', '/workspace/collabs'],
+    [m.overdue, 'late posts', '/workspace/collabs'],
+    [inTransit, 'products on the way to you', '/workspace/collabs'],
+    [m.pendingPayout ? peso(m.pendingPayout) : 0, 'approved, waiting for payment', '/workspace/results?tab=money'],
   ]);
+  void toSign;
 
   const kpis = biz ? [
     [CircleDollarSign, peso(m.cur.revenue, { compact: true }), 'Sales from creators', m.change.revenue],
@@ -74,8 +70,9 @@ export default function Overview() {
 
   return (
     <>
-      <PageHead title="My Workspace" sub={`Welcome back, ${me.name.split(' ')[0]}`} action={<ModeToggle />} />
-      <h2 className="text-[20px] font-bold mb-4">Your {biz ? 'Business' : 'Influencer'} Journey</h2>
+      <PageHead title={wizard ? `Welcome, ${me.name.split(' ')[0]}!` : 'Home'} sub={wizard ? 'Let\'s get your product in front of creators.' : `Welcome back, ${me.name.split(' ')[0]}`} action={<ModeToggle />} />
+      {wizard ? <SetupWizard me={me} onDone={() => setWizard(false)} /> : (<>
+      {biz ? <NextSteps d={d} me={me} /> : (<>
       <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
         {journey.map(([Icon, t, s, cta, to], i) => (
           <Card key={t} className="p-5 flex flex-col">
@@ -86,9 +83,10 @@ export default function Overview() {
           </Card>
         ))}
       </div>
+      </>)}
 
       <div className="mt-6 rounded-2xl bg-white border border-line px-5 py-3.5 flex flex-wrap items-center gap-x-6 gap-y-2">
-        <span className="flex items-center gap-2 text-[13.5px] font-semibold"><AlertCircle size={17} className="text-brand-dark" />Needs your attention</span>
+        <span className="flex items-center gap-2 text-[13.5px] font-semibold"><AlertCircle size={17} className="text-brand-dark" />Needs you now</span>
         {attention.filter(([v]) => v).length === 0 && <span className="text-[13.5px] text-emerald-700">You're all caught up.</span>}
         {attention.filter(([v]) => v).map(([v, l, to]) => (
           <Link key={l} to={to} className="text-[13.5px] text-ink hover:underline"><b>{v}</b> {l}</Link>
@@ -96,13 +94,13 @@ export default function Overview() {
       </div>
 
       <div className="flex flex-wrap gap-3 items-center justify-between mt-9 mb-4">
-        <h2 className="text-[20px] font-bold">Important Metrics at a Glance</h2>
+        <h2 className="text-[20px] font-bold">How you're doing</h2>
         <PeriodPicker period={period} setPeriod={setPeriod} custom={custom} setCustom={setCustom} />
       </div>
       <div className="grid grid-cols-2 lg:grid-cols-5 gap-4">
         {kpis.map(([icon, v, l, ch, inv]) => <Kpi key={l} icon={icon} value={v} label={l} change={ch} invert={inv} />)}
       </div>
-      <p className="text-[12px] text-ink-muted mt-2">Trends compare with the previous period of the same length. <Link to="/workspace/analytics" className="text-brand-dark">See full analytics</Link></p>
+      <p className="text-[12px] text-ink-muted mt-2">Trends compare with the previous period of the same length. <Link to="/workspace/results" className="text-brand-dark">See all results</Link></p>
 
       <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4 mt-8">
         <Card className="p-5">
@@ -118,17 +116,17 @@ export default function Overview() {
           </div>
         </Card>
         <Card className="p-5">
-          <p className="font-bold mb-3 flex items-center gap-2"><FileText size={16} className="text-brand-dark" />Upcoming Deliverables</p>
-          {upcoming.length === 0 && <p className="text-[13px] text-ink-muted">No open deliverables.</p>}
+          <p className="font-bold mb-3 flex items-center gap-2"><FileText size={16} className="text-brand-dark" />Posts coming up</p>
+          {upcoming.length === 0 && <p className="text-[13px] text-ink-muted">Nothing due.</p>}
           <div className="space-y-3">
             {upcoming.map((x) => {
               const late = x.dueAt < Date.now() && x.status !== 'submitted';
               return (
-                <Link to="/workspace/deliverables" key={x.id} className="flex items-center gap-3">
+                <Link to="/workspace/collabs" key={x.id} className="flex items-center gap-3">
                   <span className={cx('h-11 w-11 rounded-xl grid place-items-center text-[13px] font-bold shrink-0', late ? 'bg-rose-50 text-rose-600' : 'bg-canvas text-ink-soft')}>{new Date(x.dueAt).getDate()}</span>
                   <span className="min-w-0">
                     <span className="block text-[13.5px] truncate">{x.title}</span>
-                    <span className={cx('text-[12px]', late ? 'text-rose-600' : 'text-ink-muted')}>{biz ? `${userById(d, x.creatorId)?.name} · ` : ''}{x.status === 'submitted' ? 'Awaiting approval' : dueLabel(x.dueAt)}</span>
+                    <span className={cx('text-[12px]', late ? 'text-rose-600' : 'text-ink-muted')}>{biz ? `${userById(d, x.creatorId)?.name} · ` : ''}{x.status === 'submitted' ? 'Posted, waiting for approval' : dueLabel(x.dueAt)}</span>
                   </span>
                 </Link>
               );
@@ -136,7 +134,7 @@ export default function Overview() {
           </div>
         </Card>
         <Card className="p-5">
-          <p className="font-bold mb-3 flex items-center gap-2"><Sparkles size={16} className="text-brand-dark" />Top Performing Content</p>
+          <p className="font-bold mb-3 flex items-center gap-2"><Sparkles size={16} className="text-brand-dark" />Best posts</p>
           {top.length === 0 && <p className="text-[13px] text-ink-muted">Content stats appear once posts go live.</p>}
           <div className="space-y-3">
             {top.map((x) => {
@@ -153,9 +151,10 @@ export default function Overview() {
               );
             })}
           </div>
-          <Link to="/workspace/analytics" className="text-[13px] text-brand-dark inline-flex items-center gap-0.5 mt-4">View all content <ChevronRight size={14} /></Link>
+          <Link to="/workspace/results" className="text-[13px] text-brand-dark inline-flex items-center gap-0.5 mt-4">See all results <ChevronRight size={14} /></Link>
         </Card>
       </div>
+      </>)}
     </>
   );
 }

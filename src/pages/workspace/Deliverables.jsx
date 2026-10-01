@@ -27,10 +27,10 @@ function AddDeliverable({ onClose, campaigns }) {
   const submit = (e) => {
     e.preventDefault();
     const c = campaignById(d, f.campaignId);
-    if (act(() => actions.addDeliverable({ campaignId: f.campaignId, creatorId: f.creatorId, type: f.type, platform: f.platform, dueAt: new Date(f.due).getTime(), fee: Number(f.fee) || 0, title: `${f.type} for ${c.productName}` }), 'Deliverable added')) onClose();
+    if (act(() => actions.addDeliverable({ campaignId: f.campaignId, creatorId: f.creatorId, type: f.type, platform: f.platform, dueAt: new Date(f.due).getTime(), fee: Number(f.fee) || 0, title: `${f.type} for ${c.productName}` }), 'Post added')) onClose();
   };
   return (
-    <Modal open onClose={onClose} title="Add a deliverable" subtitle="The creator gets notified with the due date and fee.">
+    <Modal open onClose={onClose} title="Add a post" subtitle="The creator gets notified with the due date and fee.">
       {campaigns.length === 0 ? <p className="text-sm text-ink-muted">You need a campaign with at least one accepted creator first.</p> : (
         <form onSubmit={submit} className="space-y-4">
           <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
@@ -45,7 +45,7 @@ function AddDeliverable({ onClose, campaigns }) {
             <Field label="Due date"><Input type="date" value={f.due} onChange={(e) => set('due', e.target.value)} /></Field>
             <Field label="Fee (₱)"><Input type="number" min="0" value={f.fee} onChange={(e) => set('fee', e.target.value)} /></Field>
           </div>
-          <Button type="submit" size="lg" className="w-full" disabled={!f.creatorId}>Add deliverable</Button>
+          <Button type="submit" size="lg" className="w-full" disabled={!f.creatorId}>Add a post</Button>
         </form>
       )}
     </Modal>
@@ -116,10 +116,10 @@ export default function Deliverables() {
 
   return (
     <>
-      <PageHead title="Deliverables" sub={biz ? 'Approve content and track payments to creators' : 'Your content tasks, due dates and payouts'}
-        action={<><ModeToggle />{biz && <Button onClick={() => setModal({ kind: 'add' })}><Plus size={16} />Add deliverable</Button>}</>} />
+      <PageHead title="Posts" sub={biz ? 'Approve content and track payments to creators' : 'Your content tasks, due dates and payouts'}
+        action={<><ModeToggle />{biz && <Button onClick={() => setModal({ kind: 'add' })}><Plus size={16} />Add a post</Button>}</>} />
       <div className="flex flex-wrap items-center gap-3 sm:gap-4 mb-5">
-        <div className="w-full sm:w-72"><Select value={cid} onChange={(e) => setCid(e.target.value)}><option value="all">All campaigns</option>{campaignsInView.map((c) => <option key={c.id} value={c.id}>{c.productName}</option>)}</Select></div>
+        <div className="w-full sm:w-72"><Select value={cid} onChange={(e) => setCid(e.target.value)}><option value="all">All products</option>{campaignsInView.map((c) => <option key={c.id} value={c.id}>{c.productName}</option>)}</Select></div>
         <span className="text-[13px] text-ink-muted">{rows.length} deliverables · {overdue > 0 ? <b className="text-rose-600">{overdue} overdue</b> : 'none overdue'} · {peso(unpaid)} {biz ? 'to pay' : 'waiting for payment'}</span>
       </div>
       <div className="grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-4 gap-4 items-start">
@@ -154,33 +154,16 @@ export default function Deliverables() {
                           <FileImage size={12} />{x.draft?.status === 'approved' ? 'Draft approved, ready to post' : x.draft?.status === 'pending' ? 'Draft waiting for brand review' : x.draft?.status === 'changes' ? `Draft changes: ${x.draft.feedback}` : 'Draft needed before posting'}
                         </div>
                       )}
-                      {x.frozen && <p className="mt-2 text-[11.5px] rounded-lg bg-sky-50 text-sky-800 px-2 py-1.5 flex items-center gap-1.5"><Snowflake size={12} />Escrow frozen during a dispute</p>}
+                      {x.frozen && <p className="mt-2 text-[11.5px] rounded-lg bg-sky-50 text-sky-800 px-2 py-1.5 flex items-center gap-1.5"><Snowflake size={12} />Payment on hold during a dispute</p>}
                       {x.fee > 0 && (
                         <div className="mt-2">
                           {x.escrow === 'released' && <Badge tone="green">Paid {shortDate(x.paidAt)}</Badge>}
                           {x.escrow === 'outside' && <Badge tone="green">Paid outside Buzz</Badge>}
-                          {x.escrow === 'held' && <Badge tone="green"><ShieldCheck size={11} />Secured in escrow</Badge>}
+                          {x.escrow === 'held' && <Badge tone="green"><ShieldCheck size={11} />Payment protected</Badge>}
                           {x.escrow === 'unfunded' && <Badge tone={status === 'approved' ? 'red' : 'soft'}>{status === 'approved' ? 'Approved, unpaid' : 'Not funded yet'}</Badge>}
                         </div>
                       )}
-                      <div className="flex flex-wrap gap-1.5 mt-3">
-                        {x.contentUrl && <a href={x.contentUrl} target="_blank" rel="noreferrer" className="h-7 px-2 rounded-lg border border-line text-[12px] inline-flex items-center gap-1 hover:bg-canvas"><ExternalLink size={12} />Post</a>}
-                        {!biz && ['todo', 'revision'].includes(status) && c.requireDraft && x.draft?.status !== 'approved' && x.draft?.status !== 'pending' && <Button size="sm" className="h-7 text-[12px]" onClick={() => setModal({ kind: 'draft', x })}><FileImage size={12} />Send draft</Button>}
-                        {!biz && ['todo', 'revision'].includes(status) && (!c.requireDraft || x.draft?.status === 'approved') && <Button size="sm" className="h-7 text-[12px]" onClick={() => setModal({ kind: 'submit', x })}><Upload size={12} />Submit post</Button>}
-                        {biz && x.draft?.status === 'pending' && <Button size="sm" className="h-7 text-[12px]" onClick={() => setModal({ kind: 'reviewDraft', x })}><FileImage size={12} />Review draft</Button>}
-                        {!biz && ['submitted', 'approved'].includes(status) && <Button size="sm" variant="outline" className="h-7 text-[12px]" onClick={() => setModal({ kind: 'submit', x })}><BarChart2 size={12} />Update stats</Button>}
-                        {!biz && ['submitted', 'approved'].includes(status) && !x.boostCode && (x.boostRequested || campaignById(d, x.campaignId)?.wantsBoostCode) && <Button size="sm" className="h-7 text-[12px]" onClick={() => setModal({ kind: 'submit', x })}>Add ad-boost code</Button>}
-                        {x.boostCode && <Badge tone="green">Ad code sent</Badge>}
-                        {biz && status === 'submitted' && (
-                          <>
-                            <Button size="sm" className="h-7 text-[12px]" onClick={() => act(() => actions.reviewDeliverable(x.id, true), 'Approved')}><Check size={12} />Approve</Button>
-                            <Button size="sm" variant="outline" className="h-7 text-[12px]" onClick={() => setModal({ kind: 'revise', x })}><RotateCcw size={12} />Revise</Button>
-                          </>
-                        )}
-                        {biz && x.escrow === 'unfunded' && <Button size="sm" variant="soft" className="h-7 text-[12px]" onClick={() => setModal({ kind: 'fund', ids: [x.id] })}><Lock size={12} />{status === 'approved' ? 'Pay now' : 'Fund escrow'}</Button>}
-                        {biz && status === 'approved' && x.escrow === 'unfunded' && <Button size="sm" variant="ghost" className="h-7 text-[12px]" onClick={() => act(() => actions.markPaid(x.id), 'Marked as paid outside Buzz')}><Wallet size={12} />Paid outside</Button>}
-                        {!x.frozen && <button onClick={() => setModal({ kind: 'dispute', x, against: biz ? x.creatorId : c.ownerId })} className="h-7 px-1.5 text-[11.5px] text-ink-muted hover:text-rose-600 inline-flex items-center gap-1 ml-auto" title="Report a problem"><Flag size={12} /></button>}
-                      </div>
+                      <PostActions x={x} c={c} biz={biz} setModal={setModal} />
                     </Card>
                   );
                 })}
@@ -190,12 +173,56 @@ export default function Deliverables() {
         })}
       </div>
       {modal?.kind === 'add' && <AddDeliverable onClose={() => setModal(null)} campaigns={myCamps.filter((c) => membersOf(d, c.id).length)} />}
-      {modal?.kind === 'submit' && <SubmitDeliverableModal open deliverable={modal.x} onClose={() => setModal(null)} />}
-      {modal?.kind === 'fund' && <FundModal ids={modal.ids} onClose={() => setModal(null)} />}
-      {modal?.kind === 'draft' && <DraftModal x={modal.x} onClose={() => setModal(null)} />}
-      {modal?.kind === 'reviewDraft' && <ReviewDraftModal x={modal.x} onClose={() => setModal(null)} />}
-      {modal?.kind === 'dispute' && <OpenDisputeModal campaignId={modal.x.campaignId} deliverableId={modal.x.id} againstId={modal.against} onClose={() => setModal(null)} />}
-      {modal?.kind === 'revise' && <RevisionModal x={modal.x} onClose={() => setModal(null)} />}
+      <PostModals modal={modal} setModal={setModal} />
+    </>
+  );
+}
+
+// The next step on one post, for whoever is looking at it. Shared with the Creators page.
+export function PostActions({ x, c, biz, setModal }) {
+  const act = useAct();
+  const status = x.status;
+  return (
+    <div className="flex flex-wrap gap-1.5 mt-3">
+      {x.contentUrl && <a href={x.contentUrl} target="_blank" rel="noreferrer" className="h-7 px-2 rounded-lg border border-line text-[12px] inline-flex items-center gap-1 hover:bg-canvas"><ExternalLink size={12} />See post</a>}
+      {!biz && ['todo', 'revision'].includes(status) && c.requireDraft && x.draft?.status !== 'approved' && x.draft?.status !== 'pending' && <Button size="sm" className="h-7 text-[12px]" onClick={() => setModal({ kind: 'draft', x })}><FileImage size={12} />Send draft</Button>}
+      {!biz && ['todo', 'revision'].includes(status) && (!c.requireDraft || x.draft?.status === 'approved') && <Button size="sm" className="h-7 text-[12px]" onClick={() => setModal({ kind: 'submit', x })}><Upload size={12} />I posted it</Button>}
+      {biz && x.draft?.status === 'pending' && <Button size="sm" className="h-7 text-[12px]" onClick={() => setModal({ kind: 'reviewDraft', x })}><FileImage size={12} />Review draft</Button>}
+      {!biz && ['submitted', 'approved'].includes(status) && <Button size="sm" variant="outline" className="h-7 text-[12px]" onClick={() => setModal({ kind: 'submit', x })}><BarChart2 size={12} />Update views</Button>}
+      {!biz && ['submitted', 'approved'].includes(status) && !x.boostCode && (x.boostRequested || c.wantsBoostCode) && <Button size="sm" className="h-7 text-[12px]" onClick={() => setModal({ kind: 'submit', x })}>Add ad-boost code</Button>}
+      {x.boostCode && <Badge tone="green">Ad code sent</Badge>}
+      {biz && status === 'submitted' && (
+        <>
+          <Button size="sm" className="h-7 text-[12px]" onClick={() => act(() => actions.reviewDeliverable(x.id, true), 'Approved')}><Check size={12} />Approve</Button>
+          <Button size="sm" variant="outline" className="h-7 text-[12px]" onClick={() => setModal({ kind: 'revise', x })}><RotateCcw size={12} />Ask for changes</Button>
+        </>
+      )}
+      {biz && x.escrow === 'unfunded' && <Button size="sm" variant="soft" className="h-7 text-[12px]" onClick={() => setModal({ kind: 'fund', ids: [x.id] })}><Lock size={12} />{status === 'approved' ? 'Pay now' : 'Secure payment'}</Button>}
+      {biz && status === 'approved' && x.escrow === 'unfunded' && <Button size="sm" variant="ghost" className="h-7 text-[12px]" onClick={() => act(() => actions.markPaid(x.id), 'Marked as paid outside Buzz')}><Wallet size={12} />Paid outside</Button>}
+    </div>
+  );
+}
+
+// Plain-language status for one post.
+export function postStatus(x, c, biz) {
+  if (x.status === 'approved') return x.fee > 0 && x.escrow === 'unfunded' ? ['Approved, not paid yet', 'red'] : x.fee > 0 ? ['Done and paid', 'green'] : ['Done', 'green'];
+  if (x.status === 'submitted') return [biz ? 'Posted: check and approve' : 'Posted: waiting for approval', 'blue'];
+  if (x.status === 'revision') return [biz ? 'Changes requested' : 'Brand asked for changes', 'red'];
+  if (c.requireDraft && x.draft?.status === 'pending') return [biz ? 'Draft to review' : 'Draft sent', 'soft'];
+  if (c.requireDraft && x.draft?.status === 'changes') return ['Draft needs changes', 'red'];
+  return [x.dueAt < Date.now() ? 'Late' : biz ? 'Creator is working on it' : 'To do', x.dueAt < Date.now() ? 'red' : 'neutral'];
+}
+
+export function PostModals({ modal, setModal }) {
+  const close = () => setModal(null);
+  return (
+    <>
+      {modal?.kind === 'submit' && <SubmitDeliverableModal open deliverable={modal.x} onClose={close} />}
+      {modal?.kind === 'fund' && <FundModal ids={modal.ids} onClose={close} />}
+      {modal?.kind === 'draft' && <DraftModal x={modal.x} onClose={close} />}
+      {modal?.kind === 'reviewDraft' && <ReviewDraftModal x={modal.x} onClose={close} />}
+      {modal?.kind === 'dispute' && <OpenDisputeModal campaignId={modal.campaignId || modal.x?.campaignId} deliverableId={modal.x?.id} againstId={modal.against} onClose={close} />}
+      {modal?.kind === 'revise' && <RevisionModal x={modal.x} onClose={close} />}
     </>
   );
 }

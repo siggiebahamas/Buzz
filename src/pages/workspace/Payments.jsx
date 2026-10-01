@@ -10,7 +10,7 @@ import { Card, Button, Badge, Avatar, Modal, Field, Input, Select, Checkbox, Emp
 import { useMode, ModeToggle, PageHead } from './Layout';
 
 const METHODS = ['GCash', 'Maya', 'Card', 'Bank transfer (InstaPay)'];
-const TX_LABEL = { fund: ['Paid into escrow', 'neutral'], release: ['Payment received', 'green'], payout: ['Withdrawal', 'blue'], refund: ['Refund', 'violet'], purchase: ['Purchase', 'neutral'], credit: ['Buzz credit', 'soft'], subscription: ['Plan', 'neutral'] };
+const TX_LABEL = { fund: ['Paid in, held by Buzz', 'neutral'], release: ['Payment received', 'green'], payout: ['Withdrawal', 'blue'], refund: ['Refund', 'violet'], purchase: ['Purchase', 'neutral'], credit: ['Buzz credit', 'soft'], subscription: ['Plan', 'neutral'] };
 
 export function FundModal({ ids, onClose }) {
   const d = useDB();
@@ -21,7 +21,7 @@ export function FundModal({ ids, onClose }) {
   const rate = brandFeeRate(d, currentUser(d));
   const fee = Math.round(sub * rate);
   return (
-    <Modal open onClose={onClose} title="Pay into escrow" subtitle="Buzz holds the money and releases it to each creator when you approve their content.">
+    <Modal open onClose={onClose} title="Secure the payment" subtitle="Buzz holds the money and releases it to each creator when you approve their content.">
       <div className="space-y-2 max-h-56 overflow-y-auto">
         {list.map((x) => (
           <div key={x.id} className="flex justify-between text-[13.5px]"><span className="text-ink-soft truncate pr-3">{userById(d, x.creatorId)?.name} · {x.title}</span><span>{peso(x.fee)}</span></div>
@@ -34,7 +34,7 @@ export function FundModal({ ids, onClose }) {
       </div>
       <Field label="Pay with" className="mt-4"><Select id="fund-method" value={method} onChange={(e) => setMethod(e.target.value)}>{METHODS.map((m) => <option key={m}>{m}</option>)}</Select></Field>
       <p className="text-[12px] text-ink-muted mt-2">Test mode: no real money moves. A payment provider (e.g. PayMongo) plugs in here at launch.</p>
-      <Button size="lg" className="w-full mt-4" onClick={() => { if (act(() => actions.fundEscrow(ids, method), `${peso(sub + fee)} paid into escrow`)) onClose(); }}><Lock size={16} />Pay {peso(sub + fee)}</Button>
+      <Button size="lg" className="w-full mt-4" onClick={() => { if (act(() => actions.fundEscrow(ids, method), `${peso(sub + fee)} paid into Buzz Protected Payment`)) onClose(); }}><Lock size={16} />Pay {peso(sub + fee)}</Button>
     </Modal>
   );
 }
@@ -84,9 +84,9 @@ export default function Payments() {
     const allPicked = picked.length === unfunded.length && unfunded.length > 0;
     return (
       <>
-        <PageHead title="Payments" sub="Pay creators through escrow: they know the money is there, you only release it for approved work" action={<ModeToggle />} />
+        <PageHead title="Payments" sub="Pay creators safely through Buzz: they know the money is there, you only release it for approved work" action={<ModeToggle />} />
         <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
-          <Card className="p-5"><IconTile icon={Lock} /><p className="text-[24px] font-bold mt-3">{peso(held.reduce((a, x) => a + x.fee, 0))}</p><p className="text-[13px] text-ink-muted">Held in escrow · {held.length} deliverables</p></Card>
+          <Card className="p-5"><IconTile icon={Lock} /><p className="text-[24px] font-bold mt-3">{peso(held.reduce((a, x) => a + x.fee, 0))}</p><p className="text-[13px] text-ink-muted">Held safely by Buzz · {held.length} deliverables</p></Card>
           <Card className="p-5"><IconTile icon={Receipt} tone="rose" /><p className="text-[24px] font-bold mt-3">{peso(unfunded.reduce((a, x) => a + x.fee, 0))}</p><p className="text-[13px] text-ink-muted">Not yet funded · {unfunded.length} deliverables</p></Card>
           <Card className="p-5"><IconTile icon={CheckCircle2} tone="green" /><p className="text-[24px] font-bold mt-3">{peso(dels.filter((x) => x.escrow === 'released').reduce((a, x) => a + x.fee, 0))}</p><p className="text-[13px] text-ink-muted">Released to creators</p></Card>
         </div>
@@ -94,17 +94,17 @@ export default function Payments() {
         <Card className="p-5 mt-4">
           <div className="flex flex-wrap items-center justify-between gap-3 mb-3">
             <div>
-              <p className="font-bold">Fund escrow</p>
+              <p className="font-bold">Secure payment</p>
               <p className="text-[12.5px] text-ink-muted">Creators see a "secured" badge once their fee is funded. Approved work gets paid instantly.</p>
             </div>
             <Button disabled={!picked.length} onClick={() => setModal('fund')}><Lock size={15} />Fund {picked.length || ''} selected</Button>
           </div>
-          {unfunded.length === 0 ? <EmptyState icon={ShieldCheck} title="Every fee is funded" body="New deliverables appear here when you accept creators." /> : (
+          {unfunded.length === 0 ? <EmptyState icon={ShieldCheck} title="Every fee is funded" body="New posts appear here when you accept creators." /> : (
             <div className="overflow-x-auto">
               <table className="w-full text-[13.5px] min-w-[560px]">
                 <thead><tr className="text-left text-[12px] text-ink-muted border-b border-line">
                   <th className="py-2 w-8"><Checkbox checked={allPicked} onChange={(v) => setPicked(v ? unfunded.map((x) => x.id) : [])} label="" /></th>
-                  <th className="font-medium">Creator</th><th className="font-medium">Deliverable</th><th className="font-medium">Status</th><th className="font-medium text-right">Fee</th>
+                  <th className="font-medium">Creator</th><th className="font-medium">Post</th><th className="font-medium">Status</th><th className="font-medium text-right">Fee</th>
                 </tr></thead>
                 <tbody>
                   {unfunded.map((x) => {
@@ -175,13 +175,13 @@ export default function Payments() {
           <p className="text-[13px] text-white/70">Available to withdraw</p>
           <Button className="mt-4 w-full" disabled={w.balance < 100} onClick={() => setModal('withdraw')}><ArrowDownToLine size={15} />Withdraw</Button>
         </Card>
-        <Card className="p-5"><IconTile icon={ShieldCheck} tone="green" /><p className="text-[24px] font-bold mt-3">{peso(secured.reduce((a, x) => a + x.fee, 0))}</p><p className="text-[13px] text-ink-muted">Secured in escrow · paid when approved</p></Card>
+        <Card className="p-5"><IconTile icon={ShieldCheck} tone="green" /><p className="text-[24px] font-bold mt-3">{peso(secured.reduce((a, x) => a + x.fee, 0))}</p><p className="text-[13px] text-ink-muted">Payment protected · paid when approved</p></Card>
         <Card className="p-5"><IconTile icon={Receipt} tone="rose" /><p className="text-[24px] font-bold mt-3">{peso(waiting.reduce((a, x) => a + x.fee, 0))}</p><p className="text-[13px] text-ink-muted">Agreed but not yet funded by the brand</p></Card>
       </div>
       {waiting.length > 0 && (
         <Card className="p-5 mt-4">
           <p className="font-bold mb-1">Not yet funded</p>
-          <p className="text-[12.5px] text-ink-muted mb-3">Tip: ask the brand to fund escrow before you post, so you're sure to get paid.</p>
+          <p className="text-[12.5px] text-ink-muted mb-3">Tip: ask the brand to secure the payment before you post, so you're sure to get paid.</p>
           <div className="divide-y divide-line">
             {waiting.map((x) => {
               const c = campaignById(d, x.campaignId);

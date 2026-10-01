@@ -7,7 +7,8 @@ import { peso, timeAgo } from '../../lib/format';
 import { appUrl } from '../../lib/links';
 import { Card, Button, Badge, Avatar, Field, Input, Textarea, Checkbox, EmptyState, useAct, useCopy } from '../../components/ui';
 import { useMode, PageHead } from './Layout';
-import { NeedsBusiness } from './Swaps';
+import { NeedsBusiness, GrowLocked } from './Swaps';
+import { growUnlocked } from '../../lib/grow';
 
 export default function Customers() {
   const d = useDB();
@@ -17,6 +18,7 @@ export default function Customers() {
   const p = me.business ? ugcProgramOf(d, me.id) : null;
   const [f, setF] = useState({ credit: p?.credit || 150, ask: p?.ask || '', active: p ? p.active : true });
   if (!me.business) return <NeedsBusiness title="Customer creators" />;
+  if (!growUnlocked(d, me)) return <GrowLocked />;
   const posts = d.ugcPosts.filter((x) => x.brandId === me.id);
   const pending = posts.filter((x) => x.status === 'pending');
   const done = posts.filter((x) => x.status !== 'pending');

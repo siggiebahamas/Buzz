@@ -77,8 +77,8 @@ export default function Settings() {
       <Modal open={open === 'notifications'} onClose={() => setOpen(null)} title="Notifications">
         <div className="space-y-4">
           <Checkbox checked={notif.apps} onChange={(v) => setNotif({ ...notif, apps: v })} label="Applications and invites" />
-          <Checkbox checked={notif.deliverables} onChange={(v) => setNotif({ ...notif, deliverables: v })} label="Deliverables: submitted, approved, revisions" />
-          <Checkbox checked={notif.sales} onChange={(v) => setNotif({ ...notif, sales: v })} label="Sales, escrow and payouts" />
+          <Checkbox checked={notif.deliverables} onChange={(v) => setNotif({ ...notif, deliverables: v })} label="Posts: sent, approved, changes" />
+          <Checkbox checked={notif.sales} onChange={(v) => setNotif({ ...notif, sales: v })} label="Sales, payments and payouts" />
           <Checkbox checked={notif.community} onChange={(v) => setNotif({ ...notif, community: v })} label="Community likes and replies" />
           <div className="pt-3 border-t border-line"><Checkbox checked={notif.email} onChange={(v) => setNotif({ ...notif, email: v })} label="Also send these by email" hint="Topics you turned off above are never emailed." /></div>
           <Button className="w-full" onClick={() => persist({ notif }, 'Preferences saved')}>Save</Button>
