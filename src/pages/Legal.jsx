@@ -1,7 +1,5 @@
 import { Link } from 'react-router-dom';
 import { Card } from '../components/ui';
-import { useDB } from '../lib/store';
-import { isOn } from '../lib/monetize';
 
 const UPDATED = 'September 29, 2026';
 
@@ -77,7 +75,6 @@ export function Privacy() {
 }
 
 export function Footer() {
-  const d = useDB();
   return (
     <footer className="border-t border-line bg-white">
       <div className="max-w-6xl mx-auto px-4 sm:px-6 py-8 flex flex-col sm:flex-row gap-3 sm:items-center justify-between text-[13px] text-ink-muted">
@@ -85,8 +82,6 @@ export function Footer() {
         <nav className="flex flex-wrap gap-x-5 gap-y-2">
           <Link to="/pricing" className="hover:text-ink">Pricing</Link>
           <Link to="/help" className="hover:text-ink">Help center</Link>
-          {isOn(d, 'servicesCatalog') && <Link to="/services" className="hover:text-ink">Services</Link>}
-          {isOn(d, 'events') && <Link to="/events" className="hover:text-ink">Events</Link>}
           <Link to="/terms" className="hover:text-ink">Terms</Link>
           <Link to="/privacy" className="hover:text-ink">Privacy</Link>
           <Link to="/community" className="hover:text-ink">Community</Link>

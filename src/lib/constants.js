@@ -54,14 +54,6 @@ export const COMMUNITY_TOPICS = [
 
 export const topicById = (id) => COMMUNITY_TOPICS.find((t) => t.id === id) || COMMUNITY_TOPICS[0];
 
-export const COLLAB_KINDS = {
-  bundle: 'Product bundle',
-  giveaway: 'Joint giveaway',
-  shoot: 'Shared photo/video shoot',
-  popup: 'Pop-up / bazaar booth',
-  squad: 'Creator squad',
-};
-
 export const REGIONS = ['Metro Manila', 'Luzon', 'Visayas', 'Mindanao', 'Nationwide'];
 
 export const BUDGET_BUCKETS = [

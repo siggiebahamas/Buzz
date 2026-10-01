@@ -4,7 +4,6 @@ import { ShieldCheck, Wallet, Lock, ArrowDownToLine, Receipt, CheckCircle2 } fro
 import { useDB, userById, campaignById, walletOf, actions, currentUser } from '../../lib/store';
 import { brandFeeRate, isOn, setting } from '../../lib/monetize';
 import { commissionOwed } from '../../lib/ops';
-import { isCreatorPro } from '../../lib/pro';
 import { peso, shortDate, timeAgo } from '../../lib/format';
 import { Card, Button, Badge, Avatar, Modal, Field, Input, Select, Checkbox, EmptyState, IconTile, useAct, cx } from '../../components/ui';
 import { useMode, ModeToggle, PageHead } from './Layout';
@@ -43,9 +42,8 @@ function WithdrawModal({ balance, onClose }) {
   const d = useDB();
   const act = useAct();
   const [f, setF] = useState({ amount: balance, method: 'GCash', account: '', instant: false });
-  const pro = isCreatorPro(d, currentUser(d));
-  const instantOn = isOn(d, 'instantPayout') || pro;
-  const instantFee = pro ? 0 : setting(d, 'instantPayout', 'fee');
+  const instantOn = isOn(d, 'instantPayout');
+  const instantFee = setting(d, 'instantPayout', 'fee');
   return (
     <Modal open onClose={onClose} title="Withdraw earnings" subtitle={`Available: ${peso(balance)}`}>
       <div className="space-y-4">
@@ -54,7 +52,7 @@ function WithdrawModal({ balance, onClose }) {
         <Field label={f.method === 'GCash' || f.method === 'Maya' ? 'Mobile number' : 'Account number'}><Input id="wd-account" value={f.account} onChange={(e) => setF({ ...f, account: e.target.value })} placeholder={f.method === 'GCash' || f.method === 'Maya' ? '0917 123 4567' : 'Account number'} /></Field>
         {instantOn && (
           <div className="grid grid-cols-2 gap-2">
-            {[[false, 'Standard', '1–2 banking days · free'], [true, 'Instant', `Within minutes · ${instantFee ? peso(instantFee) : 'free with Creator Pro'}`]].map(([v, t, sub]) => (
+            {[[false, 'Standard', '1–2 banking days · free'], [true, 'Instant', `Within minutes · ${peso(instantFee)}`]].map(([v, t, sub]) => (
               <button key={t} type="button" onClick={() => setF({ ...f, instant: v })} className={cx('rounded-xl border p-3 text-left', f.instant === v ? 'border-brand bg-brand-softer' : 'border-line')}><p className="font-semibold text-[14px]">{t}</p><p className="text-[12px] text-ink-muted">{sub}</p></button>
             ))}
           </div>
@@ -190,25 +188,6 @@ export default function Payments() {
           </div>
         </Card>
       )}
-      {isOn(d, 'creatorAdvance') && (() => {
-        const ready = mine.filter((x) => x.status === 'submitted' && x.escrow === 'held' && !x.frozen);
-        if (!ready.length) return null;
-        const pct = setting(d, 'creatorAdvance', 'pct');
-        return (
-          <Card className="p-5 mt-4">
-            <p className="font-bold">Get paid now</p>
-            <p className="text-[12.5px] text-ink-muted">Don't wait for the brand to approve. Buzz pays you today for a {pct}% fee and handles the wait.</p>
-            <div className="mt-3 divide-y divide-line">
-              {ready.map((x) => (
-                <div key={x.id} className="flex flex-wrap items-center justify-between gap-2 py-2 text-[13.5px]">
-                  <span>{x.title}</span>
-                  <Button size="sm" onClick={() => act(() => actions.cashAdvance(x.id), 'Paid to your wallet')}>Get {peso(Math.round(x.fee * (1 - pct / 100)))} now</Button>
-                </div>
-              ))}
-            </div>
-          </Card>
-        );
-      })()}
       <Card className="p-5 mt-4">
         <p className="font-bold mb-3">Wallet activity</p>
         {w.txs.length === 0 ? <p className="text-[13px] text-ink-muted">No activity yet. Payments arrive here when brands approve your content.</p> : (

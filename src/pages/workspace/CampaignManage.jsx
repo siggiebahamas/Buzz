@@ -14,8 +14,8 @@ import { STATUS_TONE } from './shared';
 import { Truck, FileSignature, Sparkles as SparkIcon } from 'lucide-react';
 import { Modal, Field, Input, Select, Textarea } from '../../components/ui';
 import { trackingUrl } from './Campaigns';
-import { isOn, setting } from '../../lib/monetize';
-import { Megaphone, Briefcase } from 'lucide-react';
+import { isOn, setting, isBrandPro, freeFeaturedLeft } from '../../lib/monetize';
+import { Megaphone } from 'lucide-react';
 
 export default function CampaignManage() {
   const { id } = useParams();
@@ -218,7 +218,6 @@ const COURIERS = ['J&T Express', 'LBC', 'Lalamove', 'Grab Express', 'Ninja Van',
 // Agreements, samples to ship and hand-picked creator requests for one campaign.
 function CampaignOps({ c, accepted }) {
   const d = useDB();
-  useEffect(() => { actions.markSeen([c.id]); }, [c.id]);
   const act = useAct();
   const [ship, setShip] = useState(null);
   const [handpick, setHandpick] = useState(false);
@@ -266,12 +265,12 @@ function CampaignOps({ c, accepted }) {
           </>
         )}
       </Card>
-      {(isOn(d, 'featuredListings') || isOn(d, 'managedCampaigns')) && <PromoteCard c={c} />}
+      {isOn(d, 'featuredListings') && c.published && <FeatureCard c={c} />}
       {ship && <ShipModal x={ship} onClose={() => setShip(null)} />}
       {handpick && (
         <Modal open onClose={() => setHandpick(false)} title="Ask Buzz to hand-pick creators" subtitle={c.productName}>
           <Field label="Anything we should know?"><Textarea value={note} onChange={(e) => setNote(e.target.value)} placeholder="e.g. We want creators who cook at home, not restaurant reviewers. Budget is firm." /></Field>
-          <p className="text-[12.5px] text-ink-muted mt-2">{isOn(d, 'paidHandpick') ? (isOn(d, 'plans') && ['pro', 'agency'].includes(currentUser(d)?.plan) ? 'Included in your plan.' : `${peso(setting(d, 'paidHandpick', 'price'))} per campaign. Test mode: no card is charged.`) : isOn(d, 'plans') ? 'Free plan: 1 request. Pro: unlimited.' : 'Free while Buzz is new.'}</p>
+          <p className="text-[12.5px] text-ink-muted mt-2">{isOn(d, 'paidHandpick') ? (isBrandPro(d, currentUser(d)) ? 'Included in your plan.' : `${peso(setting(d, 'paidHandpick', 'price'))} per campaign. Test mode: no card is charged.`) : isOn(d, 'plans') ? 'Free plan: 1 request. Pro: unlimited.' : 'Free while Buzz is new.'}</p>
           <Button size="lg" className="w-full mt-4" onClick={() => { if (act(() => actions.requestConcierge(c.id, note), 'Request sent. We\'ll invite creators for you.')) setHandpick(false); }}>Send request</Button>
         </Modal>
       )}
@@ -294,53 +293,34 @@ export function ShipModal({ x, onClose }) {
         <Field label="Courier"><Select value={f.courier} onChange={(e) => setF({ ...f, courier: e.target.value })}>{COURIERS.map((c) => <option key={c}>{c}</option>)}</Select></Field>
         <Field label="Tracking number"><Input value={f.tracking} onChange={(e) => setF({ ...f, tracking: e.target.value })} /></Field>
       </div>
-      {isOn(d, 'shippingService') && (
-        <div className="mt-4 rounded-xl border border-brand/40 bg-brand-softer p-3 flex flex-wrap items-center gap-3">
-          <p className="flex-1 min-w-[180px] text-[13px]"><b>Book a pickup through Buzz</b> · {peso(setting(d, 'shippingService', 'price'))}. A rider collects from you and tracking is added for you.</p>
-          <Button size="sm" onClick={() => { if (act(() => actions.bookPickup(x.id), 'Pickup booked. The creator was notified.')) onClose(); }}><Truck size={14} />Book pickup</Button>
-        </div>
-      )}
       <Button size="lg" className="w-full mt-4" disabled={!f.tracking.trim()} onClick={() => { if (act(() => actions.updateShipment(x.id, { ...f, tracking: f.tracking.trim(), status: 'shipped' }), 'Marked as shipped. The creator was notified.')) onClose(); }}><Truck size={16} />Mark as shipped</Button>
     </Modal>
   );
 }
 
-function PromoteCard({ c }) {
+// Paid, clearly labelled placement at the top of Opportunities. Brand Pro includes free weeks.
+function FeatureCard({ c }) {
   const d = useDB();
   const act = useAct();
   const ask = useConfirm();
-  const [managed, setManaged] = useState(false);
-  const [notes, setNotes] = useState('');
+  const me = currentUser(d);
   const featured = c.featuredUntil > Date.now();
   const week = setting(d, 'featuredListings', 'weekPrice');
-  const budget = (c.budgetMax || 0) * (c.slots || 1);
-  const managedFee = Math.max(setting(d, 'managedCampaigns', 'minFee'), Math.round(budget * setting(d, 'managedCampaigns', 'pct') / 100));
-  const ordered = d.orders.find((o) => o.serviceId === 'managed' && o.campaignId === c.id);
+  const free = freeFeaturedLeft(d, me);
+  const cost = (w) => week * Math.max(0, w - free);
   return (
-    <Card className="p-5 lg:col-span-3 grid grid-cols-1 md:grid-cols-2 gap-5">
-      {isOn(d, 'featuredListings') && (
-        <div>
-          <p className="font-bold flex items-center gap-2"><Megaphone size={16} className="text-brand-dark" />Feature this listing</p>
-          <p className="text-[13px] text-ink-soft mt-1">{featured ? `Featured until ${shortDate(c.featuredUntil)}. It's pinned at the top of Discover and Opportunities.` : 'Pin it at the top of Discover and Opportunities with a "Featured" label. Creators still see their honest fit score.'}</p>
-          <div className="flex flex-wrap gap-2 mt-3">
-            {[1, 2, 4].map((w) => <Button key={w} size="sm" variant={w === 1 ? 'primary' : 'outline'} onClick={async () => { if (await ask({ title: `Feature for ${w} week${w > 1 ? 's' : ''}?`, body: `${peso(week * w)}. Test mode: no card is charged.`, confirm: 'Feature it' })) act(() => actions.buyFeature(c.id, w), 'Your listing is featured'); }}>{featured ? 'Add' : ''} {w} wk · {peso(week * w)}</Button>)}
-          </div>
-        </div>
-      )}
-      {isOn(d, 'managedCampaigns') && (
-        <div>
-          <p className="font-bold flex items-center gap-2"><Briefcase size={16} className="text-brand-dark" />Let Buzz run it for you</p>
-          <p className="text-[13px] text-ink-soft mt-1">{ordered ? `Requested ${timeAgo(ordered.createdAt)} · ${ordered.status === 'new' ? 'we\'ll reach out within one working day' : ordered.status === 'progress' ? 'our team is running it' : 'done'}.` : `We pick creators, brief them, approve content and send you a report. ${peso(managedFee)} for this campaign.`}</p>
-          {!ordered && <Button size="sm" className="mt-3" onClick={() => setManaged(true)}>Request managed campaign</Button>}
-        </div>
-      )}
-      {managed && (
-        <Modal open onClose={() => setManaged(false)} title="Managed campaign" subtitle={`${c.productName} · ${peso(managedFee)}`}>
-          <Field label="Goals and must-haves"><Textarea value={notes} onChange={(e) => setNotes(e.target.value)} placeholder="e.g. 200 sales in a month, Cebu-based creators only." /></Field>
-          <p className="text-[12px] text-ink-muted mt-2">Fee is {setting(d, 'managedCampaigns', 'pct')}% of the creator budget, minimum {peso(setting(d, 'managedCampaigns', 'minFee'))}. Creator fees are paid separately through Buzz Protected Payment. Test mode: no card is charged.</p>
-          <Button size="lg" className="w-full mt-4" onClick={() => { if (act(() => actions.orderService('managed', { campaignId: c.id, amount: budget, notes }), 'Request sent. Our team will reach out.')) setManaged(false); }}>Request · {peso(managedFee)}</Button>
-        </Modal>
-      )}
+    <Card className="p-5 lg:col-span-3 flex flex-col md:flex-row md:items-center gap-4">
+      <div className="flex-1">
+        <p className="font-bold flex items-center gap-2"><Megaphone size={16} className="text-brand-dark" />Feature this listing{featured && <Badge tone="green">Featured until {shortDate(c.featuredUntil)}</Badge>}</p>
+        <p className="text-[13px] text-ink-soft mt-1">Pinned at the top of Opportunities and Discover with a "Featured" label, so more creators see it. Their fit score stays honest.{free ? ` You have ${free} free week${free > 1 ? 's' : ''} this month with Brand Pro.` : isOn(d, 'plans') && me.plan !== 'pro' ? ' Brand Pro includes a free week every month.' : ''}</p>
+      </div>
+      <div className="flex flex-wrap gap-2">
+        {[1, 2, 4].map((w) => (
+          <Button key={w} size="sm" variant={w === 1 ? 'primary' : 'outline'} onClick={async () => {
+            if (await ask({ title: `Feature for ${w} week${w > 1 ? 's' : ''}?`, body: cost(w) ? `${peso(cost(w))}${w > Math.min(w, free) && free ? ` (${free} week free with Brand Pro)` : ''}. Test mode: no card is charged.` : 'Free with your Brand Pro plan.', confirm: 'Feature it' })) act(() => actions.buyFeature(c.id, w), 'Your listing is featured');
+          }}>{featured ? 'Add ' : ''}{w} wk · {cost(w) ? peso(cost(w)) : 'Free'}</Button>
+        ))}
+      </div>
     </Card>
   );
 }

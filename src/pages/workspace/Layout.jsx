@@ -55,7 +55,6 @@ export default function WorkspaceLayout() {
     : d.deliverables.filter((x) => x.creatorId === me.id && ['todo', 'revision'].includes(x.status) && x.dueAt < Date.now() + 7 * 86400000).length;
   // Six places for a brand, five for a creator. Extra tools appear once they're useful.
   const growBadge = d.swaps.filter((s) => s.toId === me.id && s.status === 'proposed').length + d.ugcPosts.filter((x) => x.brandId === me.id && x.status === 'pending').length;
-  const myGroupDeals = d.groupDeals.filter((g) => g.creatorId === me.id && g.status !== 'cancelled');
   const groups = [
     ['', mode === 'business' ? [
       ['/workspace', 'Home', LayoutGrid, 0, true],
@@ -71,8 +70,6 @@ export default function WorkspaceLayout() {
       ['/workspace/messages', 'Messages', MessageSquare, unreadCount(d)],
       ['/workspace/results', 'Earnings', Wallet],
       ['/workspace/settings', 'Settings', Settings],
-      myGroupDeals.length > 0 && ['/workspace/group-deals', 'Group deals', Users, myGroupDeals.filter((g) => g.status === 'invited').length],
-      isOn(d, 'plans') && ['/workspace/pro', 'Creator Pro', Crown],
     ]],
   ].map(([g, list]) => [g, list.filter(Boolean)]);
   const items = groups.flatMap(([, list]) => list);
@@ -112,7 +109,7 @@ export default function WorkspaceLayout() {
             <Avatar user={me} size={34} />
             <div className="min-w-0">
               <p className="text-[13.5px] font-medium truncate">{me.name}</p>
-              <p className="text-[12px] text-ink-muted">{mode === 'creator' ? 'Influencer' : 'Business Owner'}{isOn(d, 'plans') && me.plan === 'pro' ? ' · Pro' : isOn(d, 'plans') && me.plan === 'agency' ? ' · Agency' : ''}</p>
+              <p className="text-[12px] text-ink-muted">{mode === 'creator' ? 'Influencer' : 'Business Owner'}{mode === 'business' && isOn(d, 'plans') && me.plan === 'pro' ? ' · Brand Pro' : ''}</p>
             </div>
           </div>
         </div>

@@ -148,7 +148,7 @@ export function GrowLocked() {
       <Card className="p-8 text-center max-w-xl mx-auto">
         <Sprout size={28} className="mx-auto text-brand-dark" />
         <p className="font-bold text-[18px] mt-3">Unlocks after your first finished collab</p>
-        <p className="text-[14px] text-ink-soft mt-1">Get one creator to post about your product first. Then brand swaps, customer creators and group deals open up here.</p>
+        <p className="text-[14px] text-ink-soft mt-1">Get one creator to post about your product first. Then brand swaps and customer creators open up here.</p>
         <Link to="/workspace/collabs?view=find" className="inline-block mt-4"><Button>Find a creator</Button></Link>
       </Card>
     </>

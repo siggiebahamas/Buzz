@@ -3,8 +3,7 @@ import { Link, Navigate } from 'react-router-dom';
 import { ShieldAlert, Users, Store, MessageSquare, BadgeCheck, Ban, Star, Trash2, Check, Wallet, Search } from 'lucide-react';
 import { useDB, userById, campaignById, actions, isAdmin, displayName, walletOf, reactionTotal } from '../lib/store';
 import { peso, timeAgo, compact } from '../lib/format';
-import { dailyPicksStatus, DAILY_PICKS_THRESHOLD } from '../lib/discover';
-import { RevenuePanel, OrdersPanel } from './AdminRevenue';
+import { RevenuePanel } from './AdminRevenue';
 import { HealthPanel, VerificationsPanel, ApprovalsPanel, DisputesPanel, ConciergePanel, SupportPanel } from './AdminPanels';
 import { Card, Button, Badge, Avatar, Segmented, EmptyState, IconTile, useAct, useConfirm, cx } from '../components/ui';
 
@@ -57,7 +56,6 @@ export default function Admin() {
         <Segmented value={tab} onChange={setTab} size="sm" options={[
           { id: 'health', label: 'Health' },
           { id: 'revenue', label: 'Revenue' },
-          { id: 'orders', label: `Orders · ${d.orders.filter((o) => o.status !== 'delivered').length}` },
           { id: 'reports', label: `Reports · ${open.length}` },
           { id: 'verify', label: `Verify · ${d.verifications.filter((v) => v.status === 'pending').length}` },
           { id: 'approvals', label: `Creators · ${d.users.filter((u) => u.creator && u.approved === false).length}` },
@@ -81,7 +79,6 @@ export default function Admin() {
 
       {tab === 'health' && <HealthPanel />}
       {tab === 'revenue' && <RevenuePanel />}
-      {tab === 'orders' && <OrdersPanel />}
       {tab === 'verify' && <VerificationsPanel />}
       {tab === 'approvals' && <ApprovalsPanel />}
       {tab === 'disputes' && <DisputesPanel />}
@@ -160,45 +157,14 @@ export default function Admin() {
         </Card>
       )}
 
-      {tab === 'features' && (() => {
-        const s = dailyPicksStatus(d);
-        return (
-          <div className="space-y-4">
-          <Card className="mt-6 p-5 max-w-2xl">
-            <p className="font-bold text-[16px]">Extra growth tools</p>
-            <p className="text-[13px] text-ink-muted mt-0.5">Brand swaps, customer creators and group deals. On "Automatic" each brand sees them only after finishing its first collab, so new sellers aren't overwhelmed.</p>
-            <div className="mt-4"><Segmented size="sm" value={d.flags.growTools || 'auto'} onChange={(v) => act(() => actions.setFlag('growTools', v), 'Saved')}
-              options={[{ id: 'auto', label: 'Automatic' }, { id: 'on', label: 'Everyone' }, { id: 'off', label: 'Off' }]} /></div>
-          </Card>
-          <Card className="p-5 max-w-2xl">
-            <p className="font-bold text-[16px]">Community Collab Board</p>
-            <p className="text-[13px] text-ink-muted mt-0.5">The open board for bundles, shared shoots and bazaar booths. Hidden by default.</p>
-            <div className="mt-4"><Segmented size="sm" value={d.flags.collabBoard || 'off'} onChange={(v) => act(() => actions.setFlag('collabBoard', v), 'Saved')}
-              options={[{ id: 'off', label: 'Hidden' }, { id: 'on', label: 'Showing' }]} /></div>
-          </Card>
-          <Card className="p-5 max-w-2xl">
-            <div className="flex flex-wrap items-start justify-between gap-4">
-              <div>
-                <p className="font-bold text-[16px]">Daily picks + Surprise me</p>
-                <p className="text-[13px] text-ink-muted mt-0.5">Three rotating picks per creator each day, with a check-in streak. Switches on by itself once Buzz has {DAILY_PICKS_THRESHOLD.listings} live listings and {DAILY_PICKS_THRESHOLD.creators} creators.</p>
-              </div>
-              <Badge tone={s.on ? 'green' : 'neutral'}>{s.on ? 'Showing' : 'Hidden'}</Badge>
-            </div>
-            <div className="grid grid-cols-2 gap-3 mt-4">
-              {[['Live listings', s.listings, DAILY_PICKS_THRESHOLD.listings], ['Creators', s.creators, DAILY_PICKS_THRESHOLD.creators]].map(([l, v, t]) => (
-                <div key={l} className="rounded-xl bg-canvas p-3">
-                  <p className="text-[12px] text-ink-muted">{l}</p>
-                  <p className="text-[18px] font-bold">{v} <span className="text-[13px] font-normal text-ink-muted">/ {t}</span></p>
-                  <div className="h-1.5 rounded-full bg-line mt-2"><div className="h-full rounded-full bg-brand" style={{ width: `${Math.min(100, (v / t) * 100)}%` }} /></div>
-                </div>
-              ))}
-            </div>
-            <div className="mt-4"><Segmented size="sm" value={s.mode} onChange={(v) => act(() => actions.setFlag('dailyPicks', v), v === 'auto' ? 'Back to automatic' : v === 'on' ? 'Daily picks turned on' : 'Daily picks turned off')}
-              options={[{ id: 'auto', label: 'Automatic' }, { id: 'on', label: 'Always on' }, { id: 'off', label: 'Off' }]} /></div>
-          </Card>
-          </div>
-        );
-      })()}
+      {tab === 'features' && (
+        <Card className="mt-6 p-5 max-w-2xl">
+          <p className="font-bold text-[16px]">Extra growth tools</p>
+          <p className="text-[13px] text-ink-muted mt-0.5">Brand swaps and customer creators. On "Automatic" each brand sees them only after finishing its first collab, so new sellers aren't overwhelmed.</p>
+          <div className="mt-4"><Segmented size="sm" value={d.flags.growTools || 'auto'} onChange={(v) => act(() => actions.setFlag('growTools', v), 'Saved')}
+            options={[{ id: 'auto', label: 'Automatic' }, { id: 'on', label: 'Everyone' }, { id: 'off', label: 'Off' }]} /></div>
+        </Card>
+      )}
 
       {tab === 'posts' && (
         <div className="space-y-3 mt-4">

@@ -2,7 +2,7 @@ import { useRef, useState } from 'react';
 import { ImagePlus, X, Plus, Trash2, Calculator, ClipboardCheck, Check as CheckIcon, Circle } from 'lucide-react';
 import { rankCreators, creatorQuote } from '../lib/match';
 import { peso as pesoFmt, compact as compactFmt } from '../lib/format';
-import { CATEGORIES, LISTING_TYPES, COMP_TYPES, PLATFORMS, DELIVERABLE_TYPES, COMMUNITY_TOPICS, COLLAB_KINDS, REGIONS } from '../lib/constants';
+import { CATEGORIES, LISTING_TYPES, COMP_TYPES, PLATFORMS, DELIVERABLE_TYPES, COMMUNITY_TOPICS, REGIONS } from '../lib/constants';
 import { useDB, currentUser, actions, campaignById, userById } from '../lib/store';
 import { DAY } from '../lib/format';
 import { Modal, Field, Input, Textarea, Select, Button, Checkbox, useAct, cx } from './ui';
@@ -301,34 +301,6 @@ export function PostModal({ open, onClose, defaultTopic = 'ideas', onPosted }) {
           <Checkbox checked={f.notify} onChange={(v) => set('notify', v)} label="Notify followers of this project" hint="People following updates on this product get alerted." />
         </div>
         <Button type="submit" size="lg" className="w-full" disabled={!f.title.trim() || !f.body.trim()}>Publish</Button>
-      </form>
-    </Modal>
-  );
-}
-
-export function CollabModal({ open, onClose }) {
-  const act = useAct();
-  const [f, setF] = useState({ kind: 'bundle', title: '', description: '', category: 'food', slots: 3, deadline: Date.now() + 14 * DAY });
-  const set = (k, v) => setF((x) => ({ ...x, [k]: v }));
-  const submit = (e) => {
-    e.preventDefault();
-    if (!f.title.trim()) return;
-    if (act(() => actions.createCollab({ ...f, slots: Math.max(2, Number(f.slots) || 2) }), 'Collab posted')) onClose();
-  };
-  return (
-    <Modal open={open} onClose={onClose} title="Start a collab" subtitle="Team up with other founders or creators and split the cost.">
-      <form onSubmit={submit} className="space-y-4">
-        <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-          <Field label="Type"><Select value={f.kind} onChange={(e) => set('kind', e.target.value)}>{Object.entries(COLLAB_KINDS).map(([k, v]) => <option key={k} value={k}>{v}</option>)}</Select></Field>
-          <Field label="Category"><Select value={f.category} onChange={(e) => set('category', e.target.value)}>{CATEGORIES.slice(1).map((c) => <option key={c.id} value={c.id}>{c.label}</option>)}</Select></Field>
-        </div>
-        <Field label="Title"><Input value={f.title} onChange={(e) => set('title', e.target.value)} placeholder="Taste of Cebu pasalubong box" /></Field>
-        <Field label="What's the plan?"><Textarea value={f.description} onChange={(e) => set('description', e.target.value)} placeholder="Who you're looking for, how costs are split, what each member gets." /></Field>
-        <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-          <Field label="Total members (incl. you)"><Input type="number" min="2" value={f.slots} onChange={(e) => set('slots', e.target.value)} /></Field>
-          <Field label="Join by"><Input type="date" value={new Date(f.deadline).toISOString().slice(0, 10)} onChange={(e) => set('deadline', new Date(e.target.value).getTime())} /></Field>
-        </div>
-        <Button type="submit" size="lg" className="w-full" disabled={!f.title.trim()}>Post collab</Button>
       </form>
     </Modal>
   );

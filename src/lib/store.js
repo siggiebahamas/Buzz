@@ -5,9 +5,8 @@ import { buildSeed, hashPw, SERVICE_FEE, contractTerms } from './seed';
 import { brandFeeRate, creatorFeeRate, earn, isOn, setting } from './monetize';
 import { uid, DAY, peso } from './format';
 import { rankCreators } from './match';
-import { isCreatorPro, earlyLeft, hoursLabel, applyAllowance, searchMatches } from './pro';
 
-const KEY = 'buzz-db-v9';
+const KEY = 'buzz-db-v10';
 const listeners = new Set();
 
 function load() {
@@ -15,7 +14,7 @@ function load() {
     const raw = localStorage.getItem(KEY);
     if (raw) {
       const parsed = JSON.parse(raw);
-      if (parsed?.version === 9) return migrate(parsed);
+      if (parsed?.version === 10) return migrate(parsed);
     }
   } catch { /* storage blocked or corrupt: fall through to fresh seed */ }
   return buildSeed();
@@ -23,7 +22,7 @@ function load() {
 
 // Add collections introduced after a browser first saved its data.
 function migrate(d) {
-  ['swaps', 'launches', 'ugcPrograms', 'ugcPosts', 'groupDeals'].forEach((k) => { d[k] ||= []; });
+  ['swaps', 'launches', 'ugcPrograms', 'ugcPosts'].forEach((k) => { d[k] ||= []; });
   return d;
 }
 
@@ -209,9 +208,11 @@ export const actions = {
         return c.id;
       }
       const owner = currentUser(d);
-      const active = d.campaigns.filter((x) => x.ownerId === owner.id && x.published && !x.removed && x.status !== 'completed').length;
+      // Product-for-content listings are always free and unlimited; the Free plan caps paid ones.
+      const paid = (x) => x.compensation !== 'gifted';
+      const active = d.campaigns.filter((x) => x.ownerId === owner.id && x.published && !x.removed && x.status !== 'completed' && paid(x)).length;
       const limit = setting(d, 'plans', 'freeListings');
-      if (isOn(d, 'plans') && data.published !== false && !['pro', 'agency'].includes(owner.plan) && active >= limit) throw new Error(`The Free plan includes ${limit} active listings. Complete one, save this as private, or upgrade to Pro.`);
+      if (isOn(d, 'plans') && data.published !== false && paid(data) && owner.plan !== 'pro' && active >= limit) throw new Error(`The Free plan includes ${limit} active paid listings (product-for-content listings are unlimited). Complete one, post this as product-for-content, or upgrade to Brand Pro.`);
       const c = {
         id: uid('cmp'), ownerId: d.session.userId, needsShipping: data.type === 'Product' && data.compensation !== 'commission', createdAt: Date.now(), views: 0, status: 'recruiting', published: true,
         photoHints: [], shopUrl: '', contentRights: '90 days', region: currentUser(d).region, aov: 0,
@@ -221,13 +222,7 @@ export const actions = {
       d.campaigns.unshift(c);
       // Tell the creators who fit best, so good listings don't wait to be found.
       if (c.published) {
-        const told = new Set();
-        // Creator Pro instant alerts from saved searches come first; they're the most specific.
-        d.savedSearches.filter((s) => s.userId !== owner.id && !told.has(s.userId) && isCreatorPro(d, userById(d, s.userId)) && searchMatches(s, c)).forEach((s) => {
-          told.add(s.userId);
-          notify(d, s.userId, `Instant alert (${s.label}): ${c.productName}`, `/opportunity/${c.id}`);
-        });
-        rankCreators(d, c).filter((x) => x.m.score >= 70 && !told.has(x.u.id)).slice(0, 8).forEach(({ u, m }) => {
+        rankCreators(d, c).filter((x) => x.m.score >= 70).slice(0, 8).forEach(({ u, m }) => {
           notify(d, u.id, `New listing that fits you (${m.label}): ${c.productName}`, `/opportunity/${c.id}`);
         });
       }
@@ -265,13 +260,6 @@ export const actions = {
       d.deliverables = d.deliverables.filter((x) => x.campaignId !== cid);
     });
   },
-  // Brand opened its applications: creators with Creator Pro see a "Seen" mark.
-  markSeen(campaignIds) {
-    const ids = new Set(campaignIds);
-    const unseen = (d) => d.applications.filter((a) => ids.has(a.campaignId) && a.source === 'apply' && !a.seenAt && campaignById(d, a.campaignId)?.ownerId === d.session.userId);
-    if (!unseen(db).length) return;
-    commit((d) => { unseen(d).forEach((a) => { a.seenAt = Date.now(); }); });
-  },
   viewCampaign(cid) {
     commit((d) => { const c = campaignById(d, cid); if (c && c.ownerId !== d.session.userId) c.views += 1; });
   },
@@ -282,10 +270,6 @@ export const actions = {
       const me = d.session.userId;
       const c = campaignById(d, cid);
       if (d.applications.some((a) => a.campaignId === cid && a.creatorId === me && a.status !== 'withdrawn')) throw new Error('You already applied to this opportunity.');
-      const early = earlyLeft(d, c, currentUser(d));
-      if (early) throw new Error(`This listing is in Creator Pro early access. It opens to everyone in ${hoursLabel(early)}.`);
-      const allowance = applyAllowance(d, currentUser(d));
-      if (allowance && allowance.left <= 0) throw new Error(`You've used your ${allowance.cap} free applications this month. Creator Pro has no limit.`);
       d.applications.unshift({ id: uid('app'), campaignId: cid, creatorId: me, pitch, rate: Number(rate) || 0, status: 'pending', source: 'apply', createdAt: Date.now(), decidedAt: null });
       const t = threadFor(d, me, c.ownerId, cid);
       pushMessage(d, t, me, `Hi! I just applied to "${c.title}". ${pitch}`);
@@ -410,12 +394,11 @@ export const actions = {
       const me = d.session.userId;
       const { balance } = walletOf(d, me);
       const amt = Number(amount);
-      const pro = isCreatorPro(d, currentUser(d));
-      const fast = instant && (isOn(d, 'instantPayout') || pro);
+      const fast = instant && isOn(d, 'instantPayout');
       if (!(amt >= 100)) throw new Error('Minimum withdrawal is ₱100.');
       if (amt > balance) throw new Error(`You can withdraw up to ${peso(balance)}.`);
       if (!account.trim()) throw new Error('Add the account number to send to.');
-      const fee = fast && !pro ? setting(d, 'instantPayout', 'fee') : 0;
+      const fee = fast ? setting(d, 'instantPayout', 'fee') : 0;
       if (fast && amt <= fee) throw new Error('The amount must be more than the instant fee.');
       d.transactions.push({ id: uid('tx'), userId: me, type: 'payout', amount: -amt, ts: Date.now(), ref: null, note: `${fast ? 'Instant withdrawal' : 'Withdrawal'} to ${method} •••• ${account.trim().slice(-4)}${fee ? ` (${peso(fee)} fee)` : ''}` });
       if (fee) earn(d, { stream: 'instantPayout', amount: fee, payer: me, note: 'Instant withdrawal fee', charge: false, uid });
@@ -501,12 +484,6 @@ export const actions = {
     });
   },
   setFlag(key, value) { commit((d) => { d.flags = { ...(d.flags || {}), [key]: value }; }); },
-  recordVisit() {
-    const me = currentUser(db);
-    const day = new Date().toISOString().slice(0, 10);
-    if (!me || me.visitDays?.includes(day)) return;
-    commit((d) => { const u = currentUser(d); u.visitDays = [...(u.visitDays || []), day].slice(-60); });
-  },
   toggleIn(postId, field) {
     commit((d) => {
       const p = d.posts.find((x) => x.id === postId);
@@ -523,20 +500,6 @@ export const actions = {
       const p = d.posts.find((x) => x.id === postId);
       p.comments.push({ id: uid('cmt'), authorId: d.session.userId, body, createdAt: Date.now() });
       if (p.authorId !== d.session.userId) notify(d, p.authorId, `${currentUser(d).name} commented on "${p.title}"`, `/community/${p.id}`);
-    });
-  },
-  createCollab(data) {
-    commit((d) => { d.collabs.unshift({ id: uid('col'), hostId: d.session.userId, members: [d.session.userId], createdAt: Date.now(), ...data }); });
-  },
-  toggleCollab(id) {
-    commit((d) => {
-      const c = d.collabs.find((x) => x.id === id);
-      const me = d.session.userId;
-      if (c.members.includes(me)) { c.members = c.members.filter((m) => m !== me); return; }
-      if (c.members.length >= c.slots) throw new Error('This collab is full.');
-      c.members.push(me);
-      notify(d, c.hostId, `${currentUser(d).name} joined your collab "${c.title}"`, '/community?tab=collabs');
-      pushMessage(d, threadFor(d, me, c.hostId), me, `Hi! I just joined "${c.title}". Let's talk details.`);
     });
   },
   review({ campaignId, toId, rating, text }) {

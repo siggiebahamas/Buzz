@@ -3,8 +3,7 @@
 import { actions, commit, notify, email, currentUser, userById, campaignById, displayName, release, threadFor, pushMessage, feeRate } from './store';
 import { uid, peso, DAY } from './format';
 import { rankCreators } from './match';
-import { isOn, setting, earn, SERVICES } from './monetize';
-import { isCreatorPro, searchLabel } from './pro';
+import { isOn, setting, earn, isBrandPro, commissionCutRate, freeFeaturedLeft, spendFeaturedCredit } from './monetize';
 
 const me = (d) => currentUser(d);
 const REFERRAL_CREDIT = 200;
@@ -177,9 +176,9 @@ Object.assign(actions, {
   requestConcierge(campaignId, note) {
     commit((d) => {
       const u = me(d);
-      if (!isOn(d, 'paidHandpick') && isOn(d, 'plans') && !['pro', 'agency'].includes(u.plan) && d.concierge.filter((x) => x.brandId === u.id).length >= 1) throw new Error('Free plans include one hand-picked request. Upgrade to Pro for unlimited requests.');
+      if (!isOn(d, 'paidHandpick') && isOn(d, 'plans') && !isBrandPro(d, u) && d.concierge.filter((x) => x.brandId === u.id).length >= 1) throw new Error('The Free plan includes one hand-picked request. Brand Pro gets unlimited requests.');
       if (d.concierge.some((x) => x.campaignId === campaignId && x.status === 'open')) throw new Error('We\'re already hand-picking creators for this campaign.');
-      const paid = isOn(d, 'paidHandpick') && !(isOn(d, 'plans') && ['pro', 'agency'].includes(u.plan)) ? setting(d, 'paidHandpick', 'price') : 0;
+      const paid = isOn(d, 'paidHandpick') && !isBrandPro(d, u) ? setting(d, 'paidHandpick', 'price') : 0;
       d.concierge.unshift({ id: uid('cnc'), campaignId, brandId: u.id, note: note.trim(), status: 'open', picks: [], createdAt: Date.now(), paid });
       if (paid) earn(d, { stream: 'paidHandpick', amount: paid, payer: u.id, note: `Hand-picked matching: ${campaignById(d, campaignId)?.productName}`, ref: campaignId, uid });
       d.users.filter((a) => a.admin).forEach((a) => notify(d, a.id, `Hand-pick request: ${campaignById(d, campaignId)?.productName}`, '/admin'));
@@ -224,148 +223,37 @@ Object.assign(actions, {
   },
 
   // ---------- plans & referrals ----------
-  setPlan(plan, side = 'brand') {
+  setPlan(plan) {
     commit((d) => {
-      if (!isOn(d, 'plans') && plan !== 'free') throw new Error('Plans aren\'t available yet.');
+      if (!['free', 'pro'].includes(plan)) throw new Error('Unknown plan.');
+      if (!isOn(d, 'plans') && plan !== 'free') throw new Error('Brand Pro isn\'t available yet.');
       const u = me(d);
-      const price = { pro: setting(d, 'plans', 'proPrice'), agency: setting(d, 'plans', 'agencyPrice'), creatorPro: setting(d, 'plans', 'creatorProPrice') };
-      if (side === 'creator') {
-        u.creatorPlan = plan === 'free' ? 'free' : 'pro';
-        if (plan !== 'free') earn(d, { stream: 'plans', amount: price.creatorPro, payer: u.id, note: 'Creator Pro, monthly', uid });
-      } else {
-        u.plan = plan;
-        if (plan !== 'free') earn(d, { stream: 'plans', amount: price[plan], payer: u.id, note: `Buzz ${plan === 'agency' ? 'Agency' : 'Pro'}, monthly`, uid });
-      }
-      notify(d, u.id, plan === 'free' ? 'You\'re on the Free plan.' : 'Your plan is active. Thanks for supporting Buzz!', '/pricing');
+      if (!u.business) throw new Error('Brand Pro is for business owners. Add a business profile first.');
+      u.plan = plan;
+      if (plan === 'pro') earn(d, { stream: 'plans', amount: setting(d, 'plans', 'proPrice'), payer: u.id, note: 'Brand Pro, monthly', uid });
+      notify(d, u.id, plan === 'free' ? 'You\'re on the Free plan.' : 'Brand Pro is active. Thanks for supporting Buzz!', '/pricing');
     });
   },
 
-  // ---------- paid extras (each only works when its stream is switched on) ----------
+  // ---------- featured spots ----------
   buyFeature(campaignId, weeks) {
     commit((d) => {
-      if (!isOn(d, 'featuredListings')) throw new Error('Featured listings aren\'t available yet.');
+      if (!isOn(d, 'featuredListings')) throw new Error('Featured spots aren\'t available yet.');
       const c = campaignById(d, campaignId);
-      const price = setting(d, 'featuredListings', 'weekPrice') * weeks;
+      const u = me(d);
+      if (c.ownerId !== u.id) throw new Error('You can only feature your own listing.');
+      const free = Math.min(weeks, freeFeaturedLeft(d, u));
+      const price = setting(d, 'featuredListings', 'weekPrice') * (weeks - free);
+      if (free) spendFeaturedCredit(u, free);
       c.featuredUntil = Math.max(Date.now(), c.featuredUntil || 0) + weeks * 7 * DAY;
-      earn(d, { stream: 'featuredListings', amount: price, payer: d.session.userId, note: `Featured listing: ${c.productName} (${weeks} wk)`, ref: c.id, uid });
+      earn(d, { stream: 'featuredListings', amount: price, payer: u.id, note: `Featured listing: ${c.productName} (${weeks} wk${free ? `, ${free} free with Brand Pro` : ''})`, ref: c.id, uid });
     });
   },
-  buyBoost(weeks) {
-    commit((d) => {
-      if (!isOn(d, 'boostedProfiles')) throw new Error('Profile boosts aren\'t available yet.');
-      const u = me(d);
-      u.boostedUntil = Math.max(Date.now(), u.boostedUntil || 0) + weeks * 7 * DAY;
-      earn(d, { stream: 'boostedProfiles', amount: setting(d, 'boostedProfiles', 'weekPrice') * weeks, payer: u.id, note: `Profile boost (${weeks} wk)`, uid });
-    });
-  },
-  orderService(serviceId, { notes, campaignId = null, amount = null }) {
-    return commit((d) => {
-      const u = me(d);
-      let price;
-      let name;
-      let stream;
-      if (serviceId === 'managed') {
-        if (!isOn(d, 'managedCampaigns')) throw new Error('Managed campaigns aren\'t available yet.');
-        price = Math.max(setting(d, 'managedCampaigns', 'minFee'), Math.round((Number(amount) || 0) * setting(d, 'managedCampaigns', 'pct') / 100));
-        name = `Managed campaign: ${campaignById(d, campaignId)?.productName}`;
-        stream = 'managedCampaigns';
-      } else {
-        if (!isOn(d, 'servicesCatalog')) throw new Error('Buzz services aren\'t available yet.');
-        const s = SERVICES.find((x) => x.id === serviceId);
-        price = s.price;
-        name = s.name;
-        stream = 'servicesCatalog';
-      }
-      const o = { id: uid('ord'), serviceId, name, price, userId: u.id, campaignId, notes: notes?.trim() || '', status: 'new', createdAt: Date.now() };
-      d.orders.unshift(o);
-      earn(d, { stream, amount: price, payer: u.id, note: name, ref: o.id, uid });
-      d.users.filter((a) => a.admin).forEach((a) => notify(d, a.id, `New order: ${name}`, '/admin'));
-      email(d, u.id, `Order received: ${name}`, `Thanks! We'll start within one working day. Total: ₱${price.toLocaleString('en-PH')}.`, '/services');
-      return o.id;
-    });
-  },
-  updateOrder(id, status, note = '') {
-    commit((d) => {
-      const o = d.orders.find((x) => x.id === id);
-      o.status = status;
-      if (note) o.staffNote = note;
-      notify(d, o.userId, `Your order "${o.name}" is ${status === 'progress' ? 'in progress' : status}`, '/services');
-    });
-  },
-  cashAdvance(deliverableId) {
-    commit((d) => {
-      if (!isOn(d, 'creatorAdvance')) throw new Error('Cash advances aren\'t available yet.');
-      const x = d.deliverables.find((y) => y.id === deliverableId);
-      if (x.creatorId !== d.session.userId || x.status !== 'submitted' || x.escrow !== 'held' || x.frozen) throw new Error('Only submitted content with money in escrow can be advanced.');
-      const fee = Math.round(x.fee * setting(d, 'creatorAdvance', 'pct') / 100);
-      x.escrow = 'released';
-      x.advanced = true;
-      x.paidAt = Date.now();
-      d.transactions.push({ id: uid('tx'), userId: x.creatorId, type: 'release', amount: x.fee - fee, ts: Date.now(), ref: x.id, note: `Cash advance: ${x.title}` });
-      earn(d, { stream: 'creatorAdvance', amount: fee, payer: x.creatorId, note: `Advance fee: ${x.title}`, ref: x.id, charge: false, uid });
-    });
-  },
-  extendRights(deliverableId, months, price) {
-    commit((d) => {
-      if (!isOn(d, 'contentLicensing')) throw new Error('Rights extensions aren\'t available yet.');
-      const x = d.deliverables.find((y) => y.id === deliverableId);
-      const amt = Number(price);
-      if (!(amt >= 300)) throw new Error('Offer at least ₱300 to the creator.');
-      const cut = Math.round(amt * setting(d, 'contentLicensing', 'pct') / 100);
-      x.rightsUntil = Math.max(Date.now(), x.rightsUntil || 0) + months * 30 * DAY;
-      d.transactions.push({ id: uid('tx'), userId: d.session.userId, type: 'purchase', amount: -(amt + cut), ts: Date.now(), ref: x.id, note: `Content rights, ${months} months: ${x.title}` });
-      d.transactions.push({ id: uid('tx'), userId: x.creatorId, type: 'release', amount: amt, ts: Date.now(), ref: x.id, note: `Content rights extended: ${x.title}` });
-      earn(d, { stream: 'contentLicensing', amount: cut, payer: d.session.userId, note: `Rights extension: ${x.title}`, ref: x.id, charge: false, uid });
-      notify(d, x.creatorId, `${displayName(me(d))} paid ${peso(amt)} to reuse your "${x.title}" for ${months} more months`, '/workspace/payments');
-    });
-  },
-  bookPickup(shipmentId) {
-    commit((d) => {
-      if (!isOn(d, 'shippingService')) throw new Error('Pickup booking isn\'t available yet.');
-      const s = d.shipments.find((x) => x.id === shipmentId);
-      const price = setting(d, 'shippingService', 'price');
-      s.courier = 'Buzz Pickup';
-      s.tracking = `BZ${Date.now().toString().slice(-9)}`;
-      s.status = 'shipped';
-      s.shippedAt = Date.now();
-      earn(d, { stream: 'shippingService', amount: price, payer: d.session.userId, note: `Pickup booked for sample`, ref: s.id, uid });
-      notify(d, s.creatorId, `Your sample is on the way (Buzz Pickup ${s.tracking})`, '/workspace/collabs');
-    });
-  },
-  buyEventTicket(eventId, qty = 1) {
-    commit((d) => {
-      if (!isOn(d, 'events')) throw new Error('Events aren\'t available yet.');
-      const e = d.meetups.find((x) => x.id === eventId);
-      const sold = d.eventTickets.filter((t) => t.eventId === eventId).reduce((a, t) => a + t.qty, 0);
-      if (sold + qty > e.seats) throw new Error('Sorry, this event is full.');
-      d.eventTickets.push({ id: uid('etk'), eventId, userId: d.session.userId, qty, ts: Date.now() });
-      earn(d, { stream: 'events', amount: e.price * qty, payer: d.session.userId, note: `${e.title} (${qty})`, ref: e.id, uid });
-      email(d, d.session.userId, `You're in: ${e.title}`, `See you on ${new Date(e.date).toLocaleDateString('en-PH', { month: 'long', day: 'numeric' })} at ${e.place}.`, '/events');
-    });
-  },
-  addEvent(data) { commit((d) => { d.meetups.unshift({ id: uid('evt'), ...data, date: new Date(data.date).getTime(), price: Number(data.price), seats: Number(data.seats) }); }); },
   setStream(id, patch) {
     commit((d) => {
       d.flags.monetization ||= {};
       const cur = d.flags.monetization[id] || {};
       d.flags.monetization[id] = { ...cur, ...patch, settings: { ...(cur.settings || {}), ...(patch.settings || {}) } };
-    });
-  },
-  // ---------- Creator Pro ----------
-  saveSearch(filters) {
-    commit((d) => {
-      const u = me(d);
-      if (!isCreatorPro(d, u)) throw new Error('Instant alerts are part of Creator Pro.');
-      if (d.savedSearches.filter((s) => s.userId === u.id).length >= 10) throw new Error('You can keep up to 10 alerts. Delete one first.');
-      const f = { cat: filters.cat || 'all', q: (filters.q || '').trim(), minBudget: Number(filters.minBudget) || 0, platforms: filters.platforms || [], region: filters.region || 'all' };
-      d.savedSearches.unshift({ id: uid('srch'), userId: u.id, filters: f, label: searchLabel(f), createdAt: Date.now() });
-    });
-  },
-  deleteSearch(id) { commit((d) => { d.savedSearches = d.savedSearches.filter((s) => !(s.id === id && s.userId === d.session.userId)); }); },
-  setTaxInfo(info) {
-    commit((d) => {
-      const u = me(d);
-      u.taxInfo = { name: info.name?.trim() || '', tin: info.tin?.trim() || '', address: info.address?.trim() || '' };
     });
   },
   payReferralIfDue(userId) {
@@ -441,7 +329,7 @@ Object.assign(actions, {
       const brand = me(d);
       const owed = commissionOwed(d, brand.id);
       if (!owed.length) throw new Error('No unpaid commission right now.');
-      const cutPct = isOn(d, 'transactionFee') ? setting(d, 'transactionFee', 'commissionCutPct') / 100 : 0;
+      const cutPct = commissionCutRate(d, brand);
       owed.forEach(({ link, campaign, amount }) => {
         const cut = Math.round(amount * cutPct);
         d.transactions.push({ id: uid('tx'), userId: brand.id, type: 'fund', amount: -(amount + cut), ts: Date.now(), ref: link.id, note: `Commission for ${campaign.productName} (${link.code})` });

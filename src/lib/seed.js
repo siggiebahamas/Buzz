@@ -6,15 +6,6 @@ import { weekStart } from './grow';
 export const SERVICE_FEE = 0.05;
 
 // Snapshot of what both sides agree to when a creator joins a campaign.
-// Workshops and pop-ups, shown only when Events is switched on.
-function sampleEvents(now) {
-  const day = 86400000;
-  return [
-    { id: 'evt_launch', kind: 'Workshop', title: 'Launch with creators on ₱10K', date: now + 12 * day, place: 'Online (Zoom)', price: 499, seats: 60, audience: 'business', desc: 'A 90-minute class for first-time founders: writing a brief, pricing, picking creators, reading results.' },
-    { id: 'evt_rates', kind: 'Workshop', title: 'Price yourself right: rates for PH creators', date: now + 16 * day, place: 'Online (Zoom)', price: 299, seats: 80, audience: 'creator', desc: 'What brands pay, how to build a rate card, and how to negotiate without losing the deal.' },
-    { id: 'evt_bazaar', kind: 'Pop-up', title: 'Buzz Makers Pop-up, Maginhawa', date: now + 30 * day, place: 'Maginhawa St., Quezon City', price: 3500, seats: 20, audience: 'business', desc: 'A booth for your product, with Buzz creators filming the day. Price per booth.' },
-  ];
-}
 
 export function contractTerms(c, a, brand, creator) {
   return {
@@ -349,14 +340,6 @@ export function buildSeed() {
     post('u_hurno', 'build', 'Switching to pre-orders for weekend pandesal', 'After Bianca\'s video we had lines at 5AM and ran out by 7. Now testing pre-orders via Buzz messages. Anyone done this well?', 10, { photos: SAMPLE_PHOTOS.cmp_hurno, likes: ['c_bianca', 'u_sili'] }),
   ];
 
-  const collabs = [
-    { id: id('col'), hostId: 'u_mangga', kind: 'bundle', title: 'Taste of Cebu pasalubong box', description: 'Split a 3-brand box for balikbayans. One creator campaign, costs split 3 ways.', category: 'food', slots: 3, members: ['u_mangga', 'u_candle'], deadline: now + 12 * DAY, createdAt: now - 4 * DAY },
-    { id: id('col'), hostId: 'c_rina', kind: 'shoot', title: 'Baguio makers shoot day', description: '5 craft brands, 2 photographers, 1 day. ₱2,500 per brand.', category: 'crafts', slots: 5, members: ['c_rina', 'u_carvers', 'u_tboli'], deadline: now + 18 * DAY, createdAt: now - 7 * DAY },
-    { id: id('col'), hostId: 'u_sadie', kind: 'giveaway', title: 'Rainy season pet giveaway', description: 'Pet brands pool one prize bundle; 3 pet creators run it together.', category: 'pets', slots: 4, members: ['u_sadie', 'c_sam'], deadline: now + 9 * DAY, createdAt: now - 2 * DAY },
-    { id: id('col'), hostId: 'u_kalamansi', kind: 'popup', title: 'Local beauty booth at a QC weekend bazaar', description: 'Share a 3x3m booth and staff. ₱4,000 each for 3 brands.', category: 'beauty', slots: 3, members: ['u_kalamansi'], deadline: now + 21 * DAY, createdAt: now - 1 * DAY },
-    { id: id('col'), hostId: 'c_migo', kind: 'squad', title: 'Fitness creator squad for local brands', description: '4 fitness creators pitching together as one package to local brands. Bigger reach, one brief.', category: 'fitness', slots: 4, members: ['c_migo', 'c_marco'], deadline: now + 30 * DAY, createdAt: now - 5 * DAY },
-  ];
-
   const thread = (a, b, campaignId, msgs) => ({
     id: id('thr'), participants: [a, b], campaignId,
     messages: msgs.map(([from, body, hoursAgo]) => ({ id: id('msg'), from, body, ts: now - hoursAgo * 3600000 })),
@@ -399,7 +382,7 @@ export function buildSeed() {
     const n = 3 + Math.floor(r2() * 10);
     for (let k = 0; k < n; k++) profileViews.push({ userId: u.id, viewerId: r2() < 0.6 ? pickBrand() : null, ts: now - r2() * 30 * DAY });
   });
-  // ---------- grow for free: swaps, Launch Pad, customer creators, group deals ----------
+  // ---------- grow for free: swaps, Launch Pad, customer creators ----------
   const biz = (uid2) => users.find((u) => u.id === uid2).business;
   Object.assign(biz(ME), { tiktok: 'tytrading.ph', instagram: 'tytrading.ph', tiktokShopUrl: 'https://shop.tiktok.com/', facebookUrl: 'https://facebook.com/', tagline: 'Local products, done right. Made in the Philippines.' });
   Object.assign(biz('u_sili'), { tiktok: 'silirepublic', instagram: 'silirepublic', tiktokShopUrl: 'https://shop.tiktok.com/', tagline: 'Small-batch hot sauce from Pampanga siling labuyo.' });
@@ -437,16 +420,6 @@ export function buildSeed() {
     { id: id('ugc'), programId: ugcPrograms[0].id, brandId: ME, userId: 'u_hurno', url: 'https://www.tiktok.com/@hurno/video/3', platform: 'tiktok', status: 'pending', voucher: '', createdAt: now - 6 * 3600000 },
     { id: id('ugc'), programId: ugcPrograms[0].id, brandId: ME, userId: 'c_camille', url: 'https://www.instagram.com/p/camille-ugc', platform: 'instagram', status: 'approved', voucher: 'TYTRAD-K7Q2', credit: 150, createdAt: now - 9 * DAY, reviewedAt: now - 8 * DAY },
   ];
-  const groupDeals = [
-    { id: id('grp'), leadId: 'u_mangga', title: 'Taste of Cebu pasalubong box', brief: 'One TikTok unboxing of a 3-brand pasalubong box for balikbayans. Each brand gets a clear mention and a link in the caption.', category: 'food', platform: 'tiktok', creatorId: 'c_trish', fee: 6000, slots: 3, members: [{ brandId: 'u_mangga', product: 'Dried mango bars', share: 2000, fee: 100, paidAt: now - 2 * DAY }, { brandId: 'u_barako', product: 'Barako coffee', share: 2000, fee: 100, paidAt: now - DAY }], status: 'forming', postUrl: '', confirmed: [], createdAt: now - 2 * DAY },
-    { id: id('grp'), leadId: 'u_kalamansi', title: 'Self-care Sunday bundle', brief: 'A calm Sunday routine reel featuring a serum, a candle and a pilates mat flow.', category: 'beauty', platform: 'instagram', creatorId: 'c_lia', fee: 4500, slots: 3, members: [{ brandId: 'u_kalamansi', product: 'Night serum', share: 1500, fee: 75, paidAt: now - 3 * DAY }, { brandId: 'u_candle', product: 'Soy candle', share: 1500, fee: 75, paidAt: now - 3 * DAY }, { brandId: 'u_pilates', product: 'Intro class pass', share: 1500, fee: 75, paidAt: now - 2 * DAY }], status: 'invited', postUrl: '', confirmed: [], createdAt: now - 3 * DAY },
-  ];
-
-  applications.forEach((a) => {
-    if (a.source !== 'apply') return;
-    if (a.decidedAt) a.seenAt = a.createdAt + (a.decidedAt - a.createdAt) * 0.5;
-    else if (r2() < 0.5) a.seenAt = Math.min(now - 3600000, a.createdAt + (2 + r2() * 20) * 3600000);
-  });
 
   // Accounts: demo password, verification badges, one admin (you).
   const VERIFIED = new Set([ME, 'u_sili', 'u_protina', 'u_kalamansi', 'u_mangga', 'c_bianca', 'c_kaye', 'c_migo', 'c_aya', 'c_sam']);
@@ -529,13 +502,13 @@ export function buildSeed() {
   ];
 
   return {
-    version: 9,
+    version: 10,
     flags: { dailyPicks: 'auto', requireCreatorApproval: false, monetization: {} },
     session: { userId: ME, mode: 'business' },
-    users, campaigns, applications, links, events, deliverables, reviews, posts, collabs, threads, notifications, saved, profileViews,
+    users, campaigns, applications, links, events, deliverables, reviews, posts, threads, notifications, saved, profileViews,
     transactions, reports, emails: [], resets: [],
     contracts, disputes, verifications, shipments, concierge, tickets, saleImports: [],
     revenue: transactions.filter((t) => t.type === 'fund').map((t) => ({ id: id('rev'), stream: 'transactionFee', amount: Math.round((-t.amount / (1 + SERVICE_FEE)) * SERVICE_FEE), payer: t.userId, note: 'Service fee', ref: t.ref, ts: t.ts })),
-    orders: [], savedSearches: [], meetups: sampleEvents(now), launches, swaps, ugcPrograms, ugcPosts, groupDeals, eventTickets: [],
+    launches, swaps, ugcPrograms, ugcPosts,
   };
 }

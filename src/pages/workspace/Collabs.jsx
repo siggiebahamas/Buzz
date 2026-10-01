@@ -6,14 +6,13 @@ import { rankCreators, profileCampaign } from '../../lib/match';
 import { PLATFORMS } from '../../lib/constants';
 import { peso, timeAgo, shortDate, compact } from '../../lib/format';
 import { ProductImage, MatchPill } from '../../components/visuals';
-import { Card, Button, Badge, Avatar, Select, EmptyState, useAct, useConfirm, cx } from '../../components/ui';
+import { Card, Button, Badge, Avatar, Select, Input, EmptyState, useAct, useConfirm, cx } from '../../components/ui';
 import { InviteModal, ReviewModal } from '../../components/forms';
 import { useChat } from '../../components/Shell';
 import { useMode, ModeToggle, PageHead } from './Layout';
 import { PostActions, PostModals, postStatus } from './Deliverables';
 import { stageOf } from '../../lib/collabs';
 import { ShipModal } from './CampaignManage';
-import { AffiliateLink } from './Collaborations';
 
 // One card per creator-and-product: the application, the agreement, the sample,
 // every post and its payment, in the order they happen.
@@ -201,3 +200,23 @@ function FindCreators({ me }) {
   );
 }
 
+// Creators who sell through TikTok Shop's affiliate program can point their Buzz link there.
+export function AffiliateLink({ link }) {
+  const act = useAct();
+  const [open, setOpen] = useState(false);
+  const [url, setUrl] = useState(link?.affiliateUrl || '');
+  if (!link) return null;
+  if (!open) {
+    return (
+      <p className="text-[12px] text-ink-muted mt-2">
+        Your link: <span className="font-mono text-ink">buzz/go/{link.code}</span>{link.affiliateUrl ? ' → your TikTok Shop affiliate link' : ''} · <button onClick={() => setOpen(true)} className="text-brand-dark font-medium">{link.affiliateUrl ? 'Change' : 'Use my TikTok Shop affiliate link'}</button>
+      </p>
+    );
+  }
+  return (
+    <div className="mt-2 flex gap-2">
+      <Input value={url} onChange={(e) => setUrl(e.target.value)} placeholder="Your TikTok Shop affiliate product link" className="!h-8 !text-[12.5px]" />
+      <Button size="sm" onClick={() => { if (act(() => actions.setAffiliateUrl(link.id, url), url ? 'Saved. Your Buzz link now sends buyers to your affiliate link.' : 'Removed')) setOpen(false); }}>Save</Button>
+    </div>
+  );
+}

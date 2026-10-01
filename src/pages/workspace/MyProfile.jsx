@@ -8,10 +8,6 @@ import { Lightbulb, Truck } from 'lucide-react';
 import { CATEGORIES, PLATFORMS, REGIONS } from '../../lib/constants';
 import { Card, Field, Input, Textarea, Select, Button, Avatar, Checkbox, cx, useAct } from '../../components/ui';
 import { useMode, PageHead } from './Layout';
-import { isOn, setting } from '../../lib/monetize';
-import { shortDate } from '../../lib/format';
-import { Rocket } from 'lucide-react';
-import { useConfirm } from '../../components/ui';
 
 function readImage(file) {
   return new Promise((resolve) => {
@@ -58,7 +54,6 @@ export default function MyProfile() {
   return (
     <>
       <PageHead title="My Profile" sub="Your public profile. Complete profiles get better matches." action={<Link to={`/profile/${me.id}`}><Button variant="outline"><ExternalLink size={15} />View public profile</Button></Link>} />
-      {me.creator && isOn(d, 'boostedProfiles') && <BoostCard me={me} />}
       <form onSubmit={save} className="max-w-3xl space-y-5">
         <Card className="p-6 space-y-5">
           <div className="flex items-center gap-4">
@@ -179,25 +174,5 @@ function RateGuide({ d, me, cr }) {
       <p className="mt-1">Most charge <b>{peso(low)}–{peso(high)}</b> per Reel or TikTok (typical: {peso(mid)}).</p>
       <p className="text-ink-soft mt-0.5">{tip}</p>
     </div>
-  );
-}
-
-function BoostCard({ me }) {
-  const d = useDB();
-  const act = useAct();
-  const ask = useConfirm();
-  const week = setting(d, 'boostedProfiles', 'weekPrice');
-  const on = me.boostedUntil > Date.now();
-  return (
-    <Card className="max-w-3xl mb-5 p-5 bg-brand-softer border-[#F6DDB2] flex flex-col sm:flex-row sm:items-center gap-4">
-      <div className="h-11 w-11 rounded-xl bg-brand-soft text-brand-dark grid place-items-center shrink-0"><Rocket size={20} /></div>
-      <div className="flex-1">
-        <p className="font-bold">{on ? `Boosted until ${shortDate(me.boostedUntil)}` : 'Get seen by more brands'}</p>
-        <p className="text-[13px] text-ink-soft">Appear in the "Boosted creators" row when brands browse. Your fit score stays honest; boosting only adds visibility.</p>
-      </div>
-      <div className="flex gap-2">
-        {[1, 4].map((w) => <Button key={w} size="sm" variant={w === 1 ? 'primary' : 'outline'} onClick={async () => { if (await ask({ title: `Boost for ${w} week${w > 1 ? 's' : ''}?`, body: `${peso(week * w)}. Test mode: no card is charged.`, confirm: 'Boost' })) act(() => actions.buyBoost(w), 'Your profile is boosted'); }}>{w} wk · {peso(week * w)}</Button>)}
-      </div>
-    </Card>
   );
 }

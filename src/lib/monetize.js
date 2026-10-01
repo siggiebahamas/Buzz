@@ -1,53 +1,35 @@
-// Every way Buzz makes money, each with an on/off switch and prices the admin
-// can change. Only the transaction cut is on by default.
+// How Buzz makes money. Each stream has an on/off switch and prices the admin
+// can change in Admin → Revenue. Product-for-content deals are always free:
+// no money moves, so Buzz takes nothing.
 import { peso } from './format';
 
 export const STREAMS = [
   {
-    id: 'transactionFee', label: 'Transaction cut', group: 'Core', defaultOn: true,
-    desc: 'A percentage on every creator payment made through Buzz escrow, plus a cut of commissions settled through Buzz.',
+    id: 'transactionFee', label: 'Cut of paid deals and commissions', group: 'Core', defaultOn: true,
+    desc: 'A service fee on every creator fee paid through Buzz Protected Payment, and a cut of commission payouts settled through Buzz. Product-for-content deals are never charged.',
     settings: [
-      ['brandPct', 'Brand service fee (%)', 5],
+      ['brandPct', 'Service fee on paid deals (%)', 5],
       ['creatorPct', 'Creator fee (%)', 0],
       ['commissionCutPct', 'Cut of commission payouts (%)', 15],
     ],
   },
   {
-    id: 'plans', label: 'Plans: Brand Pro, Agency, Creator Pro', group: 'Subscriptions',
-    desc: 'Monthly plans. Brands get lower fees and unlimited listings. Creator Pro gets early access, profile viewers, peer comparison, instant alerts, read receipts, free instant withdrawals and the tax pack. Also turns on Free-plan limits.',
+    id: 'plans', label: 'Brand Pro subscription', group: 'Core', defaultOn: true,
+    desc: 'A monthly plan for brands that run paid deals often: lower fees, unlimited paid listings and a free featured week each month. The Free plan keeps unlimited product-for-content listings.',
     settings: [
       ['proPrice', 'Brand Pro per month (₱)', 1499], ['proPct', 'Brand Pro service fee (%)', 3],
-      ['agencyPrice', 'Agency per month (₱)', 4999], ['agencyPct', 'Agency service fee (%)', 2],
-      ['creatorProPrice', 'Creator Pro per month (₱)', 199], ['freeListings', 'Free plan active listings', 2],
-      ['earlyHours', 'Creator Pro early access (hours)', 24], ['freeApplyCap', 'Free creator applications a month (0 = no limit)', 0],
+      ['proCommissionCutPct', 'Brand Pro commission cut (%)', 10], ['proFeaturedWeeks', 'Free featured weeks per month', 1],
+      ['freeListings', 'Free plan: active paid listings', 2],
     ],
   },
-  { id: 'featuredListings', label: 'Featured listings', group: 'Visibility', desc: 'Brands pay to pin a listing at the top of Discover and Opportunities, marked "Featured".', settings: [['weekPrice', 'Price per week (₱)', 499]] },
-  { id: 'boostedProfiles', label: 'Boosted creator profiles', group: 'Visibility', desc: 'Creators pay to appear in a "Boosted" row when brands browse creators. Fit labels are never changed by payment.', settings: [['weekPrice', 'Price per week (₱)', 149]] },
-  { id: 'paidHandpick', label: 'Paid hand-picked matching', group: 'Services', desc: 'Brands pay for the Buzz team to pick and invite creators.', settings: [['price', 'Price per campaign (₱)', 1500]] },
-  { id: 'managedCampaigns', label: 'Fully managed campaigns', group: 'Services', desc: 'Buzz runs the whole campaign for the brand: picking, briefing, approvals, reporting.', settings: [['pct', 'Fee (% of creator budget)', 15], ['minFee', 'Minimum fee (₱)', 5000]] },
-  { id: 'servicesCatalog', label: 'Buzz services catalog', group: 'Services', desc: 'Brief writing, product photos, video editing, fast-track verification, reports, sponsorships.', settings: [] },
-  { id: 'instantPayout', label: 'Instant withdrawals', group: 'Money', desc: 'Creators pay a small fee to get money the same day. Standard withdrawals stay free.', settings: [['fee', 'Fee per instant withdrawal (₱)', 20]] },
-  { id: 'creatorAdvance', label: 'Creator cash advance', group: 'Money', desc: 'Creators get paid right after submitting instead of waiting for approval, for a small fee. Buzz carries the risk.', settings: [['pct', 'Fee (%)', 3]] },
-  { id: 'contentLicensing', label: 'Content-rights extensions', group: 'Money', desc: 'Brands pay creators to keep reusing content after its rights end; Buzz takes a cut.', settings: [['pct', 'Buzz cut (%)', 10]] },
-  { id: 'shippingService', label: 'Pickup booking through Buzz', group: 'Money', desc: 'Brands book a courier pickup for samples inside Buzz.', settings: [['price', 'Price per pickup (₱)', 169]] },
-  { id: 'events', label: 'Workshops & pop-up events', group: 'Community', desc: 'Paid workshops for founders and creators, and booth slots at Buzz pop-ups.', settings: [] },
-];
-
-export const SERVICES = [
-  { id: 'brief', name: 'Brief writing & campaign setup', price: 999, unit: 'per listing', who: 'business', desc: 'We write your listing, pick deliverables and set a fair budget. Ready in 1 working day.' },
-  { id: 'photos', name: 'Product photography', price: 2500, unit: 'for 10 photos', who: 'business', desc: 'Clean product shots and 3 lifestyle photos in Metro Manila. Listings with good photos get far more applicants.' },
-  { id: 'editing', name: 'Turn creator videos into ads', price: 800, unit: 'per video', who: 'business', desc: 'We cut your approved creator content into 15s and 30s ads with captions.' },
-  { id: 'report', name: 'PH creator rates report', price: 499, unit: 'one-time', who: 'any', desc: 'What creators in each niche and size charge, updated quarterly from real Buzz deals.' },
-  { id: 'newsletter', name: 'Sponsored spot in the Buzz newsletter', price: 2000, unit: 'per issue', who: 'business', desc: 'Your product in front of every creator on Buzz.' },
-  { id: 'challenge', name: 'Sponsored community challenge', price: 5000, unit: 'per challenge', who: 'business', desc: 'Run a creator challenge in Community with your product as the prize.' },
-  { id: 'fasttrack', name: 'Verification fast-track', price: 299, unit: 'one-time', who: 'any', desc: 'Same-day review of your verification request.' },
-  { id: 'portfolio', name: 'Media kit design', price: 699, unit: 'one-time', who: 'creator', desc: 'A one-page rate card and media kit PDF to send to brands.' },
+  { id: 'featuredListings', label: 'Featured spots on Opportunities', group: 'Core', defaultOn: true, desc: 'Brands pay to pin a listing at the top of Opportunities and Discover, labelled "Featured". The Launch Pad is never for sale.', settings: [['weekPrice', 'Price per week (₱)', 499]] },
+  { id: 'paidHandpick', label: 'Paid hand-picked matching', group: 'Later', desc: 'Brands pay for the Buzz team to pick and invite creators. Off: the Free plan gets one request, Brand Pro unlimited.', settings: [['price', 'Price per campaign (₱)', 1500]] },
+  { id: 'instantPayout', label: 'Instant withdrawals', group: 'Later', desc: 'Creators pay a small fee to get money the same day. Standard withdrawals stay free.', settings: [['fee', 'Fee per instant withdrawal (₱)', 20]] },
 ];
 
 export const isOn = (d, id) => {
   const m = d?.flags?.monetization?.[id];
-  return m ? !!m.on : !!STREAMS.find((s) => s.id === id)?.defaultOn;
+  return m && m.on != null ? !!m.on : !!STREAMS.find((s) => s.id === id)?.defaultOn;
 };
 
 export const setting = (d, id, key) => {
@@ -56,19 +38,38 @@ export const setting = (d, id, key) => {
   return STREAMS.find((s) => s.id === id)?.settings.find((x) => x[0] === key)?.[2] ?? 0;
 };
 
-// Brand fee on escrow payments, after plan discounts.
+export const isBrandPro = (d, u) => isOn(d, 'plans') && u?.plan === 'pro';
+
+// Brand fee on paid deals, after the Pro discount.
 export function brandFeeRate(d, u) {
   if (!isOn(d, 'transactionFee')) return 0;
-  if (isOn(d, 'plans') && u?.plan === 'agency') return setting(d, 'plans', 'agencyPct') / 100;
-  if (isOn(d, 'plans') && u?.plan === 'pro') return setting(d, 'plans', 'proPct') / 100;
+  if (isBrandPro(d, u)) return setting(d, 'plans', 'proPct') / 100;
   return setting(d, 'transactionFee', 'brandPct') / 100;
 }
 
-// Creator fee on released payments. Creator Pro pays none.
-export function creatorFeeRate(d, u) {
+// Creator fee on released payments.
+export function creatorFeeRate(d) {
   if (!isOn(d, 'transactionFee')) return 0;
-  if (isOn(d, 'plans') && u?.creatorPlan === 'pro') return 0;
   return setting(d, 'transactionFee', 'creatorPct') / 100;
+}
+
+// Buzz's cut when a brand settles creator commissions through Buzz.
+export function commissionCutRate(d, u) {
+  if (!isOn(d, 'transactionFee')) return 0;
+  if (isBrandPro(d, u)) return setting(d, 'plans', 'proCommissionCutPct') / 100;
+  return setting(d, 'transactionFee', 'commissionCutPct') / 100;
+}
+
+// Pro brands get free featured weeks each calendar month.
+const monthKey = () => new Date().toISOString().slice(0, 7);
+export function freeFeaturedLeft(d, u) {
+  if (!isBrandPro(d, u)) return 0;
+  const used = u.featureCredits?.month === monthKey() ? u.featureCredits.used : 0;
+  return Math.max(0, setting(d, 'plans', 'proFeaturedWeeks') - used);
+}
+export function spendFeaturedCredit(u, weeks) {
+  const used = u.featureCredits?.month === monthKey() ? u.featureCredits.used : 0;
+  u.featureCredits = { month: monthKey(), used: used + weeks };
 }
 
 // Record money Buzz earns. `payer` is charged in their wallet history too.

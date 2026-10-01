@@ -4,15 +4,13 @@ import { Search, Bookmark, ChevronRight, ChevronLeft, Plus, RotateCcw, Shuffle, 
 import { useDB, currentUser, applicantsCount, creators, followersOf, liveCampaigns } from '../lib/store';
 import { BUDGET_BUCKETS, COMP_TYPES, PLATFORMS, REGIONS, categoryById } from '../lib/constants';
 import { matchScore, rankCampaigns, profileCampaign } from '../lib/match';
-import { isFeatured, isBoosted } from '../components/visuals';
+import { isFeatured } from '../components/visuals';
 import { CategoryRow, OpportunityCard, OpportunityTile, CreatorCard, CreatorRow } from '../components/visuals';
-import { TOGGLES, SHELVES, dailyPicksStatus, pickOfTheDay } from '../lib/discover';
+import { TOGGLES, SHELVES } from '../lib/discover';
 import { actions } from '../lib/store';
 import { cx } from '../components/ui';
 import { Segmented, PillMenu, Button, EmptyState, Select, useAct } from '../components/ui';
 import { isOn } from '../lib/monetize';
-import { isCreatorPro } from '../lib/pro';
-import { BellRing } from 'lucide-react';
 import { CampaignForm } from '../components/forms';
 
 const inBudget = (bucket, lo, hi) => {
@@ -43,12 +41,6 @@ export default function Opportunities() {
   const reset = () => { setQ(''); setCat('all'); setBudget('any'); setComp('all'); setPlatforms([]); setRegion('all'); setToggles([]); };
   const ctx = { d, me };
   const act = useAct();
-  const alertMe = () => {
-    if (!isCreatorPro(d, me)) return nav('/workspace/pro');
-    const b = BUDGET_BUCKETS.find((x) => x.id === budget);
-    act(() => actions.saveSearch({ cat, q, minBudget: b?.min || 0, platforms, region }), 'Alert saved. We\'ll notify you the moment a match is posted.');
-  };
-  useEffect(() => { actions.recordVisit(); }, []);
 
   const listings = useMemo(() => {
     const needle = q.toLowerCase();
@@ -106,7 +98,6 @@ export default function Opportunities() {
           <input value={q} onChange={(e) => setQ(e.target.value)} placeholder={isCreatorView ? 'Search product, brand or keyword…' : 'Search creators by name, niche…'}
             className="w-full h-11 pl-10 pr-4 rounded-xl border border-line-strong bg-white text-sm focus:outline-none focus:ring-2 focus:ring-brand/40 focus:border-brand" />
         </div>
-        {isCreatorView && me?.creator && isOn(d, 'plans') && (filtered || cat !== 'all') && <Button variant="outline" className="h-11" onClick={alertMe} title="Creator Pro: get notified when a new listing matches these filters"><BellRing size={15} />Alert me</Button>}
         {filtered && <Button variant="outline" className="h-11" onClick={reset}><RotateCcw size={15} />Clear filters</Button>}
       </div>
       <div className="mt-3 flex flex-wrap gap-2">
@@ -146,7 +137,6 @@ export default function Opportunities() {
         ) : (
           <>
             {listings.some((c) => isFeatured(d, c)) && <Shelf title="Featured" sub="Paid placement by the brand" items={listings.filter((c) => isFeatured(d, c))} />}
-            <DailyPicks listings={listings} me={me} />
             <Section title={me?.creator ? 'Recommended For You' : 'Fresh Opportunities'} hint={me?.creator ? 'Matched to your content, rates, audience and platforms. Listings you already applied to are left out. Hover a fit label to see why.' : 'Sign up as a creator to see how well each one fits you.'}>
               <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-5">{recommended.map((c) => <OpportunityCard key={c.id} campaign={c} />)}</div>
             </Section>
@@ -179,7 +169,6 @@ export default function Opportunities() {
             </Results>
           ) : (
             <>
-              {people.some((u) => isBoosted(d, u)) && <Section title="Boosted creators" hint="These creators paid for extra visibility. Fit labels are the same honest scores as everywhere else."><div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-5">{people.filter((u) => isBoosted(d, u)).slice(0, 3).map((u) => <CreatorCard key={u.id} user={u} forCampaign={forCampaign} />)}</div></Section>}
               <Section title="Recommended Influencers For You"><div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-5">{people.slice(0, 6).map((u) => <CreatorCard key={u.id} user={u} forCampaign={forCampaign} />)}</div></Section>
               <Section title="Top Matching Influencers"><div className="space-y-3">{people.slice(0, 5).map((u) => <CreatorRow key={u.id} user={u} forCampaign={forCampaign} />)}</div></Section>
               <Section title="All Creators"><div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-5">{people.slice(6).map((u) => <CreatorCard key={u.id} user={u} forCampaign={forCampaign} />)}</div></Section>
@@ -220,30 +209,6 @@ function Shelf({ title, sub, items }) {
         </div>
       </div>
       <div ref={ref} className="flex gap-4 overflow-x-auto pb-2 snap-x">{items.map((c) => <OpportunityTile key={c.id} campaign={c} />)}</div>
-    </section>
-  );
-}
-
-// Hidden until Buzz has enough listings and creators (see Admin → Features).
-function DailyPicks({ listings, me }) {
-  const d = useDB();
-  const nav = useNavigate();
-  const status = dailyPicksStatus(d);
-  if (!status.on || !me || listings.length < 3) return null;
-  const picks = pickOfTheDay(listings, me.id);
-  const days = me.visitDays || [];
-  let streak = 0;
-  for (let i = 0; ; i++) { const day = new Date(Date.now() - i * 86400000).toISOString().slice(0, 10); if (days.includes(day)) streak++; else break; }
-  return (
-    <section className="mt-10 rounded-3xl bg-brand-softer border border-[#F6DDB2] p-5">
-      <div className="flex flex-wrap items-end justify-between gap-3 mb-4">
-        <div>
-          <h2 className="text-[18px] font-bold flex items-center gap-2"><Sparkles size={18} className="text-brand-dark" />Today's 3 picks for you</h2>
-          <p className="text-[12.5px] text-ink-muted">New picks every morning{streak > 1 && <> · <Flame size={12} className="inline text-brand-dark -mt-0.5" /> {streak}-day streak</>}</p>
-        </div>
-        <Button variant="outline" size="sm" onClick={() => nav(`/opportunity/${listings[Math.floor(Math.random() * listings.length)].id}`)}><Shuffle size={14} />Surprise me</Button>
-      </div>
-      <div className="flex gap-4 overflow-x-auto pb-1">{picks.map((c) => <OpportunityTile key={c.id} campaign={c} />)}</div>
     </section>
   );
 }

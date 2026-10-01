@@ -14,18 +14,14 @@ import PostDetail from './pages/PostDetail';
 import { Login, Signup, Reset } from './pages/Auth';
 import { Terms, Privacy, Footer } from './pages/Legal';
 import Admin from './pages/Admin';
-import CreatorPro from './pages/workspace/CreatorPro';
 import Help from './pages/Help';
 import Pricing from './pages/Pricing';
-import Services from './pages/Services';
 import LaunchPad from './pages/LaunchPad';
 import Shop from './pages/Shop';
 import Join from './pages/Join';
 import Grow from './pages/workspace/Grow';
 import Swaps from './pages/workspace/Swaps';
 import Customers from './pages/workspace/Customers';
-import GroupDeals from './pages/workspace/GroupDeals';
-import Events from './pages/Events';
 import Go from './pages/Go';
 import WorkspaceLayout from './pages/workspace/Layout';
 import MyShop from './pages/workspace/MyShop';
@@ -72,11 +68,9 @@ export default function App() {
           <Route path="/terms" element={<Terms />} />
           <Route path="/help" element={<Help />} />
           <Route path="/pricing" element={<Pricing />} />
-          <Route path="/services" element={<Services />} />
           <Route path="/launchpad" element={<LaunchPad />} />
           <Route path="/shop/:id" element={<Shop />} />
           <Route path="/join/:code" element={<Join />} />
-          <Route path="/events" element={<Events />} />
           <Route path="/privacy" element={<Privacy />} />
           <Route path="/admin" element={<RequireAuth><Admin /></RequireAuth>} />
           <Route path="/go/:code" element={<Go />} />
@@ -88,11 +82,9 @@ export default function App() {
             <Route path="settings" element={<SettingsHub />} />
             <Route path="messages" element={<Messages />} />
             <Route path="campaigns/:id" element={<CampaignManage />} />
-            <Route path="pro" element={<CreatorPro />} />
             <Route path="grow" element={<Grow />} />
             <Route path="swaps" element={<Swaps />} />
             <Route path="customers" element={<Customers />} />
-            <Route path="group-deals" element={<GroupDeals />} />
             {/* Older addresses, kept so links in notifications and emails still work. */}
             {[['campaigns', 'shop'], ['collaborations', 'collabs'], ['deliverables', 'collabs'], ['analytics', 'results'], ['payments', 'results?tab=money'], ['library', 'results?tab=library'],
               ['contracts', 'results?tab=agreements'], ['disputes', 'results?tab=problems'], ['profile', 'settings'], ['verification', 'settings?tab=verify'], ['referrals', 'settings?tab=invite'], ['saved', 'settings?tab=saved']]

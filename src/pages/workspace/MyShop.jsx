@@ -3,6 +3,7 @@ import { Link, Navigate, useNavigate } from 'react-router-dom';
 import { Plus, Copy, ExternalLink, Rocket, Store, Users, Package } from 'lucide-react';
 import { useDB, applicantsCount, membersOf } from '../../lib/store';
 import { weekStart, launchesFor } from '../../lib/grow';
+import { isOn, setting, freeFeaturedLeft } from '../../lib/monetize';
 import { peso } from '../../lib/format';
 import { appUrl } from '../../lib/links';
 import { ProductImage } from '../../components/visuals';
@@ -26,6 +27,7 @@ export default function MyShop() {
   if (!me.business) return <NeedsBusiness title="My Shop" />;
   const products = d.campaigns.filter((c) => c.ownerId === me.id && !c.removed).sort((a, b) => b.createdAt - a.createdAt);
   const shopLink = appUrl(`/shop/${me.id}`);
+  const paidActive = products.filter((c) => c.published && c.status !== 'completed' && c.compensation !== 'gifted').length;
   const week = launchesFor(d, weekStart());
   const launch = week.find((l) => l.brandId === me.id);
 
@@ -50,6 +52,13 @@ export default function MyShop() {
         </Card>
       </div>
 
+      {isOn(d, 'plans') && (
+        <div className="mb-4 rounded-2xl bg-white border border-line px-4 py-3 flex flex-wrap items-center gap-3 text-[13.5px]">
+          {me.plan === 'pro' ? <span><b>Brand Pro</b> · {setting(d, 'plans', 'proPct')}% fee on paid deals · unlimited paid listings{freeFeaturedLeft(d, me) ? ` · ${freeFeaturedLeft(d, me)} free featured week left this month` : ''}</span>
+            : <span><b>Free plan</b> · product-for-content listings are unlimited · {paidActive} of {setting(d, 'plans', 'freeListings')} paid listings used</span>}
+          {me.plan !== 'pro' && <Link to="/pricing" className="ml-auto text-brand-dark font-medium">Brand Pro: lower fees, unlimited paid listings →</Link>}
+        </div>
+      )}
       {products.length === 0 ? (
         <Card><EmptyState icon={Package} title="Add your first product" body="A photo, a price and where to buy. That's all creators need to start." action={<Button onClick={() => setAdding(true)}><Plus size={15} />Add a product</Button>} /></Card>
       ) : (

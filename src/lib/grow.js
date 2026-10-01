@@ -75,13 +75,6 @@ export function voucherCode(prefix) {
   return `${(prefix || 'BUZZ').replace(/[^A-Z]/gi, '').slice(0, 6).toUpperCase()}-${s}`;
 }
 
-// ---------- group deals ----------
-export const shareOf = (g) => Math.round(g.fee / g.slots);
-export const groupStatusLabel = {
-  forming: 'Looking for brands', invited: 'Waiting for the creator', active: 'Creator is working on it',
-  posted: 'Posted: confirm it went up', done: 'Done', cancelled: 'Cancelled',
-};
-
 // ---------- shop page ----------
 export function shopLinks(u) {
   const b = u.business || {};
@@ -100,7 +93,7 @@ export function socialLinks(u) {
 }
 
 // ---------- keeping it simple ----------
-// The extra growth tools (swaps, customer creators, group deals) stay hidden until a
+// The extra growth tools (brand swaps, customer creators) stay hidden until a
 // brand finishes its first collaboration, unless the admin switches them on or off.
 export function growUnlocked(d, u) {
   const mode = d.flags?.growTools || 'auto';
@@ -109,4 +102,3 @@ export function growUnlocked(d, u) {
   const mine = new Set(d.campaigns.filter((c) => c.ownerId === u.id).map((c) => c.id));
   return d.deliverables.some((x) => x.status === 'approved' && (mine.has(x.campaignId) || x.creatorId === u.id));
 }
-export const collabBoardOn = (d) => d.flags?.collabBoard === 'on';

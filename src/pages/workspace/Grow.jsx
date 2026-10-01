@@ -1,5 +1,5 @@
 import { useNavigate } from 'react-router-dom';
-import { Repeat, Gift, Users, ArrowRight } from 'lucide-react';
+import { Repeat, Gift, ArrowRight } from 'lucide-react';
 import { useDB, brandName } from '../../lib/store';
 import { swapMatches, ugcProgramOf, growUnlocked } from '../../lib/grow';
 import { Card, Button, Badge, Avatar } from '../../components/ui';
@@ -31,11 +31,10 @@ export default function Grow() {
   const activeSwaps = d.swaps.filter((s) => [s.fromId, s.toId].includes(me.id) && s.status === 'active').length;
   const program = ugcProgramOf(d, me.id);
   const pendingUgc = d.ugcPosts.filter((x) => x.brandId === me.id && x.status === 'pending').length;
-  const openDeals = d.groupDeals.filter((g) => g.status === 'forming' && !g.members.some((m) => m.brandId === me.id)).length;
   return (
     <>
       <PageHead title="More ways to grow" sub="Free tools to reach more people once your first creator collab is done." />
-      <div className="grid grid-cols-1 lg:grid-cols-3 gap-4">
+      <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
         <Tile icon={Repeat} title="Brand swaps" sub="Promote each other to your customers." to="/workspace/swaps" cta={incoming ? `${incoming} request${incoming > 1 ? 's' : ''} waiting` : 'See matches'}
           badge={activeSwaps ? <Badge tone="blue">{activeSwaps} active</Badge> : null}>
           <div className="space-y-2">{matches.map(({ u, reasons }) => (
@@ -45,9 +44,6 @@ export default function Grow() {
         <Tile icon={Gift} title="Customer creators" sub="Happy buyers post, you give store credit." to="/workspace/customers" cta={program ? (pendingUgc ? `${pendingUgc} post${pendingUgc > 1 ? 's' : ''} to review` : 'Manage') : 'Start'}
           badge={program?.active ? <Badge tone="green">Live</Badge> : null}>
           <p className="text-[13px] text-ink-soft">{program ? `Customers get a ₱${program.credit} voucher for each approved post.` : 'It costs a discount on a future order, not cash. Real customer posts sell.'}</p>
-        </Tile>
-        <Tile icon={Users} title="Group deals" sub="Split one creator's fee with other brands." to="/workspace/group-deals" cta={openDeals ? `${openDeals} open to join` : 'Start one'}>
-          <p className="text-[13px] text-ink-soft">A ₱6,000 creator split three ways is ₱2,000 each, and every brand is in the post.</p>
         </Tile>
       </div>
     </>

@@ -26,24 +26,3 @@ export const SHELVES = [
   { id: 'closing', title: 'Closing soon', sub: 'Applications end within 10 days', test: (c) => c.deadline < Date.now() + 10 * DAY, sort: (a, b) => a.deadline - b.deadline },
   { id: 'noface', title: 'No face needed', sub: 'Hands, voiceover or product-only content', test: TOGGLES[7].test },
 ];
-
-// Daily picks switch on by themselves once Buzz has enough supply to rotate.
-export const DAILY_PICKS_THRESHOLD = { listings: 50, creators: 100 };
-
-export function dailyPicksStatus(d) {
-  const listings = d.campaigns.filter((c) => c.published && !c.removed && c.status !== 'completed').length;
-  const creatorCount = d.users.filter((u) => u.creator && !u.suspended).length;
-  const reached = listings >= DAILY_PICKS_THRESHOLD.listings && creatorCount >= DAILY_PICKS_THRESHOLD.creators;
-  const mode = d.flags?.dailyPicks || 'auto';
-  return { mode, reached, listings, creators: creatorCount, on: mode === 'on' || (mode === 'auto' && reached) };
-}
-
-// Same three picks all day for a person, new ones tomorrow.
-export function pickOfTheDay(list, userId, n = 3) {
-  const day = new Date().toISOString().slice(0, 10);
-  let h = 0;
-  for (const ch of `${userId}${day}`) h = (h * 31 + ch.charCodeAt(0)) >>> 0;
-  const arr = [...list];
-  for (let i = arr.length - 1; i > 0; i--) { h = (h * 1103515245 + 12345) >>> 0; const j = h % (i + 1); [arr[i], arr[j]] = [arr[j], arr[i]]; }
-  return arr.slice(0, n);
-}
