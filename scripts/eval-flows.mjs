@@ -207,5 +207,40 @@ check('Admin can switch the extra tools on for everyone', grow.growUnlocked(db()
 actions.setFlag('growTools', 'auto');
 check('Brands that finished a collab see the extra tools', grow.growUnlocked(db(), db().users.find((u) => u.id === 'u_me')));
 
+// Retail scouting + business toolkit.
+await import('../src/lib/scout.js');
+const scout = await import('../src/lib/scout.js');
+check('Retail-ready products are ranked by proof of sales', scout.rankRetail(db()).length >= 4 && scout.rankRetail(db())[0].s.score >= scout.rankRetail(db()).at(-1).s.score);
+actions.login('u_me');
+check('Wholesale must leave the store a margin', throws(() => actions.setRetailReady('cmp_barong', { ready: true, wholesale: 5000, srp: 4200 })));
+actions.setRetailReady('cmp_barong', { ready: true, wholesale: 2600, srp: 4200, moq: 10, fda: false });
+check('Brand can list a product for store buyers', db().campaigns.find((c) => c.id === 'cmp_barong').retail.ready);
+check('Unverified buyers cannot send requests', throws(() => actions.requestFromStore('cmp_barong', { kind: 'samples' })));
+actions.login('u_buyer2');
+check('Pending buyer still cannot send requests', throws(() => actions.requestFromStore('cmp_barong', { kind: 'samples' })));
+actions.login('u_me');
+actions.verifyBuyer('u_buyer2', true);
+actions.login('u_buyer2');
+const srq = actions.requestFromStore('cmp_barong', { kind: 'meeting', note: 'For our airport store', qty: 40 });
+check('Store request reaches the brand with a message', db().notifications.some((n) => n.userId === 'u_me' && n.text.includes('Isla Pasalubong Center')) && db().threads.some((t) => t.participants.includes('u_buyer2') && t.participants.includes('u_me')));
+check('Duplicate open request is refused', throws(() => actions.requestFromStore('cmp_barong', { kind: 'samples' })));
+actions.login('u_me');
+actions.respondStore(srq, true);
+const rs0 = revenueSummary(db()).by.retailScouting || 0;
+actions.recordStoreOrder(srq, 60000);
+check('First store order earns the success fee', (revenueSummary(db()).by.retailScouting || 0) - rs0 === 4800 && db().storeRequests.find((r) => r.id === srq).status === 'ordered');
+actions.login('u_buyer2');
+const srq2 = actions.requestFromStore('cmp_barong', { kind: 'meeting', note: 'Reorder', qty: 40 });
+actions.login('u_me'); actions.respondStore(srq2, true);
+const rs1 = revenueSummary(db()).by.retailScouting || 0;
+actions.recordStoreOrder(srq2, 60000);
+check('Reorders from the same store are fee-free', (revenueSummary(db()).by.retailScouting || 0) === rs1);
+actions.requestIntro('ptn_photo', 'Need 10 shots');
+check('Duplicate toolkit intro is refused', throws(() => actions.requestIntro('ptn_photo', '')));
+const lead = db().partnerLeads.find((l) => l.partnerId === 'ptn_photo' && l.userId === 'u_me');
+const pr0 = revenueSummary(db()).by.partnerReferrals || 0;
+actions.updateLead(lead.id, 'closed');
+check('Closed referral records the partner fee, not charged to the seller', (revenueSummary(db()).by.partnerReferrals || 0) - pr0 === 300 && !db().transactions.some((t) => t.ref === lead.id));
+
 console.log(`\n${pass} passed, ${fail} failed`);
 process.exit(fail ? 1 : 0);

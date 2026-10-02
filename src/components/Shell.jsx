@@ -1,6 +1,6 @@
 import { createContext, useContext, useEffect, useRef, useState } from 'react';
 import { NavLink, Link, useNavigate, useLocation } from 'react-router-dom';
-import { Bell, MessageCircle, X, Send, ArrowLeft, LogOut, RotateCcw, UserRound, Repeat, Search, ShieldAlert, Smartphone, LifeBuoy, Sparkles as SparklesIcon, Compass, Sparkles, Users, LayoutGrid, Rocket } from 'lucide-react';
+import { Bell, MessageCircle, X, Send, ArrowLeft, LogOut, RotateCcw, UserRound, Repeat, Search, ShieldAlert, Smartphone, LifeBuoy, Sparkles as SparklesIcon, Compass, Sparkles, Users, LayoutGrid, Rocket, Store } from 'lucide-react';
 import { isOn } from '../lib/monetize';
 import { useDB, currentUser, userById, actions, unreadCount, displayName, campaignById } from '../lib/store';
 import { timeAgo } from '../lib/format';
@@ -86,6 +86,7 @@ function AccountMenu() {
               <MenuItem icon={UserRound} onClick={() => { setOpen(false); nav(`/profile/${me.id}`); }}>View public profile</MenuItem>
               {installable && <MenuItem icon={Smartphone} onClick={() => { window.__buzzInstall?.prompt(); setInstallable(false); setOpen(false); }}>Install the Buzz app</MenuItem>}
               <MenuItem icon={SparklesIcon} onClick={() => { setOpen(false); nav('/pricing'); }}>{!isOn(d, 'plans') || !me.business ? 'Pricing' : me.plan === 'pro' ? 'Your plan: Brand Pro' : 'Get Brand Pro'}</MenuItem>
+              {me.buyer && <MenuItem icon={Store} onClick={() => { setOpen(false); nav('/retail'); }}>{me.buyer.verified ? 'Retail scouting' : 'Buyer access: in review'}</MenuItem>}
               <MenuItem icon={LifeBuoy} onClick={() => { setOpen(false); nav('/help'); }}>Help & support</MenuItem>
               {me.admin && <MenuItem icon={ShieldAlert} onClick={() => { setOpen(false); nav('/admin'); }}>Admin: Trust & Safety</MenuItem>}
               <MenuItem icon={Repeat} onClick={() => setSwitching(true)}>Switch demo account</MenuItem>

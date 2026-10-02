@@ -3,7 +3,7 @@ import { Link, Navigate } from 'react-router-dom';
 import { ShieldAlert, Users, Store, MessageSquare, BadgeCheck, Ban, Star, Trash2, Check, Wallet, Search } from 'lucide-react';
 import { useDB, userById, campaignById, actions, isAdmin, displayName, walletOf, reactionTotal } from '../lib/store';
 import { peso, timeAgo, compact } from '../lib/format';
-import { RevenuePanel } from './AdminRevenue';
+import { RevenuePanel, RetailPanel } from './AdminRevenue';
 import { HealthPanel, VerificationsPanel, ApprovalsPanel, DisputesPanel, ConciergePanel, SupportPanel } from './AdminPanels';
 import { Card, Button, Badge, Avatar, Segmented, EmptyState, IconTile, useAct, useConfirm, cx } from '../components/ui';
 
@@ -56,6 +56,7 @@ export default function Admin() {
         <Segmented value={tab} onChange={setTab} size="sm" options={[
           { id: 'health', label: 'Health' },
           { id: 'revenue', label: 'Revenue' },
+          { id: 'retail', label: `Retail & partners · ${d.users.filter((u) => u.buyer && !u.buyer.verified).length + d.partnerLeads.filter((l) => l.status === 'new').length}` },
           { id: 'reports', label: `Reports · ${open.length}` },
           { id: 'verify', label: `Verify · ${d.verifications.filter((v) => v.status === 'pending').length}` },
           { id: 'approvals', label: `Creators · ${d.users.filter((u) => u.creator && u.approved === false).length}` },
@@ -79,6 +80,7 @@ export default function Admin() {
 
       {tab === 'health' && <HealthPanel />}
       {tab === 'revenue' && <RevenuePanel />}
+      {tab === 'retail' && <RetailPanel />}
       {tab === 'verify' && <VerificationsPanel />}
       {tab === 'approvals' && <ApprovalsPanel />}
       {tab === 'disputes' && <DisputesPanel />}

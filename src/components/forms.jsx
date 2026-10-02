@@ -1,4 +1,5 @@
 import { useRef, useState } from 'react';
+import { Link } from 'react-router-dom';
 import { ImagePlus, X, Plus, Trash2, Calculator, ClipboardCheck, Check as CheckIcon, Circle } from 'lucide-react';
 import { rankCreators, creatorQuote } from '../lib/match';
 import { peso as pesoFmt, compact as compactFmt } from '../lib/format';
@@ -142,7 +143,7 @@ export function CampaignForm({ open, onClose, initial, onSaved }) {
   return (
     <Modal open={open} onClose={onClose} title={initial?.id ? 'Edit opportunity' : 'Post an Opportunity'} subtitle="Creators see this listing and can apply or be invited." width="max-w-2xl">
       <form onSubmit={submit} className="space-y-5">
-        <Field label="Product photos (first one is the cover)" hint="Clear product shots win. Up to 5 photos.">
+        <Field label="Product photos (first one is the cover)" hint={<>Clear product shots win. Up to 5 photos. <Link to="/workspace/toolkit" className="underline underline-offset-2" onClick={onClose}>Need a photographer?</Link></>}>
           <PhotoPicker photos={f.photos} onChange={(p) => set('photos', p)} />
         </Field>
         <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">

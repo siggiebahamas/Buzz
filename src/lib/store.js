@@ -6,7 +6,7 @@ import { brandFeeRate, creatorFeeRate, earn, isOn, setting } from './monetize';
 import { uid, DAY, peso } from './format';
 import { rankCreators } from './match';
 
-const KEY = 'buzz-db-v10';
+const KEY = 'buzz-db-v11';
 const listeners = new Set();
 
 function load() {
@@ -14,7 +14,7 @@ function load() {
     const raw = localStorage.getItem(KEY);
     if (raw) {
       const parsed = JSON.parse(raw);
-      if (parsed?.version === 10) return migrate(parsed);
+      if (parsed?.version === 11) return migrate(parsed);
     }
   } catch { /* storage blocked or corrupt: fall through to fresh seed */ }
   return buildSeed();
@@ -22,7 +22,7 @@ function load() {
 
 // Add collections introduced after a browser first saved its data.
 function migrate(d) {
-  ['swaps', 'launches', 'ugcPrograms', 'ugcPosts'].forEach((k) => { d[k] ||= []; });
+  ['swaps', 'launches', 'ugcPrograms', 'ugcPosts', 'storeRequests', 'partners', 'partnerLeads'].forEach((k) => { d[k] ||= []; });
   return d;
 }
 

@@ -5,6 +5,7 @@ import { ToastProvider, ConfirmProvider } from './components/ui';
 import { useDB, actions } from './lib/store';
 import './lib/ops';
 import './lib/growops';
+import './lib/scout';
 import Discover from './pages/Discover';
 import Opportunities from './pages/Opportunities';
 import OpportunityDetail from './pages/OpportunityDetail';
@@ -18,6 +19,8 @@ import Help from './pages/Help';
 import Pricing from './pages/Pricing';
 import LaunchPad from './pages/LaunchPad';
 import Shop from './pages/Shop';
+import Retail from './pages/Retail';
+import Toolkit from './pages/workspace/Toolkit';
 import Join from './pages/Join';
 import Grow from './pages/workspace/Grow';
 import Swaps from './pages/workspace/Swaps';
@@ -70,6 +73,7 @@ export default function App() {
           <Route path="/pricing" element={<Pricing />} />
           <Route path="/launchpad" element={<LaunchPad />} />
           <Route path="/shop/:id" element={<Shop />} />
+          <Route path="/retail" element={<Retail />} />
           <Route path="/join/:code" element={<Join />} />
           <Route path="/privacy" element={<Privacy />} />
           <Route path="/admin" element={<RequireAuth><Admin /></RequireAuth>} />
@@ -83,6 +87,7 @@ export default function App() {
             <Route path="messages" element={<Messages />} />
             <Route path="campaigns/:id" element={<CampaignManage />} />
             <Route path="grow" element={<Grow />} />
+            <Route path="toolkit" element={<Toolkit />} />
             <Route path="swaps" element={<Swaps />} />
             <Route path="customers" element={<Customers />} />
             {/* Older addresses, kept so links in notifications and emails still work. */}

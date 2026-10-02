@@ -294,6 +294,7 @@ export function ShipModal({ x, onClose }) {
         <Field label="Tracking number"><Input value={f.tracking} onChange={(e) => setF({ ...f, tracking: e.target.value })} /></Field>
       </div>
       <Button size="lg" className="w-full mt-4" disabled={!f.tracking.trim()} onClick={() => { if (act(() => actions.updateShipment(x.id, { ...f, tracking: f.tracking.trim(), status: 'shipped' }), 'Marked as shipped. The creator was notified.')) onClose(); }}><Truck size={16} />Mark as shipped</Button>
+      <p className="text-[12px] text-ink-muted mt-3 text-center">Shipping often? <Link to="/workspace/toolkit" className="underline underline-offset-2 hover:text-ink">See fulfillment partners</Link></p>
     </Modal>
   );
 }

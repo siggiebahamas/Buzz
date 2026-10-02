@@ -1,6 +1,6 @@
 import { useState } from 'react';
-import { Link, Navigate, useNavigate } from 'react-router-dom';
-import { Plus, Copy, ExternalLink, Rocket, Store, Users, Package } from 'lucide-react';
+import { Link, Navigate, useNavigate, useSearchParams } from 'react-router-dom';
+import { Plus, Copy, ExternalLink, Rocket, Store, Users, Package, Wrench } from 'lucide-react';
 import { useDB, applicantsCount, membersOf } from '../../lib/store';
 import { weekStart, launchesFor } from '../../lib/grow';
 import { isOn, setting, freeFeaturedLeft } from '../../lib/monetize';
@@ -11,6 +11,8 @@ import { Card, Button, Badge, EmptyState, useCopy } from '../../components/ui';
 import { CampaignForm } from '../../components/forms';
 import { useMode, ModeToggle, PageHead } from './Layout';
 import { NeedsBusiness } from './Swaps';
+import { RetailModal, StoreRequests } from './Stores';
+import { cx } from '../../components/ui';
 
 const STAGE = {
   recruiting: ['Looking for creators', 'soft'], active: ['Creators are posting', 'blue'], tracking: ['Counting sales', 'violet'], completed: ['Done', 'green'],
@@ -23,6 +25,9 @@ export default function MyShop() {
   const copy = useCopy();
   const { mode, me } = useMode();
   const [adding, setAdding] = useState(false);
+  const [retail, setRetail] = useState(null);
+  const [params, setParams] = useSearchParams();
+  const view = params.get('tab') === 'stores' ? 'stores' : 'products';
   if (mode === 'creator') return <Navigate to="/workspace/collabs" replace />;
   if (!me.business) return <NeedsBusiness title="My Shop" />;
   const products = d.campaigns.filter((c) => c.ownerId === me.id && !c.removed).sort((a, b) => b.createdAt - a.createdAt);
@@ -30,6 +35,7 @@ export default function MyShop() {
   const paidActive = products.filter((c) => c.published && c.status !== 'completed' && c.compensation !== 'gifted').length;
   const week = launchesFor(d, weekStart());
   const launch = week.find((l) => l.brandId === me.id);
+  const newStores = d.storeRequests.filter((r) => r.brandId === me.id && r.status === 'new').length;
 
   return (
     <>
@@ -59,7 +65,14 @@ export default function MyShop() {
           {me.plan !== 'pro' && <Link to="/pricing" className="ml-auto text-brand-dark font-medium">Brand Pro: lower fees, unlimited paid listings →</Link>}
         </div>
       )}
-      {products.length === 0 ? (
+      <div className="flex gap-2 mb-4">
+        {[['products', 'Products', 0], ['stores', 'Store requests', newStores]].map(([id, label, n]) => (
+          <button key={id} onClick={() => setParams(id === 'stores' ? { tab: 'stores' } : {})} className={cx('h-9 px-4 rounded-full text-[13.5px] border inline-flex items-center gap-2', view === id ? 'bg-ink text-white border-ink' : 'bg-white border-line-strong text-ink-soft hover:bg-canvas')}>
+            {label}{n > 0 && <span className={cx('text-[11.5px] px-1.5 rounded-full', view === id ? 'bg-white/20' : 'bg-brand text-white')}>{n}</span>}
+          </button>
+        ))}
+      </div>
+      {view === 'stores' ? <StoreRequests me={me} /> : products.length === 0 ? (
         <Card><EmptyState icon={Package} title="Add your first product" body="A photo, a price and where to buy. That's all creators need to start." action={<Button onClick={() => setAdding(true)}><Plus size={15} />Add a product</Button>} /></Card>
       ) : (
         <div className="grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-3 gap-4">
@@ -74,6 +87,7 @@ export default function MyShop() {
                   <div className="flex items-start justify-between gap-2"><Link to={`/workspace/campaigns/${c.id}`} className="font-bold hover:underline">{c.productName}</Link><Badge tone={tone}>{label}</Badge></div>
                   <p className="text-[12.5px] text-ink-muted mt-0.5">{c.compensation === 'gifted' ? `Product for content${c.giftValue ? ` · worth ${peso(c.giftValue)}` : ''}` : c.compensation === 'commission' ? `${c.commissionRate}% per sale` : `${peso(c.budgetMin)}–${peso(c.budgetMax)} per creator`}</p>
                   <p className="text-[13px] text-ink-soft mt-2 flex items-center gap-1.5"><Users size={14} />{working} working · {applied} applied · {c.views} views</p>
+                  <button onClick={() => setRetail(c)} className={cx('mt-2 text-[12.5px] inline-flex items-center gap-1.5 self-start', c.retail?.ready ? 'text-emerald-700' : 'text-ink-muted hover:text-ink')}><Store size={13} />{c.retail?.ready ? `In front of store buyers · ${peso(c.retail.wholesale)} wholesale` : 'Get it into stores'}</button>
                   <div className="flex gap-2 mt-auto pt-3">
                     <Link to={`/workspace/campaigns/${c.id}`} className="flex-1"><Button size="sm" variant="outline" className="w-full">Manage</Button></Link>
                     <Link to="/workspace/collabs?view=find" className="flex-1"><Button size="sm" className="w-full">Find creators</Button></Link>
@@ -84,6 +98,8 @@ export default function MyShop() {
           })}
         </div>
       )}
+      <p className="mt-8 text-[13px] text-ink-muted flex items-center gap-1.5"><Wrench size={14} />Need packaging, labels, barcodes or permits? <Link to="/workspace/toolkit" className="text-ink underline decoration-line-strong underline-offset-2 hover:text-brand-dark">Business toolkit</Link></p>
+      {retail && <RetailModal c={retail} onClose={() => setRetail(null)} />}
       {adding && <CampaignForm open onClose={() => setAdding(false)} onSaved={(id) => nav(`/workspace/campaigns/${id}`)} />}
     </>
   );

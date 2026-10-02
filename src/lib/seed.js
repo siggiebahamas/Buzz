@@ -501,14 +501,55 @@ export function buildSeed() {
     { id: id('tkt'), userId: 'u_hurno', topic: 'Payments', subject: 'Can I pay escrow with a BPI debit card?', body: 'I don\'t use GCash. Does Buzz accept debit cards for escrow?', status: 'open', replies: [], createdAt: now - 6 * 3600000 },
   ];
 
+  // ---------- retail scouting + business toolkit ----------
+  users.push({
+    id: 'u_buyer', name: 'Rhea Lim', email: 'rhea@buzz.demo', color: '#0F766E', photo: null, location: 'Pasig City', region: 'Metro Manila', joinedAt: now - 20 * DAY,
+    bio: 'I buy local food and gifts for our neighborhood grocery stores.', business: null, creator: null, primary: 'buyer',
+    buyer: { company: 'Kanto Fresh Grocers', role: 'Category buyer, local goods', channel: 'Grocery & supermarket', stores: 9, region: 'Metro Manila', verified: true, appliedAt: now - 19 * DAY },
+  });
+  users.push({
+    id: 'u_buyer2', name: 'Joel Ramos', email: 'joel@buzz.demo', color: '#7C3AED', photo: null, location: 'Cebu City', region: 'Visayas', joinedAt: now - 2 * DAY,
+    bio: '', business: null, creator: null, primary: 'buyer',
+    buyer: { company: 'Isla Pasalubong Center', role: 'Owner', channel: 'Pasalubong shop', stores: 2, region: 'Visayas', verified: false, appliedAt: now - 2 * DAY },
+  });
+  const retailSpec = {
+    cmp_sili: { wholesale: 210, srp: 320, moq: 48, capacity: 1500, shelfLife: '12 months', fda: true, bir: true, barcode: true, note: 'Ships in cases of 12. Display box available.' },
+    cmp_mangga: { wholesale: 115, srp: 180, moq: 60, capacity: 3000, shelfLife: '9 months', fda: true, bir: true, barcode: true, note: 'Pasalubong-ready packs.' },
+    cmp_barako: { wholesale: 260, srp: 420, moq: 24, capacity: 800, shelfLife: '6 months', fda: true, bir: true, barcode: false, note: '' },
+    cmp_kalamansi: { wholesale: 330, srp: 549, moq: 24, capacity: 1000, shelfLife: '18 months', fda: true, bir: true, barcode: true, note: 'FDA-notified cosmetic.' },
+    cmp_foodbox: { wholesale: 650, srp: 990, moq: 12, capacity: 300, shelfLife: '4 months', fda: false, bir: true, barcode: false, note: 'Curated box of 6 local snacks.' },
+  };
+  campaigns.forEach((c) => { if (retailSpec[c.id]) c.retail = { ready: true, since: now - 25 * DAY, ...retailSpec[c.id] }; });
+  const storeRequests = [
+    { id: id('srq'), buyerId: 'u_buyer', brandId: ME, campaignId: 'cmp_foodbox', kind: 'samples', note: 'Holiday gift aisle. Can you do 2 samples by next week?', qty: 120, status: 'new', createdAt: now - 7 * 3600000 },
+    { id: id('srq'), buyerId: 'u_buyer', brandId: 'u_sili', campaignId: 'cmp_sili', kind: 'meeting', note: 'Your creator results are great. Let\'s talk pricing for 9 stores.', qty: 432, status: 'ordered', orderValue: 90720, fee: 7258, orderedAt: now - 6 * DAY, createdAt: now - 15 * DAY },
+    { id: id('srq'), buyerId: 'u_buyer', brandId: 'u_mangga', campaignId: 'cmp_mangga', kind: 'samples', note: '', qty: 240, status: 'talking', createdAt: now - 4 * DAY },
+  ];
+  const partners = [
+    { id: 'ptn_pack', name: 'Kahon Packaging Co.', category: 'packaging', blurb: 'Custom mailer boxes and pouches from 100 pieces. Food-safe options.', perk: '10% off your first order', region: 'Nationwide', fee: 400, active: true },
+    { id: 'ptn_label', name: 'Tatak Print Studio', category: 'printing', blurb: 'Waterproof product labels, stickers and hang tags. 3-day turnaround.', perk: 'Free design check on your first label', region: 'Metro Manila', fee: 250, active: true },
+    { id: 'ptn_ship', name: 'Hatid Fulfillment', category: 'courier', blurb: 'Pick-up, pack and ship for small sellers. Rates below walk-in prices.', perk: '₱20 off per parcel for your first month', region: 'Luzon', fee: 500, active: true },
+    { id: 'ptn_photo', name: 'Liwanag Product Photos', category: 'photo', blurb: 'Clean product and lifestyle shots that work on TikTok Shop and Shopee.', perk: '5 free extra photos per shoot', region: 'Metro Manila', fee: 300, active: true },
+    { id: 'ptn_fda', name: 'Papeles Permit Help', category: 'permits', blurb: 'FDA license to operate, product notification, BIR registration. Stores will ask for these.', perk: 'Free 20-minute checklist call', region: 'Nationwide', fee: 600, active: true },
+    { id: 'ptn_code', name: 'Guhit Barcodes', category: 'barcodes', blurb: 'GS1 barcode setup so supermarkets can scan your product.', perk: 'Setup fee waived', region: 'Nationwide', fee: 300, active: true },
+  ];
+  const partnerLeads = [
+    { id: id('lead'), partnerId: 'ptn_pack', userId: 'u_hurno', note: 'Need 500 boxes for pandesal.', status: 'closed', fee: 400, createdAt: now - 20 * DAY },
+    { id: id('lead'), partnerId: 'ptn_fda', userId: 'u_mangga', note: '', status: 'contacted', createdAt: now - 3 * DAY },
+    { id: id('lead'), partnerId: 'ptn_code', userId: 'u_barako', note: 'A grocery asked for barcodes.', status: 'new', createdAt: now - 5 * 3600000 },
+  ];
+
   return {
-    version: 10,
+    version: 11,
     flags: { dailyPicks: 'auto', requireCreatorApproval: false, monetization: {} },
     session: { userId: ME, mode: 'business' },
     users, campaigns, applications, links, events, deliverables, reviews, posts, threads, notifications, saved, profileViews,
     transactions, reports, emails: [], resets: [],
     contracts, disputes, verifications, shipments, concierge, tickets, saleImports: [],
-    revenue: transactions.filter((t) => t.type === 'fund').map((t) => ({ id: id('rev'), stream: 'transactionFee', amount: Math.round((-t.amount / (1 + SERVICE_FEE)) * SERVICE_FEE), payer: t.userId, note: 'Service fee', ref: t.ref, ts: t.ts })),
-    launches, swaps, ugcPrograms, ugcPosts,
+    revenue: [
+      { id: id('rev'), stream: 'retailScouting', amount: 7258, payer: 'u_sili', note: 'Store placement: Sili Republic Hot Sauce → Kanto Fresh Grocers', ref: null, ts: now - 6 * DAY },
+      { id: id('rev'), stream: 'partnerReferrals', amount: 400, payer: null, note: 'Referral: Hurno Bakehouse → Kahon Packaging Co.', ref: null, ts: now - 18 * DAY },
+    ].concat(transactions.filter((t) => t.type === 'fund').map((t) => ({ id: id('rev'), stream: 'transactionFee', amount: Math.round((-t.amount / (1 + SERVICE_FEE)) * SERVICE_FEE), payer: t.userId, note: 'Service fee', ref: t.ref, ts: t.ts }))),
+    launches, swaps, ugcPrograms, ugcPosts, storeRequests, partners, partnerLeads,
   };
 }

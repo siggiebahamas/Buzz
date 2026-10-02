@@ -23,6 +23,8 @@ export const STREAMS = [
     ],
   },
   { id: 'featuredListings', label: 'Featured spots on Opportunities', group: 'Core', defaultOn: true, desc: 'Brands pay to pin a listing at the top of Opportunities and Discover, labelled "Featured". The Launch Pad is never for sale.', settings: [['weekPrice', 'Price per week (₱)', 499]] },
+  { id: 'retailScouting', label: 'Retail scouting', group: 'Core', defaultOn: true, desc: 'Store buyers discover retail-ready products on Buzz and order direct. Brands pay a success fee only on the first order from a new store; buyers browse free.', settings: [['successPct', 'Success fee on a first store order (%)', 8], ['minOrder', 'Smallest order that earns a fee (₱)', 5000]] },
+  { id: 'partnerReferrals', label: 'Business toolkit referrals', group: 'Core', defaultOn: true, desc: 'Vetted suppliers (packaging, printing, couriers, photos, permits) pay Buzz a referral fee when a seller they meet through Buzz becomes a customer. Sellers pay nothing extra.', settings: [['defaultFee', 'Default fee per closed referral (₱)', 300]] },
   { id: 'paidHandpick', label: 'Paid hand-picked matching', group: 'Later', desc: 'Brands pay for the Buzz team to pick and invite creators. Off: the Free plan gets one request, Brand Pro unlimited.', settings: [['price', 'Price per campaign (₱)', 1500]] },
   { id: 'instantPayout', label: 'Instant withdrawals', group: 'Later', desc: 'Creators pay a small fee to get money the same day. Standard withdrawals stay free.', settings: [['fee', 'Fee per instant withdrawal (₱)', 20]] },
 ];

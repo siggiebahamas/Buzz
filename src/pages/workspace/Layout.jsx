@@ -1,5 +1,5 @@
 import { useState } from 'react';
-import { NavLink, Outlet } from 'react-router-dom';
+import { NavLink, Outlet, Navigate } from 'react-router-dom';
 import { LayoutGrid, UserRound, Briefcase, Handshake, ListChecks, BarChart3, MessageSquare, Bookmark, Settings, HelpCircle, Wallet, FileSignature, Scale, BadgeCheck, Gift, Library, Crown, Sprout, Repeat, Users, Megaphone, Store } from 'lucide-react';
 import { Link } from 'react-router-dom';
 import { useDB, currentUser, unreadCount, actions } from '../../lib/store';
@@ -39,6 +39,7 @@ const FAQ = [
   ['Do I need a budget?', 'No. Most brands start by sending the product for free in exchange for a post. You can pay creators a fee later, once you know what works.'],
   ['How do creators get paid safely?', 'When there is a fee, the brand pays it into Buzz Protected Payment first. Buzz releases it to the creator when the brand approves the post, or automatically after 7 days.'],
   ['What is the fit label?', 'How well a creator matches your product: content, budget, audience, platforms and past results. Hover it to see the reasons.'],
+  ['Can I get my product into stores?', 'Yes. In My Shop, tap "Get it into stores" on a product and add your wholesale terms. Verified store buyers can then find you and request samples. Listing is free; Buzz takes a small fee only on the first order from a new store.'],
   ['Something went wrong with a collab.', 'Open the collab and tap Report a problem. Any payment is put on hold and our team reviews it within 24 hours.'],
   ['Can I be both a creator and a seller?', 'Yes. Add both in Settings → Profile, then switch with the toggle at the top of your workspace.'],
 ];
@@ -47,6 +48,7 @@ export default function WorkspaceLayout() {
   const d = useDB();
   const { mode, me } = useMode();
   const [help, setHelp] = useState(false);
+  if (me?.buyer && !me.business && !me.creator) return <Navigate to="/retail" replace />;
   const pendingApps = mode === 'business'
     ? d.applications.filter((a) => a.status === 'pending' && d.campaigns.find((c) => c.id === a.campaignId)?.ownerId === me.id).length
     : d.applications.filter((a) => a.status === 'invited' && a.creatorId === me.id).length;

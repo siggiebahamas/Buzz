@@ -1,12 +1,12 @@
 import { useState } from 'react';
 import { Link, useLocation, useNavigate, useSearchParams } from 'react-router-dom';
 import { Megaphone, Store, MailCheck } from 'lucide-react';
-import { useDB, actions, userById, displayName } from '../lib/store';
+import { useDB, actions, userById, displayName, getDB, currentUser } from '../lib/store';
 import { CATEGORIES, PLATFORMS, REGIONS } from '../lib/constants';
 import { Card, Field, Input, Select, Button, Avatar, Checkbox, cx, useAct } from '../components/ui';
 import { Logo } from '../components/visuals';
 
-const QUICK = [['u_me', 'Founder + creator + admin'], ['c_bianca', 'Food creator'], ['u_sili', 'Hot sauce founder'], ['c_kaye', 'Beauty creator']];
+const QUICK = [['u_me', 'Founder + creator + admin'], ['c_bianca', 'Food creator'], ['u_sili', 'Hot sauce founder'], ['u_buyer', 'Grocery store buyer']];
 
 function Shell({ title, sub, children }) {
   return (
@@ -26,7 +26,7 @@ export function Login() {
   const [email, setEmail] = useState('');
   const [pw, setPw] = useState('');
   const [err, setErr] = useState('');
-  const after = () => nav(loc.state?.from || '/workspace');
+  const after = () => { const u = currentUser(getDB()); nav(loc.state?.from || (u?.buyer && !u.business && !u.creator ? '/retail' : '/workspace')); };
   const submit = (e) => {
     e.preventDefault();
     try { actions.loginWithPassword(email, pw); after(); } catch (x) { setErr(x.message); }
